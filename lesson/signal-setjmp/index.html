@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>signal.h &amp; setjmp.h: interrupts and teleports — The C Path</title>
+<meta name="description" content="Pressing Ctrl+C doesn't just kill your program — it sends it a message the program can catch , which is how editors and servers manage to save your work…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="signal.h &amp; setjmp.h: interrupts and teleports — The C Path">
+<meta property="og:description" content="Pressing Ctrl+C doesn't just kill your program — it sends it a message the program can catch , which is how editors and servers manage to save your work…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"signal.h & setjmp.h: interrupts and teleports","description":"Pressing Ctrl+C doesn't just kill your program — it sends it a message the program can catch , which is how editors and servers manage to save your work…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📚 The Standard Library</p>
+<h1>signal.h &amp; setjmp.h: interrupts and teleports</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/signal-setjmp">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Pressing Ctrl+C doesn't just kill your program — it sends it a message the program can <em>catch</em>, which is how editors and servers manage to save your work before exiting instead of corrupting files. The "Segmentation fault" you've been seeing since Part 2 is literally one of these messages arriving. Today you learn to intercept them — plus C's strangest trick: a jump that teleports straight out of deeply nested function calls.</p></div>
+
+<p>Two of the standard library's strangest headers. <code>signal.h</code> lets the outside world interrupt your program mid-statement; <code>setjmp.h</code> lets your program teleport back through the call stack — the tower of function calls currently in progress — ignoring every <code>return</code> in between. Both are powerful, both are minefields — and both are worth understanding even if you use them rarely.</p>
+
+<h2>Signals: asynchronous interruptions</h2>
+<p>A <strong>signal</strong> is a tiny notification delivered to your process — by the OS, another process, or itself. When one arrives, normal execution is <em>suspended wherever it happens to be</em>, a handler function runs, and then execution resumes. The classics:</p>
+<table>
+<tr><th>signal</th><th>when</th><th>default action</th></tr>
+<tr><td><code>SIGINT</code></td><td>user presses Ctrl+C</td><td>terminate</td></tr>
+<tr><td><code>SIGSEGV</code></td><td>invalid memory access (your old friend segfault)</td><td>terminate + core dump</td></tr>
+<tr><td><code>SIGFPE</code></td><td>fatal arithmetic error, e.g. integer division by zero</td><td>terminate + core dump</td></tr>
+<tr><td><code>SIGTERM</code></td><td>polite kill request (<code>kill PID</code>)</td><td>terminate</td></tr>
+<tr><td><code>SIGABRT</code></td><td><code>abort()</code> — e.g. a failed assert</td><td>terminate + core dump</td></tr>
+</table>
+<p><code>signal(SIGINT, handler)</code> installs your function; <code>raise(SIGINT)</code> sends a signal to yourself; <code>signal(SIGINT, SIG_IGN)</code> ignores one, <code>SIG_DFL</code> restores the default.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does pressing Ctrl+C in a terminal actually do to the foreground program?</p><ul><li>Kills it directly, no questions asked</li><li>Sends it SIGINT, whose default action is termination — but a handler can intercept it</li><li>Sends SIGSEGV</li><li>Closes its stdin</li></ul><details><summary>Show answer</summary><p><b>Sends it SIGINT, whose default action is termination — but a handler can intercept it</b> — Ctrl+C makes the terminal send SIGINT. Untouched, the default action terminates the process — but a program that installs a handler can finish its current job, save state, and exit cleanly instead. That’s the graceful-shutdown pattern below.</p></details></div>
+
+<h2>The one correct handler pattern</h2>
+<p>Here's the hard rule: your handler may run <em>between any two instructions</em> — possibly in the middle of a <code>printf</code> or a <code>malloc</code> that's holding an internal lock. Calling those from the handler can deadlock or corrupt state. The C standard blesses almost nothing inside a handler: essentially, <b>set a flag of type <code>volatile sig_atomic_t</code> and get out</b>. The main loop notices the flag at its leisure:</p>
+<figure class="code"><figcaption>graceful.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;signal.h&gt;
+
+volatile sig_atomic_t stop_requested = 0;
+
+void on_sigint(int sig) {
+    (void)sig;              /* unused parameter        */
+    stop_requested = 1;     /* the ONLY safe action:   */
+}                           /* set a flag and return   */
+
+int main(void) {
+    signal(SIGINT, on_sigint);
+    printf(&quot;working... press Ctrl+C to stop gracefully\n&quot;);
+
+    unsigned long processed = 0;
+    while (!stop_requested) {
+        processed++;        /* pretend this is real work */
+    }
+
+    /* normal code again — printf is fine HERE */
+    printf(&quot;\ncleanly stopped after %lu items\n&quot;, processed);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc graceful.c -o graceful &amp;&amp; ./graceful
+working... press Ctrl+C to stop gracefully
+^C
+cleanly stopped after 1846503219 items
+# no half-written files, no lost buffers — WE chose when to exit</pre></figure>
+<p>Why that exact type? <code>volatile</code> (Part 3) forbids the compiler from caching the flag in a register — it must re-read memory each loop, or it would never see the handler's write. <code>sig_atomic_t</code> guarantees reads and writes happen in one indivisible step, so the handler can't observe a half-written value.</p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>Don't printf in a signal handler.</b> It may <em>seem</em> to work — until the signal lands while printf holds its internal buffer lock, and your program deadlocks or scrambles output. Same for malloc, free, exit, and most of the library. POSIX defines a list of "async-signal-safe" functions (<code>write</code> is on it); standard C promises even less. Flag-and-return is the only fully portable pattern.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why must the shutdown flag be <code>volatile sig_atomic_t</code> rather than plain <code>int</code>?</p><ul><li>Signals can only write to that type</li><li>int is too small to store a signal number</li><li>volatile forces the loop to re-read memory each iteration, and sig_atomic_t makes each access indivisible</li><li>It’s just convention — int works identically</li></ul><details><summary>Show answer</summary><p><b>volatile forces the loop to re-read memory each iteration, and sig_atomic_t makes each access indivisible</b> — Without volatile, the optimizer may hoist the flag into a register — while(!stop) becomes an infinite loop that never sees the handler’s write. And a type with non-atomic access could be caught half-updated by a signal arriving mid-write. The combination closes both holes.</p></details></div>
+
+<h2>setjmp / longjmp: the non-local goto</h2>
+<p><code>setjmp(buf)</code> bookmarks the current execution point (stack position, registers) and returns 0. Later — possibly many function calls deeper — <code>longjmp(buf, v)</code> <em>teleports back</em> to that bookmark: every intervening stack frame is abandoned, and the program resumes as if setjmp had just returned <code>v</code> (forced to 1 if you pass 0). One setup, two returns:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/signal-setjmp">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+<p>This is C's "mini exception mechanism" — libraries like libpng and Lua use it to escape from deep errors without threading error codes through every call:</p>
+<figure class="code"><figcaption>miniexcept.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;setjmp.h&gt;
+
+static jmp_buf error_jump;
+
+double safe_div(double a, double b) {
+    if (b == 0.0)
+        longjmp(error_jump, 1);      /* &quot;throw&quot;           */
+    return a / b;
+}
+
+double average_rate(double dist, double time) {
+    return safe_div(dist, time);     /* deep call chain   */
+}
+
+int main(void) {
+    if (setjmp(error_jump) != 0) {   /* &quot;catch&quot;           */
+        fprintf(stderr, &quot;math error — recovered\n&quot;);
+        return 1;
+    }
+    printf(&quot;rate = %.1f\n&quot;, average_rate(100.0, 2.0));
+    printf(&quot;rate = %.1f\n&quot;, average_rate(100.0, 0.0));
+    printf(&quot;never reached\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc miniexcept.c -o miniexcept &amp;&amp; ./miniexcept
+rate = 50.0
+math error — recovered
+# the second call never returned: longjmp leapt over
+# average_rate AND safe_div straight back into main</pre></figure>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>The volatile locals caveat:</b> after longjmp lands, any local variable of the setjmp function that was <em>modified after setjmp</em> and isn't declared <code>volatile</code> has an <b>indeterminate value</b> — it may have lived in a register that the jump rewound. Rule: locals you change between setjmp and longjmp and read afterwards must be <code>volatile</code>.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> After a longjmp back into main, which local of main has a guaranteed value?</p><ul><li>All of them</li><li>None of them</li><li>Those unchanged since setjmp, plus changed ones declared <code>volatile</code></li><li>Only global variables</li></ul><details><summary>Show answer</summary><p><b>Those unchanged since setjmp, plus changed ones declared <code>volatile</code></b> — The jump may rewind registers to their setjmp-time snapshot. Locals modified after setjmp might live in those registers — unless volatile forces them to memory. Unchanged locals and volatile-qualified ones are safe; the rest are indeterminate.</p></details></div>
+
+<h2>Why it's a last resort</h2>
+<p>longjmp skips every cleanup on the way down: <code>free</code> calls never happen (leaks), <code>fclose</code> never runs, locks stay locked. Jumping into a function that already returned is UB. And code with hidden teleports is simply hard to read. Prefer returning error codes; reserve setjmp/longjmp for genuinely exceptional escapes — a parser bailing out of deep recursion, a library protecting its user from internal failure — where it earns its keep.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/signal-setjmp">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>One mystery remains from lesson one of this part: how can <code>printf</code> accept two arguments, or five, or ten? Time to write variadic functions ourselves.</p>
+
+<a class="cta" href="../../index.html#/lesson/signal-setjmp">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../limits-stdint/">← limits.h, float.h &amp; stdint.h: know your sizes</a>
+<a href="../variadic-functions/">Variadic functions: how printf really works →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

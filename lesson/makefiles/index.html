@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Makefiles: builds that rebuild themselves — The C Path</title>
+<meta name="description" content="Download almost any big project — a game engine, Python, Linux itself — and building it is one command: make . Behind that magic is a 50-year-old tool you…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Makefiles: builds that rebuild themselves — The C Path">
+<meta property="og:description" content="Download almost any big project — a game engine, Python, Linux itself — and building it is one command: make . Behind that magic is a 50-year-old tool you…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Makefiles: builds that rebuild themselves","description":"Download almost any big project — a game engine, Python, Linux itself — and building it is one command: make . Behind that magic is a 50-year-old tool you…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">⚙️ Compiler &amp; Toolchain Mastery</p>
+<h1>Makefiles: builds that rebuild themselves</h1>
+<p class="meta">⏱ 15 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/makefiles">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Download almost any big project — a game engine, Python, Linux itself — and building it is one command: <code>make</code>. Behind that magic is a 50-year-old tool you can learn in one sitting. Once you have, your own multi-file projects rebuild only the files you actually changed — the habit that keeps a recompile at two seconds instead of twenty minutes as a codebase grows.</p></div>
+
+<p>Your projects are no longer one file. Recompiling <em>everything</em> after each edit is slow, and a shell script that always rebuilds all of it is no better — it doesn't know what changed. <b>make</b> (born 1976, still everywhere) solves exactly this: you declare which files depend on which, and it rebuilds <em>only what's out of date</em>, by comparing file timestamps.</p>
+
+<h2>Our project: three files</h2>
+<p>A little calculator split the way you learned in the header-organization lesson:</p>
+<figure class="code"><figcaption>the project</figcaption><pre><code>/* calc.h — shared interface */
+int add(int a, int b);
+int mul(int a, int b);
+
+/* calc.c — implementation: includes calc.h */
+/* main.c — CLI:            includes calc.h */</code></pre></figure>
+<p class="iw">▶ <a href="../../index.html#/lesson/makefiles">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<h2>Anatomy of a rule</h2>
+<p>A Makefile is a list of rules, each saying: this <b>target</b> is built from these <b>prerequisites</b> using this <b>recipe</b>:</p>
+<figure class="code"><figcaption>Makefile — version 1 (explicit)</figcaption><pre><code>app: main.o calc.o
+	gcc main.o calc.o -o app
+
+main.o: main.c calc.h
+	gcc -Wall -c main.c -o main.o
+
+calc.o: calc.c calc.h
+	gcc -Wall -c calc.c -o calc.o
+
+# target: prerequisites
+# &lt;TAB&gt;   recipe  — that indent is a REAL tab character!</code></pre></figure>
+<p>The logic when you run <code>make app</code>: if <code>app</code> is missing, or <em>older</em> than any prerequisite, run the recipe — after recursively ensuring each prerequisite is itself up to date. That's the entire algorithm. Timestamps in, minimal rebuilds out.</p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>THE TAB TRAP.</b> Recipe lines must start with a real <b>TAB character</b> — not spaces. Ever. This is make's most infamous design decision (its author kept it to avoid breaking his ten existing users… in 1976). If your editor converts tabs to spaces you get the cryptic classic:<br><code>Makefile:5: *** missing separator.  Stop.</code><br>Configure your editor to keep literal tabs in Makefiles.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> <code>make</code> prints <code>Makefile:5: *** missing separator.  Stop.</code> — what is almost certainly wrong?</p><ul><li>A missing semicolon on line 5</li><li>The recipe line is indented with spaces instead of a tab</li><li>The target has no prerequisites</li><li>make is not installed correctly</li></ul><details><summary>Show answer</summary><p><b>The recipe line is indented with spaces instead of a tab</b> — The most famous error in build-system history: recipes MUST begin with a literal TAB. Editors that auto-convert tabs to spaces silently break Makefiles; most have a Makefile mode that preserves tabs.</p></details></div>
+
+<h2>First run, then the magic</h2>
+<figure class="code term"><figcaption>incremental rebuilds in action</figcaption><pre>$ make
+gcc -Wall -c main.c -o main.o
+gcc -Wall -c calc.c -o calc.o
+gcc main.o calc.o -o app
+$ make
+make: 'app' is up to date.
+$ touch calc.c              # pretend we edited it
+$ make
+gcc -Wall -c calc.c -o calc.o
+gcc main.o calc.o -o app
+# main.o untouched — make compared timestamps and skipped it.</pre></figure>
+<p>Touch one source file and only <em>two</em> commands run — recompile that object, relink. Touch nothing and make proudly does nothing. On a project with 2,000 files this is the difference between 2 seconds and 20 minutes.</p>
+
+<h2>Variables and automatic variables</h2>
+<p>Version 1 repeats itself badly. Make has variables (<code>CC</code>, <code>CFLAGS</code> are conventions the whole world uses) and <b>automatic variables</b> that mean "the current rule's parts":</p>
+<table>
+<tr><th>variable</th><th>means</th></tr>
+<tr><td><code>$@</code></td><td>the target</td></tr>
+<tr><td><code>$&lt;</code></td><td>the <em>first</em> prerequisite</td></tr>
+<tr><td><code>$^</code></td><td><em>all</em> prerequisites (deduplicated)</td></tr>
+</table>
+<figure class="code"><figcaption>Makefile — version 2 (variables + patterns)</figcaption><pre><code>CC     := gcc
+CFLAGS := -std=c17 -Wall -Wextra -g
+OBJS   := main.o calc.o
+
+app: $(OBJS)
+	$(CC) $^ -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $&lt; -o $@
+
+.PHONY: all clean
+all: app
+clean:
+	rm -f app $(OBJS)</code></pre></figure>
+<p>The <code>%.o: %.c</code> <b>pattern rule</b> says: any <code>.o</code> is built from the matching <code>.c</code> like so — one rule replaces a rule per file. And <code>.PHONY</code> marks <code>all</code>/<code>clean</code> as command names, not files: without it, a file literally named <code>clean</code> in your directory would make <code>make clean</code> report "up to date" and do nothing.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In the rule <code>app: $(OBJS)</code> with recipe <code>$(CC) $^ -o $@</code>, what do <code>$^</code> and <code>$@</code> expand to?</p><ul><li>$^ = app, $@ = main.o calc.o</li><li>$^ = main.o calc.o, $@ = app</li><li>$^ = the first prerequisite, $@ = all of them</li><li>both expand to the Makefile name</li></ul><details><summary>Show answer</summary><p><b>$^ = main.o calc.o, $@ = app</b> — $@ is the target (app), $^ is all prerequisites (main.o calc.o), and $< would be just the first one — which is why pattern rules use $< to name the single .c file.</p></details></div>
+
+<h2>The header problem — and its modern fix</h2>
+<p>Subtle bug in v2: edit <code>calc.h</code> and… nothing rebuilds! Make only knows the dependencies you declare, and we declared none on headers. Hand-listing them rots instantly. The modern fix: ask <b>GCC itself</b> to emit dependency files as a side effect of compiling (<code>-MMD -MP</code> produce a <code>.d</code> makefile-fragment per object), then include them:</p>
+<figure class="code"><figcaption>Makefile — final version (auto-dependencies)</figcaption><pre><code>CC     := gcc
+CFLAGS := -std=c17 -Wall -Wextra -g -MMD -MP
+OBJS   := main.o calc.o
+
+app: $(OBJS)
+	$(CC) $^ -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $&lt; -o $@
+
+-include $(OBJS:.o=.d)
+
+.PHONY: clean
+clean:
+	rm -f app $(OBJS) $(OBJS:.o=.d)</code></pre></figure>
+<figure class="code term"><figcaption>gcc writes the dependencies for us</figcaption><pre>$ make
+gcc -std=c17 -Wall -Wextra -g -MMD -MP -c main.c -o main.o
+gcc -std=c17 -Wall -Wextra -g -MMD -MP -c calc.c -o calc.o
+gcc main.o calc.o -o app
+$ cat main.d
+main.o: main.c calc.h
+calc.h:
+$ touch calc.h &amp;&amp; make      # NOW header edits are seen:
+gcc -std=c17 -Wall -Wextra -g -MMD -MP -c main.c -o main.o
+gcc -std=c17 -Wall -Wextra -g -MMD -MP -c calc.c -o calc.o
+gcc main.o calc.o -o app</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Without <code>-MMD</code>-style dependency tracking, what happens when you edit only a header file?</p><ul><li>make rebuilds everything, wastefully</li><li>make errors out</li><li>Nothing rebuilds — you run stale objects compiled from the old header</li><li>Only the linker reruns</li></ul><details><summary>Show answer</summary><p><b>Nothing rebuilds — you run stale objects compiled from the old header</b> — Make only follows declared arrows. If no rule lists calc.h as a prerequisite, editing it changes nothing make checks — and you debug a "bug" that is really a stale .o file. The -MMD/-MP + -include idiom fixes this permanently.</p></details></div>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Free speed:</b> <code>make -j8</code> builds up to 8 targets in parallel — the dependency graph tells make exactly which compiles are independent. <code>make -j$(nproc)</code> uses every core. This is why declaring dependencies honestly matters: the graph <em>is</em> the parallelism.</p></div></div>
+
+<h2>Beyond make</h2>
+<p>Big projects today usually generate their build instead of hand-writing it: <b>CMake</b> and <b>Meson</b> describe the project at a higher level and emit Makefiles (or the faster Ninja) for any platform, handling dependency discovery and cross-compilation. They're worth learning eventually — but they generate exactly the concepts you just learned, so none of this knowledge is wasted; it's the assembly language of build systems.</p>
+
+<p>Your build now takes care of itself — time to master the tools for when the <em>program</em> misbehaves: gdb, valgrind, and the sanitizers.</p>
+
+<a class="cta" href="../../index.html#/lesson/makefiles">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../inline-assembly/">← Inline assembly: when C must step aside</a>
+<a href="../debugging-tools/">The debugging arsenal: gdb, valgrind &amp; sanitizers →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

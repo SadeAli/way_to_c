@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arrays: many values, one name — The C Path</title>
+<meta name="description" content="A game tracks a hundred enemies; a weather app stores a temperature for every hour — you can't invent a separate variable name for each one. Arrays give a…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Arrays: many values, one name — The C Path">
+<meta property="og:description" content="A game tracks a hundred enemies; a weather app stores a temperature for every hour — you can't invent a separate variable name for each one. Arrays give a…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Arrays: many values, one name","description":"A game tracks a hundred enemies; a weather app stores a temperature for every hour — you can't invent a separate variable name for each one. Arrays give a…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎯 Pointers &amp; Memory</p>
+<h1>Arrays: many values, one name</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/arrays">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>A game tracks a hundred enemies; a weather app stores a temperature for every hour — you can't invent a separate variable name for each one. Arrays give a single name to the whole batch and a number to each slot. The catch: C's arrays come with no safety net whatsoever, and stepping one slot past the end has caused more famous crashes and security holes than any other mistake in programming history.</p></div>
+
+<p>An <strong>array</strong> is a fixed-size sequence of elements of one type, packed <em>back-to-back</em> in memory. Declare with <code>int temps[5];</code> — five ints, indexed <code>temps[0]</code> through <code>temps[4]</code>. Yes, from <b>zero</b>: the index is really an <em>offset</em> from the start, and the first element is zero elements in.</p>
+
+<h2>Declaring and indexing</h2>
+<figure class="code"><figcaption>temps.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int temps[5] = {12, 15, 19, 14, 9};
+
+    temps[2] = 21;                 /* write element 2 */
+    printf(&quot;first %d, last %d\n&quot;, temps[0], temps[4]);
+
+    for (int i = 0; i &lt; 5; i++)    /* the canonical loop */
+        printf(&quot;temps[%d] = %d\n&quot;, i, temps[i]);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc temps.c -o temps &amp;&amp; ./temps
+first 12, last 9
+temps[0] = 12
+temps[1] = 15
+temps[2] = 21
+temps[3] = 14
+temps[4] = 9</pre></figure>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/arrays">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> For <code>int a[10]</code>, the valid indices are…</p><ul><li>1 to 10</li><li>0 to 10</li><li>0 to 9</li><li>any int — C doesn’t care</li></ul><details><summary>Show answer</summary><p><b>0 to 9</b> — Ten elements, offsets 0 through 9. Writing a[10] is the classic off-by-one: it’s one past the end, and touching it is undefined behavior.</p></details></div>
+
+<h2>No bounds checking. None.</h2>
+<p>Here's the deal C offers you: array indexing compiles to bare address arithmetic — maximally fast, zero safety net. Ask for <code>a[3]</code> in a 3-element array and C computes the address <em>three elements past the start</em> and reads whatever bytes happen to live there. No exception, no warning at runtime, no mercy:</p>
+<figure class="code"><figcaption>oops.c — compiles clean, still broken</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a[3] = {1, 2, 3};
+
+    printf(&quot;a[3]  = %d\n&quot;, a[3]);    /* UB: reads past the end   */
+    printf(&quot;a[42] = %d\n&quot;, a[42]);   /* UB: reads a stranger’s   */
+    return 0;                         /*     memory — or crashes  */
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc oops.c -o oops &amp;&amp; ./oops
+a[3]  = 32764
+a[42] = -1449275392
+# garbage from neighboring stack memory — different every run
+$ gcc -fsanitize=address oops.c -o oops &amp;&amp; ./oops
+==5150==ERROR: AddressSanitizer: stack-buffer-overflow ...</pre></figure>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>Out-of-bounds access is undefined behavior</b> — the biggest single source of C bugs and security holes in history. It may return garbage, crash, corrupt a neighboring variable, or appear to work for years. The bounds live in <em>your</em> head; the compiler trusts you completely. Tools like <code>-fsanitize=address</code> catch these at runtime — use them.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does C do when you read <code>a[99]</code> on an <code>int a[3]</code>?</p><ul><li>Throws an exception</li><li>Returns 0</li><li>Refuses to compile</li><li>Whatever happens, happens — it’s undefined behavior</li></ul><details><summary>Show answer</summary><p><b>Whatever happens, happens — it’s undefined behavior</b> — The generated code just reads the address 99 elements in. Garbage, crash, or silent corruption — all are "correct" outcomes of UB. C sold the safety net to buy speed.</p></details></div>
+
+<h2>Initializers</h2>
+<p>Brace lists initialize arrays, with two lovely rules: <b>missing trailing elements become zero</b>, and (since C99) you can target specific indices with <strong>designated initializers</strong>:</p>
+<figure class="code"><figcaption>init.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a[5]  = {1, 2};               /* rest zeroed: 1 2 0 0 0  */
+    int b[]   = {1, 2, 3};            /* size inferred: 3        */
+    int c[10] = {[0] = 1, [9] = 99};  /* designated (C99)        */
+
+    printf(&quot;a: %d %d %d %d %d\n&quot;, a[0], a[1], a[2], a[3], a[4]);
+    printf(&quot;b has %zu elements\n&quot;, sizeof b / sizeof b[0]);
+    printf(&quot;c[9] = %d, c[5] = %d\n&quot;, c[9], c[5]);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc init.c -o init &amp;&amp; ./init
+a: 1 2 0 0 0
+b has 3 elements
+c[9] = 99, c[5] = 0
+# partial initialization zero-fills everything you didn't mention</pre></figure>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>The element-count idiom:</b> <code>sizeof a / sizeof a[0]</code> — total bytes divided by bytes-per-element. Memorize it; every real C codebase has a macro for it. But beware: it only works where <code>a</code> is a true array (next-next lesson explains when it silently isn't).</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> <code>int a[5] = {7};</code> — what is <code>a[4]</code>?</p><ul><li>7</li><li>0</li><li>Garbage (uninitialized)</li><li>Compile error</li></ul><details><summary>Show answer</summary><p><b>0</b> — Any initializer list, even a partial one, zero-fills the remaining elements. (With NO initializer at all, a local array’s contents really are garbage.)</p></details></div>
+
+<h2>Variable-length arrays (VLAs)</h2>
+<p>C99 lets an array size be a runtime value: <code>int buf[n];</code>. Handy, but controversial: VLAs live on the stack, there's <em>no way to detect allocation failure</em>, and a large <code>n</code> simply crashes the program. C11 made them optional, and many codebases (the Linux kernel among them) ban VLAs outright. Prefer fixed sizes or <code>malloc</code> (coming soon).</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/arrays">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>You may have noticed arrays and pointers keep brushing against each other — after one quick detour, we'll confront that relationship head-on.</p>
+
+<a class="cta" href="../../index.html#/lesson/arrays">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../pointer-arithmetic/">← Pointer arithmetic: +1 is not one byte</a>
+<a href="../arrays-vs-pointers/">Arrays vs pointers: the great confusion →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

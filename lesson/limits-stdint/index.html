@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>limits.h, float.h &amp; stdint.h: know your sizes — The C Path</title>
+<meta name="description" content="A file your program saves on Linux can come back garbled when read on Windows — the two systems literally disagree about how many bytes some numbers take.…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="limits.h, float.h &amp; stdint.h: know your sizes — The C Path">
+<meta property="og:description" content="A file your program saves on Linux can come back garbled when read on Windows — the two systems literally disagree about how many bytes some numbers take.…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"limits.h, float.h & stdint.h: know your sizes","description":"A file your program saves on Linux can come back garbled when read on Windows — the two systems literally disagree about how many bytes some numbers take.…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📚 The Standard Library</p>
+<h1>limits.h, float.h &amp; stdint.h: know your sizes</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/limits-stdint">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>A file your program saves on Linux can come back garbled when read on Windows — the two systems literally disagree about how many bytes some numbers take. Today you get number types that are <em>exactly</em> the same size on every machine, which is how image files, save games, and internet messages stay readable on every device on Earth.</p></div>
+
+<p>"How big is an <code>int</code>?" The honest C answer: <em>it depends</em>. The standard only guarantees minimums — <code>int</code> ≥ 16 bits, <code>long</code> ≥ 32, <code>long long</code> ≥ 64. Real machines disagree: on 64-bit Linux <code>long</code> is 64 bits, on 64-bit Windows it's 32! Today's headers turn that chaos into certainty.</p>
+
+<h2>limits.h: the actual numbers on this machine</h2>
+<figure class="code"><figcaption>mylimits.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;float.h&gt;
+
+int main(void) {
+    printf(&quot;CHAR_BIT   = %d bits per byte\n&quot;, CHAR_BIT);
+    printf(&quot;char       : %d .. %d\n&quot;, CHAR_MIN, CHAR_MAX);
+    printf(&quot;short      : %d .. %d\n&quot;, SHRT_MIN, SHRT_MAX);
+    printf(&quot;int        : %d .. %d\n&quot;, INT_MIN, INT_MAX);
+    printf(&quot;long       : %ld .. %ld\n&quot;, LONG_MIN, LONG_MAX);
+    printf(&quot;uint max   : %u\n&quot;, UINT_MAX);
+    printf(&quot;int bits   = %zu\n&quot;, sizeof(int) * CHAR_BIT);
+    printf(&quot;DBL_EPSILON= %g, DBL_DIG=%d\n&quot;, DBL_EPSILON, DBL_DIG);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc mylimits.c -o mylimits &amp;&amp; ./mylimits
+CHAR_BIT   = 8 bits per byte
+char       : -128 .. 127
+short      : -32768 .. 32767
+int        : -2147483648 .. 2147483647
+long       : -9223372036854775808 .. 9223372036854775807
+uint max   : 4294967295
+int bits   = 32
+DBL_EPSILON= 2.22045e-16, DBL_DIG=15
+# note: char is signed here — that's implementation-defined!</pre></figure>
+<p><code>CHAR_BIT</code> is the number of bits in a byte — 8 everywhere you'll likely ever work, but the standard permits more (some DSPs use 16 or 32). The pattern <code>sizeof(type) * CHAR_BIT</code> gives a type's bit width portably.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does the C standard guarantee about <code>int</code>?</p><ul><li>Exactly 32 bits</li><li>At least 16 bits</li><li>The same size as long</li><li>At least 32 bits</li></ul><details><summary>Show answer</summary><p><b>At least 16 bits</b> — Only a minimum: int must span at least −32767..32767 (16 bits). It happens to be 32 bits on modern desktops, but 16-bit ints are alive and well on microcontrollers — which is exactly why stdint.h exists.</p></details></div>
+
+<h2>float.h: precision limits</h2>
+<table>
+<tr><th>macro</th><th>typical value</th><th>meaning</th></tr>
+<tr><td><code>FLT_MAX / DBL_MAX</code></td><td>3.4×10³⁸ / 1.8×10³⁰⁸</td><td>largest finite float / double</td></tr>
+<tr><td><code>FLT_EPSILON</code></td><td>1.19×10⁻⁷</td><td>smallest x where 1.0f + x ≠ 1.0f</td></tr>
+<tr><td><code>DBL_EPSILON</code></td><td>2.22×10⁻¹⁶</td><td>same for double — the yardstick for relative comparisons</td></tr>
+<tr><td><code>FLT_DIG / DBL_DIG</code></td><td>6 / 15</td><td>decimal digits that survive a round trip</td></tr>
+</table>
+<p>These are the numbers behind Part 0's "float ≈ 7 digits, double ≈ 15–16" — now you know where to look them up.</p>
+
+<h2>The fix: stdint.h fixed-width types</h2>
+<p>C99 ended the guessing game. When the exact width matters — file formats, network packets, embedded registers, overflow-sensitive math — say what you mean:</p>
+<table>
+<tr><th>type</th><th>meaning</th></tr>
+<tr><td><code>int8_t … int64_t</code>, <code>uint8_t … uint64_t</code></td><td>exactly N bits, two's complement (mandatory since C23!) — optional only on exotic hardware</td></tr>
+<tr><td><code>int_least8_t</code> …</td><td>smallest type with <em>at least</em> N bits — always exists</td></tr>
+<tr><td><code>int_fast8_t</code> …</td><td>fastest type with at least N bits (often plain int under the hood)</td></tr>
+<tr><td><code>intptr_t / uintptr_t</code></td><td>integer wide enough to round-trip a pointer — the only sanctioned way to store an address as an integer</td></tr>
+<tr><td><code>intmax_t / INT32_MAX …</code></td><td>the widest integer type, plus a MAX/MIN macro for every type above</td></tr>
+</table>
+
+<h2>Printing them: inttypes.h</h2>
+<p>Here's the trap: what printf specifier matches <code>int64_t</code>? On 64-bit Linux it's <code>long</code> (<code>%ld</code>), on Windows it's <code>long long</code> (<code>%lld</code>) — hardcode either and the other platform breaks. <code>inttypes.h</code> provides format macros that expand to the right letters via string-literal concatenation:</p>
+<figure class="code"><figcaption>fixed.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;inttypes.h&gt;
+
+int main(void) {
+    int32_t  file_offset = 123456;        /* exact 32 bits    */
+    uint8_t  flags       = 0xC3;          /* exact byte       */
+    int64_t  big         = INT64_MAX;
+    int_fast16_t counter = 0;             /* whatever's quick */
+
+    /* PRId64 expands to &quot;ld&quot; or &quot;lld&quot; as needed —
+       string concatenation glues it into the format: */
+    printf(&quot;big    = %&quot; PRId64 &quot;\n&quot;, big);
+    printf(&quot;offset = %&quot; PRId32 &quot;, flags = 0x%&quot; PRIX8 &quot;\n&quot;,
+           file_offset, flags);
+
+    uintptr_t addr = (uintptr_t)&amp;counter; /* pointer &lt;-&gt; int  */
+    printf(&quot;counter lives at 0x%&quot; PRIxPTR &quot;\n&quot;, addr);
+
+    printf(&quot;sizeof int_fast16_t = %zu\n&quot;, sizeof counter);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc fixed.c -o fixed &amp;&amp; ./fixed
+big    = 9223372036854775807
+offset = 123456, flags = 0xC3
+counter lives at 0x7ffc9a2b4c2c
+sizeof int_fast16_t = 8
+# fast16 chose a full 64-bit register on this machine!</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why is <code>printf("%ld", my_int64)</code> unportable for an <code>int64_t</code>?</p><ul><li>%ld only prints 32 bits</li><li>int64_t may be long on one platform and long long on another — the specifier must match the underlying type</li><li>printf can’t print 64-bit values</li><li>It’s fine — int64_t is always long</li></ul><details><summary>Show answer</summary><p><b>int64_t may be long on one platform and long long on another — the specifier must match the underlying type</b> — int64_t is a typedef for whichever native type is 64-bit: long on Linux/macOS, long long on Windows. A mismatched specifier is UB. PRId64 from inttypes.h expands to the correct letters on each platform.</p></details></div>
+
+<h2>stddef.h & stdbool.h: the little glue types</h2>
+<ul>
+<li><code>size_t</code> — unsigned type of <code>sizeof</code> and array indexing; print with <code>%zu</code></li>
+<li><code>ptrdiff_t</code> — signed result of subtracting pointers; print with <code>%td</code></li>
+<li><code>NULL</code> — the null pointer constant (since C23 you can — and should — write <code>nullptr</code>)</li>
+<li><code>bool / true / false</code> — via stdbool.h historically; real keywords in C23, no header needed</li>
+<li><code>offsetof(type, member)</code> — byte offset of a member inside a struct, computed at compile time</li>
+</ul>
+<p><code>offsetof</code> makes struct padding (Part 2) visible. Recall why: an <code>int</code> wants a 4-aligned address, so the compiler inserts gap bytes:</p>
+<figure class="code"><figcaption>offsets.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stddef.h&gt;
+
+struct packet {
+    char     tag;      /* 1 byte              */
+    int      value;    /* 4 bytes, wants 4-alignment */
+    char     flag;     /* 1 byte              */
+};
+
+int main(void) {
+    printf(&quot;offset of tag   = %zu\n&quot;, offsetof(struct packet, tag));
+    printf(&quot;offset of value = %zu\n&quot;, offsetof(struct packet, value));
+    printf(&quot;offset of flag  = %zu\n&quot;, offsetof(struct packet, flag));
+    printf(&quot;sizeof struct   = %zu\n&quot;, sizeof(struct packet));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc offsets.c -o offsets &amp;&amp; ./offsets
+offset of tag   = 0
+offset of value = 4
+offset of flag  = 8
+sizeof struct   = 12
+# 6 bytes of data, 12 bytes of struct: 6 bytes of padding!</pre></figure>
+<p class="iw">▶ <a href="../../index.html#/lesson/limits-stdint">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> <code>offsetof(struct packet, value)</code> above returned 4, not 1. Why?</p><ul><li>offsetof counts from 1</li><li>int members always come first in memory</li><li>The compiler inserted 3 padding bytes so the int starts at a 4-aligned offset</li><li>sizeof(char) is 4 here</li></ul><details><summary>Show answer</summary><p><b>The compiler inserted 3 padding bytes so the int starts at a 4-aligned offset</b> — Alignment (Part 5!): a 4-byte int is placed at offsets divisible by 4 for efficient access. tag occupies offset 0, offsets 1–3 are padding, value starts at 4. offsetof is how you verify a layout matches a file format or wire protocol.</p></details></div>
+
+<h2>So which type do I use?</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/limits-stdint">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p>Default to <code>int</code> for small numbers, <code>size_t</code> for sizes/indexes, <code>int64_t</code> when values can get big, exact-width types at any binary boundary (files, network, hardware). Reach for unsigned types for bit manipulation — not just because a value "can't be negative" (unsigned underflow bugs in loop conditions are legion).</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/limits-stdint">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Types measured and pinned down — now for the standard library's wildest corner: signals that interrupt your program, and jumps that teleport across functions.</p>
+
+<a class="cta" href="../../index.html#/lesson/limits-stdint">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../ctype-assert-errno/">← ctype.h, assert.h &amp; errno.h: small headers, big habits</a>
+<a href="../signal-setjmp/">signal.h &amp; setjmp.h: interrupts and teleports →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

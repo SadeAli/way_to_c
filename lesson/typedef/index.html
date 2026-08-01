@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>typedef: giving types better names — The C Path</title>
+<meta name="description" content="Some of C's most familiar type names — size_t , or the FILE behind every file you'll ever open — aren't built into the language at all: they're nicknames…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="typedef: giving types better names — The C Path">
+<meta property="og:description" content="Some of C's most familiar type names — size_t , or the FILE behind every file you'll ever open — aren't built into the language at all: they're nicknames…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"typedef: giving types better names","description":"Some of C's most familiar type names — size_t , or the FILE behind every file you'll ever open — aren't built into the language at all: they're nicknames…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🧬 Types &amp; Qualifiers, In Depth</p>
+<h1>typedef: giving types better names</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/typedef">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Some of C's most familiar type names — <code>size_t</code>, or the <code>FILE</code> behind every file you'll ever open — aren't built into the language at all: they're nicknames minted with <code>typedef</code>, and this lesson shows you the trick. You'll also use it to turn a declaration full of stars and parentheses into a name a human can read at a glance.</p></div>
+
+<p><code>typedef</code> creates an <strong>alias</strong> for an existing type — a nickname, not a new type. <code>typedef int Celsius;</code> makes <code>Celsius</code> and <code>int</code> fully interchangeable (the compiler won't stop you mixing them — it's documentation, not a wall between types). Where typedef shines is taming C's gnarlier type syntax.</p>
+
+<h2>The one insight that makes typedef easy</h2>
+<p>A typedef is written <em>exactly like a variable declaration</em>, with <code>typedef</code> stapled on front. Wherever the <strong>variable name</strong> would be, that becomes the <strong>type name</strong>:</p>
+<figure class="code"><figcaption>mirror.c — declaration, then typedef</figcaption><pre><code>/* variable declarations...          ...become type aliases */
+unsigned char      byte_v;    typedef unsigned char      byte;
+int                pair_v[2]; typedef int                pair[2];
+int              (*cmp_v)(const void *, const void *);
+typedef int      (*cmp_fn)(const void *, const void *);
+
+/* now these are easy to read: */
+byte   b   = 0xFF;     /* one unsigned char        */
+pair   xy  = { 3, 4 }; /* an array of two ints!    */
+cmp_fn f;              /* pointer to qsort-style fn */</code></pre></figure>
+<p>This mirror rule works for arbitrarily hairy types. Can you declare it as a variable? Then you can typedef it.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> After <code>typedef int Meters;</code>, what does <code>Meters m = 5; int x = m;</code> do?</p><ul><li>Compile error: incompatible types</li><li>Compiles: Meters IS int, just under another name</li><li>Runtime conversion from Meters to int</li><li>Undefined behavior</li></ul><details><summary>Show answer</summary><p><b>Compiles: Meters IS int, just under another name</b> — typedef creates an alias, not a distinct type. Great for readability and portability, useless as a type-safety wall — the compiler sees int everywhere.</p></details></div>
+
+<h2>Taming structs and function pointers</h2>
+<p>The two heavyweight champions of "please give this a name":</p>
+<figure class="code"><figcaption>tamed.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+typedef struct Node Node;     /* name first: usable below */
+struct Node {
+    int   value;
+    Node *next;               /* thanks to the line above  */
+};
+
+typedef int (*cmp_fn)(const void *, const void *);
+
+int by_int(const void *a, const void *b) {
+    return *(const int *)a - *(const int *)b;
+}
+
+int main(void) {
+    cmp_fn cmp = by_int;      /* vs: int (*cmp)(const void*, const void*) */
+    int v[] = { 31, 4, 15 };
+    qsort(v, 3, sizeof v[0], cmp);
+    printf(&quot;%d %d %d\n&quot;, v[0], v[1], v[2]);
+
+    Node n2 = { 20, NULL }, n1 = { 10, &amp;n2 };
+    printf(&quot;%d -&gt; %d\n&quot;, n1.value, n1.next-&gt;value);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc tamed.c -o tamed &amp;&amp; ./tamed
+4 15 31
+10 -&gt; 20</pre></figure>
+<p>Note the self-referencing struct: the <code>struct Node</code> <em>tag</em> is still needed inside, because the typedef name isn't usable until the declaration ends. The idiom <code>typedef struct Node Node;</code> <em>before</em> the struct body sidesteps this entirely.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Inside <code>struct Node { ... };</code>, why can't the member be declared with a typedef name defined <em>after</em> the struct?</p><ul><li>Members can never be pointers to the own struct</li><li>A typedef name only exists once its declaration is complete — inside the body you must use the struct tag (or pre-declare the typedef)</li><li>typedef and struct cannot mix</li><li>It can — order never matters in C</li></ul><details><summary>Show answer</summary><p><b>A typedef name only exists once its declaration is complete — inside the body you must use the struct tag (or pre-declare the typedef)</b> — C is processed top-to-bottom. Either use the tag (struct Node *next;) or write typedef struct Node Node; BEFORE the body — then Node *next; works inside it.</p></details></div>
+
+<h2>Opaque types: typedef as API armor</h2>
+<p>Here's a professional trick. Declare a typedef of an <em>incomplete</em> struct in the header, and define the struct only in the <code>.c</code> file. Users can hold pointers to a <code>Timer</code>, but can't see or touch its fields — the layout can change without breaking anyone:</p>
+<figure class="code"><figcaption>timer.h + timer.c — the opaque pattern</figcaption><pre><code>/* ---- timer.h (what users see) ---- */
+typedef struct Timer Timer;        /* incomplete: fields hidden */
+
+Timer *timer_start(const char *name);
+double timer_elapsed(const Timer *t);
+void   timer_free(Timer *t);
+
+/* ---- timer.c (private) ---- */
+struct Timer {                      /* real definition lives here */
+    const char *name;
+    long        start_ns;
+};
+/* users CANNOT write t-&gt;start_ns — incomplete type! */</code></pre></figure>
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p>This is exactly how <code>FILE</code> works in <code>&lt;stdio.h&gt;</code>: you juggle <code>FILE *</code> pointers everywhere but have (portably) no idea what's inside a <code>FILE</code>. That's an opaque type in the wild — and why the pattern is also called the "FILE idiom".</p></div></div>
+
+<h2>When NOT to typedef: hiding pointers</h2>
+<div class="sq"><p class="sq-q">🤔 Given <code>typedef char *string;</code> — what exactly does <code>const string s</code> declare?</p><details><summary>Think first</summary><p>It declares <code>char *const s</code> — a <b>const pointer to modifiable chars</b>. Not <code>const char *s</code>! The qualifier applies to the typedef'd type <em>as a sealed unit</em>; const cannot reach "inside" the alias to qualify the pointee. This trap alone is a good reason not to hide pointers behind typedefs.</p></details></div>
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Rule of thumb:</b> don't typedef away a <code>*</code> unless the type is truly opaque (a handle). <code>typedef char *string;</code> looks cute, but readers can no longer see that assignment copies a <em>pointer</em> (not the text!), and const stops meaning what they think. The Linux kernel style guide bans pointer typedefs for exactly this reason.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> When is typedef-ing a pointer type considered good style?</p><ul><li>Always — it saves keystrokes</li><li>For opaque handles where callers should never dereference it anyway</li><li>Whenever the pointer is const</li><li>Never, it is a syntax error</li></ul><details><summary>Show answer</summary><p><b>For opaque handles where callers should never dereference it anyway</b> — If users are meant to treat the value as a black-box handle, hiding the * is honest. If they will dereference, index, or free it, hiding its pointer-ness just obscures the code and breaks const intuition.</p></details></div>
+
+<h2>You use typedefs constantly already</h2>
+<p><code>size_t</code>, <code>ptrdiff_t</code>, <code>uint32_t</code>, <code>sig_atomic_t</code>, <code>FILE</code>, <code>time_t</code> — all typedefs. That's the portability trick of the standard library: <code>uint32_t</code> might alias <code>unsigned int</code> on your machine and <code>unsigned long</code> on another, but <em>your</em> code just says <code>uint32_t</code> and works everywhere.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/typedef">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>typedef names existing types — next up is the keyword that mints whole families of named integer constants: <code>enum</code>.</p>
+
+<a class="cta" href="../../index.html#/lesson/typedef">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../volatile/">← volatile: &quot;this memory has a mind of its own&quot;</a>
+<a href="../enum/">enum: constants with names and superpowers →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arrays vs pointers: the great confusion — The C Path</title>
+<meta name="description" content="By now arrays and pointers keep acting suspiciously alike — *p here, a[i] there, loops that work with either. One hidden rule explains the whole illusion,…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Arrays vs pointers: the great confusion — The C Path">
+<meta property="og:description" content="By now arrays and pointers keep acting suspiciously alike — *p here, a[i] there, loops that work with either. One hidden rule explains the whole illusion,…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Arrays vs pointers: the great confusion","description":"By now arrays and pointers keep acting suspiciously alike — *p here, a[i] there, loops that work with either. One hidden rule explains the whole illusion,…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎯 Pointers &amp; Memory</p>
+<h1>Arrays vs pointers: the great confusion</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/arrays-vs-pointers">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>By now arrays and pointers keep acting suspiciously alike — <code>*p</code> here, <code>a[i]</code> there, loops that work with either. One hidden rule explains the whole illusion, and it also answers two questions that bite every C learner: why <code>sizeof</code> seems to lie about an array inside a function, and why every function that takes an array forces you to pass its length separately.</p></div>
+
+<p>"Arrays are just pointers" is the most repeated <em>wrong</em> sentence in C education. Arrays and pointers are different things — an array <em>is</em> its elements; a pointer <em>refers</em> to something else. The confusion exists because of one sneaky rule, and once you know it, everything snaps into focus.</p>
+
+<h2>The rule: arrays decay</h2>
+<p>In almost every expression, an array name is automatically converted — <strong>"decays"</strong> — to a <em>pointer to its first element</em>. Write <code>a</code>, get <code>&amp;a[0]</code>. That's it. That's the whole trick behind a decade of confusion:</p>
+<figure class="code"><figcaption>decay.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a[4] = {10, 20, 30, 40};
+
+    printf(&quot;a        = %p\n&quot;, (void *)a);       /* decays!      */
+    printf(&quot;&amp;a[0]    = %p\n&quot;, (void *)&amp;a[0]);   /* same address */
+    printf(&quot;*a       = %d\n&quot;, *a);              /* a[0]         */
+    printf(&quot;*(a + 2) = %d\n&quot;, *(a + 2));        /* a[2]         */
+    printf(&quot;sizeof a = %zu\n&quot;, sizeof a);       /* NO decay: 16 */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc decay.c -o decay &amp;&amp; ./decay
+a        = 0x7ffe0b8c1540
+&amp;a[0]    = 0x7ffe0b8c1540
+*a       = 10
+*(a + 2) = 30
+sizeof a = 16
+# a acts like &amp;a[0] everywhere — EXCEPT inside sizeof</pre></figure>
+<p>Notice the last line: <code>sizeof a</code> said 16, not 8. That's our first clue that <code>a</code> is <em>not</em> actually a pointer — more on that below.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In most expressions, an array name evaluates to…</p><ul><li>The whole array, copied</li><li>A pointer to its first element</li><li>The number of elements</li><li>Its first element’s value</li></ul><details><summary>Show answer</summary><p><b>A pointer to its first element</b> — That’s decay: <code>a</code> becomes <code>&amp;a[0]</code>. The array itself never moves; only its starting address is handed around.</p></details></div>
+
+<h2><code>a[i]</code> is <em>defined</em> as <code>*(a + i)</code></h2>
+<p>Indexing isn't an array feature — it's a <strong>pointer</strong> feature! The standard literally defines <code>a[i]</code> to mean <code>*(a + i)</code>: decay the array, do pointer arithmetic, dereference. And since addition commutes, <code>*(a + i) == *(i + a)</code>… which means this monstrosity compiles:</p>
+<figure class="code"><figcaption>commute.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a[4] = {10, 20, 30, 40};
+
+    printf(&quot;a[2]     = %d\n&quot;, a[2]);
+    printf(&quot;*(a + 2) = %d\n&quot;, *(a + 2));   /* the definition   */
+    printf(&quot;*(2 + a) = %d\n&quot;, *(2 + a));   /* + commutes...    */
+    printf(&quot;2[a]     = %d\n&quot;, 2[a]);       /* ...so this works */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc commute.c -o commute &amp;&amp; ./commute
+a[2]     = 30
+*(a + 2) = 30
+*(2 + a) = 30
+2[a]     = 30</pre></figure>
+
+<div class="callout fun"><div class="co-ic">🎉</div><div class="co-body"><p><b>Yes, <code>2[a]</code> is legal C.</b> It desugars to <code>*(2 + a)</code>, same as <code>a[2]</code>. Wonderful for winning bar bets, terrible for code review. Use this power only for good.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why does <code>3[a]</code> compile and equal <code>a[3]</code>?</p><ul><li>It’s a GCC extension</li><li>Because a[i] is defined as *(a+i), and addition commutes</li><li>It doesn’t compile</li><li>It only works for char arrays</li></ul><details><summary>Show answer</summary><p><b>Because a[i] is defined as *(a+i), and addition commutes</b> — <code>3[a]</code> → <code>*(3 + a)</code> → <code>*(a + 3)</code> → <code>a[3]</code>. Indexing is pointer arithmetic wearing square brackets.</p></details></div>
+
+<h2>When decay does NOT happen</h2>
+<p>There are exactly three main escapes from decay, and they're where the array's true nature shows:</p>
+<table>
+<tr><th>expression</th><th>what you get</th></tr>
+<tr><td><code>sizeof a</code></td><td>size of the <em>whole array</em> in bytes (e.g. 16 for <code>int a[4]</code>)</td></tr>
+<tr><td><code>&amp;a</code></td><td>pointer to the whole array — type <code>int (*)[4]</code>, same address, different type: <code>&amp;a + 1</code> jumps 16 bytes!</td></tr>
+<tr><td><code>char s[] = "hi"</code></td><td>a string literal initializing an array copies the characters — no decay</td></tr>
+</table>
+
+<div class="sq"><p class="sq-q">🤔 Given <code>int a[8];</code> on a 64-bit machine — what are <code>sizeof a</code>, <code>sizeof &amp;a[0]</code>, and <code>sizeof (a + 0)</code>?</p><details><summary>Think first</summary><p><code>sizeof a</code> = <b>32</b> (8 ints × 4 bytes — no decay inside sizeof). <code>sizeof &amp;a[0]</code> = <b>8</b> (it’s an <code>int *</code>, and pointers are 8 bytes here). <code>sizeof (a + 0)</code> = <b>8</b> too — the arithmetic forced <code>a</code> to decay into a pointer first! The moment an array participates in an expression, it’s a pointer.</p></details></div>
+
+<h2>Array parameters are a polite fiction</h2>
+<p>Now the kicker. When you declare a function parameter as an array, C silently rewrites it as a pointer — <code>void f(int a[10])</code>, <code>void f(int a[])</code>, and <code>void f(int *a)</code> declare <em>the exact same function</em>. The 10 is decorative. Consequences:</p>
+<figure class="code"><figcaption>param.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+void inspect(int a[100]) {          /* the 100 is a lie:     */
+    printf(&quot;inside : %zu\n&quot;, sizeof a);  /* a is an int*    */
+    a[0] = 999;                     /* modifies CALLER's array */
+}
+
+int main(void) {
+    int a[100] = {1};
+    printf(&quot;outside: %zu\n&quot;, sizeof a);
+    inspect(a);
+    printf(&quot;a[0] is now %d\n&quot;, a[0]);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc param.c -o param &amp;&amp; ./param
+param.c:5:35: warning: 'sizeof' on array parameter 'a' will
+    return size of 'int *' [-Wsizeof-array-argument]
+outside: 400
+inside : 8
+a[0] is now 999
+# inside the function, &quot;a&quot; is just a pointer — 8 bytes</pre></figure>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>An array never travels through a function call.</b> Only the address of its first element does — which is also why arrays "pass by reference" (the callee can modify your elements) and why every array-taking function needs a separate length parameter: <code>void f(int *a, size_t n)</code>. The length doesn't ride along; you must carry it yourself.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Inside <code>void f(int a[10])</code>, what is <code>sizeof a</code>?</p><ul><li>40</li><li>10</li><li>sizeof(int *) — the parameter is really a pointer</li><li>A compile error</li></ul><details><summary>Show answer</summary><p><b>sizeof(int *) — the parameter is really a pointer</b> — Array parameters are rewritten to pointers before the function body ever sees them. The declared size is documentation at best — which is why functions take an explicit length argument.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/arrays-vs-pointers">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Armed with decay, you're ready for C's most famous "array of char with a twist" — strings.</p>
+
+<a class="cta" href="../../index.html#/lesson/arrays-vs-pointers">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../arrays/">← Arrays: many values, one name</a>
+<a href="../strings/">Strings: char arrays with a secret handshake →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

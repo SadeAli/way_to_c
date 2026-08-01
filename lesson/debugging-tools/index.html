@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The debugging arsenal: gdb, valgrind &amp; sanitizers — The C Path</title>
+<meta name="description" content="&quot;Segmentation fault (core dumped)&quot; — no line number, no hint, no mercy. You've almost certainly met that message already, and staring harder at the code was…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="The debugging arsenal: gdb, valgrind &amp; sanitizers — The C Path">
+<meta property="og:description" content="&quot;Segmentation fault (core dumped)&quot; — no line number, no hint, no mercy. You've almost certainly met that message already, and staring harder at the code was…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"The debugging arsenal: gdb, valgrind & sanitizers","description":"\"Segmentation fault (core dumped)\" — no line number, no hint, no mercy. You've almost certainly met that message already, and staring harder at the code was…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">⚙️ Compiler &amp; Toolchain Mastery</p>
+<h1>The debugging arsenal: gdb, valgrind &amp; sanitizers</h1>
+<p class="meta">⏱ 16 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/debugging-tools">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>"Segmentation fault (core dumped)" — no line number, no hint, no mercy. You've almost certainly met that message already, and staring harder at the code was your only move. The tools in this lesson turn the same crash into a report naming the exact line that blew up, the line that freed the memory, and the line that allocated it — most bug hunts end in under a minute once you know which tool to reach for.</p></div>
+
+<p>Every C bug you'll ever hunt falls into a few classes — crashes, leaks, scribbled-over memory, wrong answers — and each class has a purpose-built tool that finds it in seconds. This lesson is your armory tour. Rule zero applies to all of them: <b>compile with <code>-g</code></b>, or every tool speaks in raw memory addresses instead of your source lines.</p>
+
+<h2>printf debugging, done properly</h2>
+<p>No shame in it — but do it right:</p>
+<figure class="code"><figcaption>dbg.h — a printf-debugging macro worth keeping</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+/* stderr (unbuffered!) + file, line, and the expression itself */
+#define DBG(fmt, ...) \
+    fprintf(stderr, &quot;[%s:%d] &quot; fmt &quot;\n&quot;, __FILE__, __LINE__, __VA_ARGS__)
+
+int main(void) {
+    int balance = 100, price = 30;
+    for (int i = 0; i &lt; 3; i++) {
+        balance -= price;
+        DBG(&quot;i=%d balance=%d&quot;, i, balance);
+    }
+    printf(&quot;final: %d\n&quot;, balance);
+    return 0;
+}</code></pre></figure>
+<p>Why <code>stderr</code>? It's <b>unbuffered</b>: output appears immediately. <code>stdout</code> is buffered, so when your program crashes, its last buffered lines <em>die with it</em> — and you end up debugging the wrong location because the final printf "never printed". If you must use stdout, <code>fflush(stdout)</code> after each probe.</p>
+
+<h2>gdb: the time machine</h2>
+<p>This program crashes. Watch a real session find the bug in five commands:</p>
+<figure class="code"><figcaption>crash.c — spot the bug before gdb does</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int length_of(const char *s) {
+    return (int)strlen(s);
+}
+
+int main(void) {
+    const char *words[] = {&quot;alpha&quot;, &quot;beta&quot;, NULL};
+    int total = 0;
+    for (int i = 0; i &lt;= 3; i++)          /* hmm... */
+        total += length_of(words[i]);
+    printf(&quot;total = %d\n&quot;, total);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>a real gdb session</figcaption><pre>$ gcc -g -Og crash.c -o crash
+$ gdb -q ./crash
+Reading symbols from ./crash...
+(gdb) run
+Program received signal SIGSEGV, Segmentation fault.
+__strlen_avx2 () at ../sysdeps/x86_64/multiarch/strlen-avx2.S:74
+(gdb) backtrace
+#0  __strlen_avx2 () at ../sysdeps/x86_64/multiarch/strlen-avx2.S:74
+#1  0x0000555555555151 in length_of (s=0x0) at crash.c:5
+#2  0x0000555555555185 in main () at crash.c:12
+(gdb) frame 2                # jump to OUR code
+#2  0x0000555555555185 in main () at crash.c:12
+12          total += length_of(words[i]);
+(gdb) print i
+$1 = 2
+(gdb) print words[i]
+$2 = 0x0
+# i=2 is the NULL sentinel — the loop bound &lt;= 3 is the bug.
+(gdb) quit</pre></figure>
+<p>The crash is <em>in</em> <code>strlen</code>, but the <b>bug</b> is in frame #2: our loop condition <code>i &lt;= 3</code> walks past the <code>NULL</code> terminator of the array. <code>backtrace</code> + <code>frame</code> + <code>print</code> is the core gdb workflow — you'll use those three more than everything else combined. Honorable mentions: <code>break file:line</code>, <code>next</code> (step over) vs <code>step</code> (step into), <code>watch var</code> (break when a variable changes), and <code>run &lt; input.txt</code>.</p>
+<p>Even better: if your system saves <b>core dumps</b> (<code>ulimit -c unlimited</code>, or via systemd-coredump), you can autopsy a crash after the fact with <code>gdb ./crash core</code> — same backtrace, no need to reproduce it live.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> The gdb backtrace bottoms out inside <code>__strlen_avx2</code>. Where should you look for the bug?</p><ul><li>In glibc’s strlen — file a bug report</li><li>In the innermost frame only</li><li>Walk up the backtrace to the first frame that is YOUR code, and inspect its variables</li><li>Nowhere — backtraces are unreliable after SIGSEGV</li></ul><details><summary>Show answer</summary><p><b>Walk up the backtrace to the first frame that is YOUR code, and inspect its variables</b> — Library code is almost never the culprit — it faithfully crashed on the garbage we fed it (a NULL pointer). "frame N" up to your own code, then print the local variables: that is the standard segfault autopsy.</p></details></div>
+
+<h2>valgrind: the memory auditor</h2>
+<p>Valgrind's memcheck runs your <em>unmodified binary</em> in a CPU emulator, tracking every byte of heap. Leaks, use of uninitialized values, bad frees — nothing escapes (at ~20× slowdown):</p>
+<figure class="code"><figcaption>leak.c</figcaption><pre><code>#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+char *dup_string(const char *s) {
+    char *copy = malloc(strlen(s) + 1);
+    strcpy(copy, s);
+    return copy;              /* caller owns this... supposedly */
+}
+
+int main(void) {
+    for (int i = 0; i &lt; 3; i++) {
+        char *c = dup_string(&quot;hello&quot;);
+        (void)c;              /* ...but nobody frees it */
+    }
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>valgrind memcheck</figcaption><pre>$ gcc -g leak.c -o leak
+$ valgrind --leak-check=full ./leak
+==41337== Memcheck, a memory error detector
+==41337== Command: ./leak
+==41337==
+==41337== HEAP SUMMARY:
+==41337==     in use at exit: 18 bytes in 3 blocks
+==41337==   total heap usage: 3 allocs, 0 frees, 18 bytes allocated
+==41337==
+==41337== 18 bytes in 3 blocks are definitely lost in loss record 1 of 1
+==41337==    at 0x48468F3: malloc (in vgpreload_memcheck-amd64-linux.so)
+==41337==    by 0x109162: dup_string (leak.c:5)
+==41337==    by 0x1091A6: main (leak.c:12)
+==41337==
+==41337== LEAK SUMMARY:
+==41337==    definitely lost: 18 bytes in 3 blocks
+==41337==    indirectly lost: 0 bytes in 0 blocks
+==41337==      possibly lost: 0 bytes in 0 blocks
+==41337== ERROR SUMMARY: 1 errors from 1 contexts</pre></figure>
+<p>Read the verdicts like a coroner: <b>definitely lost</b> = leaked, no pointer to it remains — fix these. <b>still reachable</b> = a global still points at it at exit — untidy but usually harmless. The stack trace shows the <em>allocation</em> site: valgrind tells you where the leaked memory was born, and your job is to find where it should have died.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Valgrind reports <code>definitely lost: 18 bytes in 3 blocks</code> allocated at <code>dup_string (leak.c:5)</code>. What does the location tell you?</p><ul><li>Line 5 is where you must add free()</li><li>Where the leaked memory was allocated — you still must find where it should have been freed</li><li>The exact line where the pointer was overwritten</li><li>That malloc itself is buggy</li></ul><details><summary>Show answer</summary><p><b>Where the leaked memory was allocated — you still must find where it should have been freed</b> — Valgrind can only know the birthplace of the block. The fix belongs wherever ownership ends — here, main’s loop should free(c) each iteration. Freeing inside dup_string would return dangling memory!</p></details></div>
+
+<h2>Sanitizers: valgrind's speed-demon cousins</h2>
+<p>AddressSanitizer (ASan) and UndefinedBehaviorSanitizer (UBSan) are <em>compiled into</em> the binary — only ~2× slowdown, and they catch things valgrind can't (stack overflows! signed overflow!). This is the flag you met in the gcc-flags lesson, now in action on a use-after-free:</p>
+<figure class="code"><figcaption>uaf.c — use after free</figcaption><pre><code>#include &lt;stdlib.h&gt;
+
+int main(void) {
+    int *p = malloc(4 * sizeof(int));
+    p[0] = 42;
+    free(p);
+    return p[0];              /* reading freed memory: UB */
+}</code></pre></figure>
+<figure class="code term"><figcaption>AddressSanitizer report</figcaption><pre>$ gcc -g -fsanitize=address,undefined uaf.c -o uaf
+$ ./uaf
+=================================================================
+==5124==ERROR: AddressSanitizer: heap-use-after-free on address
+0x604000000010 at pc 0x55e2f52412a1 bp 0x7ffc3c3f5b20
+READ of size 4 at 0x604000000010 thread T0
+    #0 0x55e2f52412a0 in main uaf.c:7
+freed by thread T0 here:
+    #0 0x7f1c2bcb6642 in free
+    #1 0x55e2f5241264 in main uaf.c:6
+previously allocated by thread T0 here:
+    #0 0x7f1c2bcb78a7 in malloc
+    #1 0x55e2f5241234 in main uaf.c:4
+SUMMARY: AddressSanitizer: heap-use-after-free uaf.c:7 in main
+# accessed at line 7, freed at line 6, born at line 4. Case closed.</pre></figure>
+<p>Three stack traces: where the bad access happened, where the memory was freed, and where it was allocated. That's usually the whole investigation, done. Run your test suite under <code>-fsanitize=address,undefined</code> routinely — many teams gate every merge on it.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which bug can AddressSanitizer catch that valgrind memcheck fundamentally cannot?</p><ul><li>heap buffer overflow</li><li>stack buffer overflow</li><li>memory leak</li><li>use of uninitialized heap memory</li></ul><details><summary>Show answer</summary><p><b>stack buffer overflow</b> — ASan instruments the code at compile time, so it plants red zones around STACK arrays too. Valgrind works on unmodified binaries and can’t see stack frame layout — stack smashes sail right past it. (Uninitialized reads are the reverse: memcheck’s specialty, not ASan’s.)</p></details></div>
+
+<h2>Before it even runs: static analysis</h2>
+<p>GCC's <code>-fanalyzer</code> explores paths through your code at compile time and narrates bugs like a detective novel — double frees, NULL derefs, leaks — complete with a numbered path of events. <code>clang-tidy</code> does the same from the Clang world, plus style checks. They produce false positives; treat them as a very sharp code review, not a verdict. And when the mystery is "what is my program even <em>doing</em> with the OS?", <code>strace ./app</code> prints every syscall — the tool of choice for "why can't it find my config file?" (answer: it's opening a path you didn't expect).</p>
+
+<h2>Which tool for which bug?</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/debugging-tools">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+<table>
+<tr><th>symptom</th><th>reach for</th></tr>
+<tr><td>segfault / crash</td><td>ASan first (best report), gdb for interactive digging, core dump for post-mortem</td></tr>
+<tr><td>memory leak</td><td>valgrind <code>--leak-check=full</code>, or ASan's leak checker (on by default at exit)</td></tr>
+<tr><td>heisenbug / wrong values at -O2 only</td><td>UBSan — it's almost always undefined behavior</td></tr>
+<tr><td>wrong answer, no crash</td><td>gdb breakpoints + <code>watch</code>, strategic stderr printf</td></tr>
+<tr><td>weird interaction with OS/files</td><td>strace</td></tr>
+<tr><td>bug not written yet</td><td><code>-Wall -Wextra</code>, <code>-fanalyzer</code>, clang-tidy</td></tr>
+</table>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Don't stack them:</b> ASan and valgrind fight over the same memory tricks — run one or the other, never both on the same binary. And keep a plain <code>-g -Og</code> build around: sanitizer binaries are for hunting, not shipping.</p></div></div>
+
+<h2>Practice</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/debugging-tools">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>One tool family remains — the linker's — and with it, the final lesson of the course: building and using libraries.</p>
+
+<a class="cta" href="../../index.html#/lesson/debugging-tools">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../makefiles/">← Makefiles: builds that rebuild themselves</a>
+<a href="../linking-libraries/">Libraries: static, shared &amp; shipping your code →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>_Noreturn: functions that never come back — The C Path</title>
+<meta name="description" content="If you've ever written a helper that prints an error message and quits, you've probably also met gcc's baffling complaint about it — &quot;control reaches end of…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="_Noreturn: functions that never come back — The C Path">
+<meta property="og:description" content="If you've ever written a helper that prints an error message and quits, you've probably also met gcc's baffling complaint about it — &quot;control reaches end of…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"_Noreturn: functions that never come back","description":"If you've ever written a helper that prints an error message and quits, you've probably also met gcc's baffling complaint about it — \"control reaches end of…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🚀 Modern C (C11 → C23)</p>
+<h1>_Noreturn: functions that never come back</h1>
+<p class="meta">⏱ 9 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/noreturn">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>If you've ever written a helper that prints an error message and quits, you've probably also met gcc's baffling complaint about it — "control reaches end of non-void function" — on code that was perfectly fine. One word tells the compiler the truth: this function never comes back. The false alarm vanishes, and the compiler still catches <em>real</em> missing-return bugs.</p></div>
+
+<p>Some functions don't return. Not "return nothing" like <code>void</code> — they <em>never hand control back at all</em>: <code>exit()</code> ends the process, <code>abort()</code> kills it, <code>longjmp()</code> jumps execution back to an earlier point in the program, <code>thrd_exit()</code> ends the thread. C11 gave us a way to tell the compiler this: the <strong><code>_Noreturn</code></strong> keyword, written in front of a function (with a pretty <code>noreturn</code> macro in <code>&lt;stdnoreturn.h&gt;</code>).</p>
+
+<h2>Why the compiler cares</h2>
+<p>Two reasons. <b>Better warnings:</b> if the compiler doesn't know <code>die()</code> never returns, it thinks the code after it is reachable — and warns about "control reaches end of non-void function" in perfectly fine code, or worse, <em>fails to warn</em> about genuinely missing returns. <b>Better code:</b> a call that never returns needs no "afterwards" — the compiler can skip saving registers and delete everything downstream of the call.</p>
+
+<figure class="code"><figcaption>why.c — the warning noreturn fixes</figcaption><pre><code>void die_unmarked(const char *msg);   /* compiler assumes it returns */
+
+int parse_level(const char *s) {
+    if (s[0] == 'a') return 1;
+    if (s[0] == 'b') return 2;
+    die_unmarked(&quot;bad level&quot;);
+}   /* warning: control reaches end of non-void function
+       — a FALSE alarm, but the compiler can't know that */</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c17 -Wall why.c -c
+why.c: In function 'parse_level':
+why.c:7:1: warning: control reaches end of non-void function [-Wreturn-type]
+# mark die_unmarked as noreturn and this warning vanishes —
+# and REAL missing-return bugs still get caught</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>_Noreturn</code> promise the compiler?</p><ul><li>The function returns void</li><li>The function has no side effects</li><li>Control never comes back to the caller</li><li>The function never fails</li></ul><details><summary>Show answer</summary><p><b>Control never comes back to the caller</b> — It’s purely about control flow: after the call, execution never resumes at the call site — because of exit(), abort(), longjmp(), an infinite loop, etc. "Returns no value" is void; noreturn is a much stronger claim.</p></details></div>
+
+<h2>The <code>die()</code> pattern</h2>
+<p>Nearly every serious C codebase has a fatal-error helper: print a message, exit with failure. Marking it <code>noreturn</code> is what makes it compose cleanly with the rest of your code:</p>
+
+<figure class="code"><figcaption>die.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdnoreturn.h&gt;   /* the 'noreturn' macro (C11/C17) */
+
+noreturn void die(const char *msg) {
+    fprintf(stderr, &quot;fatal: %s\n&quot;, msg);
+    exit(EXIT_FAILURE);          /* exit is itself noreturn */
+}
+
+int parse_level(const char *s) {
+    if (s[0] == 'a') return 1;
+    if (s[0] == 'b') return 2;
+    die(&quot;bad level string&quot;);     /* no return needed after this  */
+}                                /* ...and no warning: dead end. */
+
+int main(void) {
+    printf(&quot;level a = %d\n&quot;, parse_level(&quot;a&quot;));
+    printf(&quot;level x = %d\n&quot;, parse_level(&quot;x&quot;));   /* boom */
+    printf(&quot;never printed\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c17 -Wall die.c -o die &amp;&amp; ./die
+level a = 1
+fatal: bad level string
+$ echo $?
+1
+# exit status 1 — scripts and Makefiles can see the failure</pre></figure>
+
+<p>Look at <code>parse_level</code>: no <code>return</code> after the <code>die()</code> call, and no warning either — the compiler knows that path is a dead end. Delete the <code>noreturn</code> and gcc immediately complains that control can reach the end of a non-void function. The flow makes it obvious:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/noreturn">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> A <code>noreturn</code> function executes a plain <code>return;</code>. What happens?</p><ul><li>A compile error, always</li><li>It works like a normal void return</li><li>Undefined behavior</li><li>The program exits with status 0</li></ul><details><summary>Show answer</summary><p><b>Undefined behavior</b> — The standard says behavior is undefined if a noreturn function actually returns. Compilers try to warn when they can see it, but the promise is yours to keep — the optimizer may have deleted the caller’s "afterwards" entirely.</p></details></div>
+
+<h2>The rules (and the C23 facelift)</h2>
+<ul>
+<li>A noreturn function should have return type <code>void</code> — a value it can never produce would be nonsense.</li>
+<li>If a noreturn function <em>does</em> return (falls off the end, or hits a <code>return;</code>), behavior is <strong>undefined</strong>. The promise cuts both ways.</li>
+<li>C23 deprecates <code>_Noreturn</code> and <code>&lt;stdnoreturn.h&gt;</code> in favor of the attribute syntax: <code>[[noreturn]] void die(const char *msg);</code> — same meaning, modern spelling (more on attributes in the C23 lesson).</li>
+</ul>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Don't confuse <code>void</code> with <code>noreturn</code>.</b> A <code>void</code> function returns — it just carries no value; execution continues at the caller. A <code>noreturn</code> function never resumes the caller at all. And never mark <code>main</code> noreturn: returning from <code>main</code> is its normal job.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/noreturn">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which spelling does C23 prefer?</p><ul><li><code>[[noreturn]] void die(…);</code></li><li><code>__noreturn__ void die(…);</code></li><li><code>void noreturn die(…);</code></li><li><code>_Noreturn</code> — unchanged</li></ul><details><summary>Show answer</summary><p><b><code>[[noreturn]] void die(…);</code></b> — C23 adopts the [[attribute]] syntax and deprecates both _Noreturn and stdnoreturn.h. Old spellings still compile (deprecated ≠ removed), but new code should write [[noreturn]].</p></details></div>
+
+<p>Next: a corner of C most people never visit — built-in <b>complex numbers</b>, where C quietly beats your calculator.</p>
+
+<a class="cta" href="../../index.html#/lesson/noreturn">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../atomics-threads/">← Atomics &amp; threads: sharing memory without lying to yourself</a>
+<a href="../complex-imaginary/">_Complex: C does imaginary numbers natively →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

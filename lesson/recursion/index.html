@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recursion: functions that call themselves — The C Path</title>
+<meta name="description" content="You met the stack-overflow crash on Part 0's memory map — this lesson teaches you to cause one (on purpose, once) and then avoid it forever, because it's…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Recursion: functions that call themselves — The C Path">
+<meta property="og:description" content="You met the stack-overflow crash on Part 0's memory map — this lesson teaches you to cause one (on purpose, once) and then avoid it forever, because it's…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Recursion: functions that call themselves","description":"You met the stack-overflow crash on Part 0's memory map — this lesson teaches you to cause one (on purpose, once) and then avoid it forever, because it's…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📈 Algorithms &amp; Complexity</p>
+<h1>Recursion: functions that call themselves</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/recursion">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>You met the stack-overflow crash on Part 0's memory map — this lesson teaches you to cause one (on purpose, once) and then avoid it forever, because it's exactly what happens to a function that calls itself with no brake.</p><p>Handled right, a self-calling function solves in three elegant lines what loops turn into a nightmare — it's the engine inside the quicksort and merge sort you just watched, and today you'll see exactly how it works.</p></div>
+
+<p>A recursive function solves a problem by calling <em>itself</em> on a smaller version of the same problem. It sounds like cheating — "to sort the array, sort the array" — but you already watched it work: quicksort and merge sort are recursion. The trick is that each call shrinks the job, until it's so small the answer is obvious.</p>
+
+<h2>The anatomy: base case + recursive case</h2>
+<p>Every correct recursive function has exactly two ingredients:</p>
+<ul>
+<li><b>Base case:</b> an input so small you return the answer directly. This is the emergency brake.</li>
+<li><b>Recursive case:</b> do a little work, then call yourself on a <em>strictly smaller</em> input that marches toward the base case.</li>
+</ul>
+
+<figure class="code"><figcaption>fact.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+long fact(int n) {
+    if (n &lt;= 1)                 /* BASE case: brake!     */
+        return 1;
+    return n * fact(n - 1);     /* RECURSIVE case:       */
+}                               /*   shrink toward base  */
+
+int main(void) {
+    printf(&quot;4!  = %ld\n&quot;, fact(4));
+    printf(&quot;10! = %ld\n&quot;, fact(10));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc fact.c -o fact &amp;&amp; ./fact
+4!  = 24
+10! = 3628800</pre></figure>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>No base case, no mercy:</b> <code>long bad(int n) { return n + bad(n - 1); }</code> never stops shrinking past zero. Each call adds a stack frame; the stack is finite (typically ~8 MB, roughly 10⁵–10⁶ frames), so you get a <b>stack overflow</b> — on Linux, a segfault. Same fate if the base case exists but the input doesn't move toward it.</p></div></div>
+
+<h2>Watch the call stack breathe</h2>
+<p>Recursion works because of something you met in Part 0: every call gets its <em>own stack frame</em> with its own <code>n</code>. Four calls to <code>fact</code> means four separate <code>n</code>s alive at once. Step through and watch the stack grow, hit the base case, then unwind while multiplying:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/recursion">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> During fact(4), how many separate variables named <code>n</code> exist at the deepest moment?</p><ul><li>1 — it is overwritten each call</li><li>4 — one per active stack frame</li><li>2 — caller and callee</li><li>0 — n lives in a register</li></ul><details><summary>Show answer</summary><p><b>4 — one per active stack frame</b> — Each call pushes a fresh frame with its own n (4, 3, 2, 1 — all alive at once). That per-call privacy is the entire mechanism that makes recursion work.</p></details></div>
+
+<h2>Fibonacci: recursion's cautionary tale</h2>
+<p>The Fibonacci definition — fib(n) = fib(n−1) + fib(n−2) — translates to gorgeous, tragic C:</p>
+
+<figure class="code"><figcaption>fib_naive.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+long long fib(int n) {          /* naive: TWO calls per call */
+    if (n &lt; 2) return n;        /* fib(0)=0, fib(1)=1        */
+    return fib(n - 1) + fib(n - 2);
+}
+
+int main(void) {
+    printf(&quot;fib(45) = %lld\n&quot;, fib(45));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -O2 fib_naive.c -o fib_naive &amp;&amp; time ./fib_naive
+fib(45) = 1134903170
+
+real    0m4.31s
+# ~4 seconds — and every +1 to n multiplies the time by ~1.6</pre></figure>
+
+<p>Four seconds?! For one number?! Look at what the calls actually do:</p>
+
+<figure class="code"><figcaption>the call tree of fib(5)</figcaption><pre><code>fib(5)
+├── fib(4)
+│   ├── fib(3)
+│   │   ├── fib(2)   ← computed here…
+│   │   └── fib(1)
+│   └── fib(2)       ← …and again here…
+└── fib(3)           ← this WHOLE subtree is a repeat!
+    ├── fib(2)       ← …and again here
+    └── fib(1)
+
+15 calls for fib(5). fib(45) makes ~3.6 BILLION calls.</code></pre></figure>
+
+<p>Every call spawns <em>two</em> more, and the same subproblems get recomputed again and again — fib(2) alone is computed 3 times in that tiny tree, and about a <em>billion</em> times in fib(45). The call count roughly doubles per level: exponential, about Θ(1.618ⁿ) (the golden ratio!), which the O(2ⁿ) curve bounds from above:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/recursion">This spot has an interactive bigo widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why is naive recursive fibonacci exponential?</p><ul><li>Function calls are inherently slow in C</li><li>The same subproblems are recomputed an exponential number of times</li><li>long long arithmetic is O(n)</li><li>The stack gets too deep</li></ul><details><summary>Show answer</summary><p><b>The same subproblems are recomputed an exponential number of times</b> — Each call branches into two, and the branches endlessly repeat work already done elsewhere in the tree — fib(2) is recomputed ~a billion times inside fib(45). Depth is only n; the WIDTH of the tree is the killer.</p></details></div>
+
+<h3>The fix: remember what you computed</h3>
+<p><strong>Memoization</strong> — cache each answer the first time, return the cached value ever after. One array turns an exponential algorithm into a linear one:</p>
+
+<figure class="code"><figcaption>fib_memo.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+long long memo[93];   /* fib(92) is the last to fit long long */
+
+long long fib(int n) {
+    if (n &lt; 2) return n;
+    if (memo[n]) return memo[n];       /* cached? done: O(1) */
+    return memo[n] = fib(n - 1) + fib(n - 2);
+}
+
+int main(void) {
+    printf(&quot;fib(45) = %lld\n&quot;, fib(45));
+    printf(&quot;fib(90) = %lld\n&quot;, fib(90));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -O2 fib_memo.c -o fib_memo &amp;&amp; time ./fib_memo
+fib(45) = 1134903170
+fib(90) = 2880067194370816120
+
+real    0m0.002s
+# each fib(k) computed once, then looked up: Θ(n). 2000x faster,
+# and it reaches n=90 where the naive version needs ~centuries.</pre></figure>
+
+<h2>Recursion vs iteration</h2>
+<p>Anything recursive can be rewritten with a loop (plus, sometimes, an explicit stack — next lesson!), and vice versa. Rules of thumb:</p>
+<ul>
+<li><b>Naturally recursive shapes</b> — trees, divide &amp; conquer, nested structures — stay clearer as recursion.</li>
+<li><b>Linear passes</b> (factorial, summing, fibonacci-with-memo) are usually better as plain loops: no stack-depth limit, less call overhead.</li>
+<li>A <b>tail call</b> — where the recursive call is the very last action, its result returned unchanged — <em>can</em> be optimized by compilers into a loop (gcc/clang do it at <code>-O2</code>). But C the language doesn't guarantee it, so never bet your stack on it.</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is the complexity of MEMOIZED fibonacci?</p><ul><li>Θ(n)</li><li>Θ(2ⁿ) still</li><li>Θ(n log n)</li><li>Θ(1)</li></ul><details><summary>Show answer</summary><p><b>Θ(n)</b> — Each value fib(0..n) is computed exactly once (constant work each) and every repeat hits the O(1) cache check. n distinct computations → Θ(n). Trading O(n) memory for exponential time is the best deal in computing.</p></details></div>
+
+<h2>The showpiece: Tower of Hanoi</h2>
+<p>Move n disks from peg A to peg C, one at a time, never placing a bigger disk on a smaller one. Iteratively: a nightmare. Recursively: three lines of pure elegance — move n−1 disks out of the way, move the big one, move the n−1 back on top.</p>
+
+<figure class="code"><figcaption>hanoi.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+void hanoi(int n, char from, char to, char via) {
+    if (n == 0) return;              /* base: nothing to move */
+    hanoi(n - 1, from, via, to);     /* clear the n-1 above   */
+    printf(&quot;move disk %d: %c -&gt; %c\n&quot;, n, from, to);
+    hanoi(n - 1, via, to, from);     /* stack them back on    */
+}
+
+int main(void) {
+    hanoi(3, 'A', 'C', 'B');
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc hanoi.c -o hanoi &amp;&amp; ./hanoi
+move disk 1: A -&gt; C
+move disk 2: A -&gt; B
+move disk 1: C -&gt; B
+move disk 3: A -&gt; C
+move disk 1: B -&gt; A
+move disk 2: B -&gt; C
+move disk 1: A -&gt; C</pre></figure>
+
+<div class="sq"><p class="sq-q">🤔 hanoi(3) printed 7 moves. How many moves for n disks — and is a faster algorithm possible?</p><details><summary>Think first</summary><p>Moves(n) = 2 × Moves(n−1) + 1, which solves to <b>2ⁿ − 1</b>. And no algorithm can beat it — the biggest disk can only move when all n−1 others are parked on the spare peg, which provably requires this many steps. Here the problem itself is Θ(2ⁿ); the legend where monks move 64 disks would take 2⁶⁴−1 moves ≈ 585 billion years at one per second.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/recursion">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>To trace recursion we kept talking about "the stack" — pushing frames, popping frames. That push/pop discipline is a data structure in its own right, and it's next.</p>
+
+<a class="cta" href="../../index.html#/lesson/recursion">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../sorting/">← Sorting: from bubble to quicksort</a>
+<a href="../stacks-queues/">Stacks &amp; queues: LIFO meets FIFO →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

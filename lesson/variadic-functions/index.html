@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Variadic functions: how printf really works — The C Path</title>
+<meta name="description" content="printf takes two arguments one moment and ten the next — you've leaned on that magic since your very first program without knowing how it's possible. Today…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Variadic functions: how printf really works — The C Path">
+<meta property="og:description" content="printf takes two arguments one moment and ten the next — you've leaned on that magic since your very first program without knowing how it's possible. Today…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Variadic functions: how printf really works","description":"printf takes two arguments one moment and ten the next — you've leaned on that magic since your very first program without knowing how it's possible. Today…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📚 The Standard Library</p>
+<h1>Variadic functions: how printf really works</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/variadic-functions">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p><code>printf</code> takes two arguments one moment and ten the next — you've leaned on that magic since your very first program without knowing how it's possible. Today you build a working mini-printf of your own, and learn why <code>printf(user_input)</code> is a genuine security hole that attackers have exploited for decades.</p></div>
+
+<p>Since day one you've called <code>printf("x=%d y=%d", x, y)</code> — a function that somehow accepts <em>any number of arguments of any type</em>. Today the magic trick is revealed: such functions are called <em>variadic</em> (they take a variable number of arguments), and the machinery behind them is the three-dot <code>...</code> ellipsis and <code>stdarg.h</code>. By the end you'll have written your own.</p>
+
+<h2>The machinery: va_list and friends</h2>
+<p>A declaration like <code>int my_sum(int count, ...)</code> means: one named parameter, then anything. Inside, four macros from <code>stdarg.h</code> walk the extras:</p>
+<table>
+<tr><th>macro</th><th>role</th></tr>
+<tr><td><code>va_list ap;</code></td><td>declares a cursor over the unnamed arguments</td></tr>
+<tr><td><code>va_start(ap, last)</code></td><td>points the cursor just past the last <em>named</em> parameter</td></tr>
+<tr><td><code>va_arg(ap, type)</code></td><td>yields the next argument <em>as</em> <code>type</code> and advances — <b>you</b> must know the type; nothing checks</td></tr>
+<tr><td><code>va_copy(dst, src)</code></td><td>clones a cursor (C99) — needed to walk the args twice</td></tr>
+<tr><td><code>va_end(ap)</code></td><td>cleanup; required before returning</td></tr>
+</table>
+<p>Notice what's <em>missing</em>: any way to ask "how many arguments are there?" or "what type is next?". The callee is blind — that information must be smuggled in separately, which is exactly what printf's format string does. Step through the simplest possible example:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/variadic-functions">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> How does a variadic function know how many unnamed arguments it received?</p><ul><li>va_start returns the count</li><li>sizeof(ap) reveals it</li><li>It can’t — the caller must communicate it (count parameter, format string, or sentinel)</li><li>va_arg returns NULL after the last one</li></ul><details><summary>Show answer</summary><p><b>It can’t — the caller must communicate it (count parameter, format string, or sentinel)</b> — The mechanism is completely blind: no count, no types, no end marker. Every variadic API layers its own protocol on top — printf’s format string, my_sum’s count, execl’s NULL sentinel. Get the protocol wrong and it’s UB.</p></details></div>
+
+<h2>Build your own printf</h2>
+<p>Now the real thing, miniaturized. The format string is the type map: each <code>%</code> letter tells us which type to pull with <code>va_arg</code>:</p>
+<figure class="code"><figcaption>miniprintf.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdarg.h&gt;
+
+void mini_printf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    for (const char *p = fmt; *p; p++) {
+        if (*p != '%') { putchar(*p); continue; }
+        switch (*++p) {                /* char after '%' */
+        case 'd': printf(&quot;%d&quot;, va_arg(ap, int));      break;
+        case 'f': printf(&quot;%g&quot;, va_arg(ap, double));   break;
+        case 's': fputs(va_arg(ap, const char *), stdout); break;
+        case 'c': putchar(va_arg(ap, int));           break;
+        case '%': putchar('%');                       break;
+        }
+    }
+    va_end(ap);
+}
+
+int main(void) {
+    mini_printf(&quot;%s scored %d points (%f%%) — grade %c\n&quot;,
+                &quot;ada&quot;, 97, 97.5, 'A');
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc miniprintf.c -o miniprintf &amp;&amp; ./miniprintf
+ada scored 97 points (97.5%) — grade A
+# the format string told us the type sequence:
+# char* , int , double , int(char)</pre></figure>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p>To build a logging wrapper around real printf, don't re-parse formats — pass the whole va_list along to <code>vprintf</code>/<code>vfprintf</code>/<code>vsnprintf</code>: <code>va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap);</code>. That's the v-family's whole purpose (and where <code>va_copy</code> shines if you must format twice).</p></div></div>
+
+<h2>Default argument promotions: why %f handles float</h2>
+<p>Ever wondered why printf has <code>%d</code> for int and <code>%f</code> for double — but no specifier for <code>char</code>, <code>short</code>, or <code>float</code>? Because they <b>can never arrive</b>. For arguments matched by <code>...</code>, the compiler applies the <em>default argument promotions</em>: <code>char</code> and <code>short</code> are promoted to <code>int</code>, and <code>float</code> is promoted to <code>double</code>. So <code>va_arg(ap, char)</code> is simply wrong — the value on the stack is an int:</p>
+<figure class="code"><figcaption>promotions.c — what the callee actually receives</figcaption><pre><code>void f(int count, ...);
+
+char  c = 'A';       /* passed through ... as: int    */
+short s = 7;         /* as: int                       */
+float x = 2.5f;      /* as: double                    */
+
+f(3, c, s, x);
+/* inside f, the ONLY correct pulls are:
+     va_arg(ap, int)     for c
+     va_arg(ap, int)     for s
+     va_arg(ap, double)  for x
+   va_arg(ap, char) / (short) / (float) are UB —
+   those types can never come through the ellipsis.  */</code></pre></figure>
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> You pass a <code>float f</code> to printf. Which specifier is correct?</p><ul><li><code>%f</code> — the float was promoted to double on the way in</li><li><code>%hf</code> for half precision</li><li>Floats can’t be printed without a cast</li><li><code>%lf</code> is required for the promotion</li></ul><details><summary>Show answer</summary><p><b><code>%f</code> — the float was promoted to double on the way in</b> — Default argument promotions convert every float argument to double before it enters the .... So %f (which expects double) is exactly right — printf never sees a real float. (%lf is also accepted for printf since C99, but it’s the same thing.)</p></details></div>
+
+<h2>The price: zero type safety</h2>
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p>If <code>va_arg</code> pulls the wrong type — <code>printf("%d", 3.14)</code>, <code>printf("%s", 42)</code> — the behavior is <b>undefined</b>: garbage output if you're lucky, a segfault (or an exploitable hole — look up "format string vulnerability") if you're not. Modern compilers check literal printf formats for you (<code>-Wformat</code>, and you can extend it to your own functions with GCC's <code>format</code> attribute) — but only when the format is a literal. Never write <code>printf(user_input)</code>; write <code>printf("%s", user_input)</code>.</p></div></div>
+
+<p>Since the callee can't count arguments, every variadic API picks a protocol:</p>
+<ul>
+<li><b>Format string</b> — printf, scanf: the string encodes count and types.</li>
+<li><b>Explicit count</b> — <code>my_sum(3, a, b, c)</code>: the first argument says how many follow.</li>
+<li><b>Sentinel</b> — POSIX <code>execl("ls", "ls", "-l", (char *)NULL)</code>: a special terminator value marks the end. (Note the cast — NULL alone might not be pointer-sized in a variadic call!)</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>printf("%s", 42)</code> do?</p><ul><li>Prints "42"</li><li>Compile error, guaranteed</li><li>Undefined behavior — printf dereferences 42 as if it were a char pointer</li><li>Prints the address 42</li></ul><details><summary>Show answer</summary><p><b>Undefined behavior — printf dereferences 42 as if it were a char pointer</b> — va_arg pulls the 42 and treats it as a char* to walk and print — reading address 42 is UB, usually a segfault. Compilers catch this for literal formats (-Wformat is on by default in warnings), which is one great reason to keep formats literal.</p></details></div>
+
+<div class="callout fun"><div class="co-ic">🎉</div><div class="co-body"><p><b>C23 tidied this corner:</b> <code>va_start(ap)</code> no longer needs the second argument (it's ignored if given), and a function may now be <em>fully</em> variadic — <code>int f(...)</code> with no named parameters at all, something previously illegal. The old two-argument form still works everywhere.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/variadic-functions">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>🎉 That's the standard library toured — every header worth knowing, from printf to setjmp. Next part we put it all to work: algorithms, Big-O, and classic data structures in C.</p>
+
+<a class="cta" href="../../index.html#/lesson/variadic-functions">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../signal-setjmp/">← signal.h &amp; setjmp.h: interrupts and teleports</a>
+<a href="../big-o/">Big-O: measuring work, not seconds →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

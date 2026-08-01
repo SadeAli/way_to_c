@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multidimensional arrays: grids in a flat world — The C Path</title>
+<meta name="description" content="Chess boards, Minesweeper fields, spreadsheets, every photo on your screen — all grids. But memory, as you've seen since Part 0, is one straight line of…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Multidimensional arrays: grids in a flat world — The C Path">
+<meta property="og:description" content="Chess boards, Minesweeper fields, spreadsheets, every photo on your screen — all grids. But memory, as you've seen since Part 0, is one straight line of…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Multidimensional arrays: grids in a flat world","description":"Chess boards, Minesweeper fields, spreadsheets, every photo on your screen — all grids. But memory, as you've seen since Part 0, is one straight line of…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎯 Pointers &amp; Memory</p>
+<h1>Multidimensional arrays: grids in a flat world</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/multidim-arrays">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Chess boards, Minesweeper fields, spreadsheets, every photo on your screen — all grids. But memory, as you've seen since Part 0, is one straight line of bytes, so C has to fold each grid into that line. Learn the fold and you'll be able to hand grids to functions without baffling compiler errors — and you'll see why looping over a big grid in the wrong order can make the exact same code several times slower.</p></div>
+
+<p>Memory is one long line of bytes — there is no "up" or "down" in RAM. So how does C store a grid like <code>int m[2][3]</code>? By a beautifully simple trick: a 2-D array is an <strong>array of arrays</strong>. <code>m</code> is 2 elements long, and each element is itself an <code>int[3]</code> row.</p>
+
+<h2>Declaring and looping</h2>
+<figure class="code"><figcaption>grid.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int m[2][3] = {
+        {1, 2, 3},      /* row 0 */
+        {4, 5, 6},      /* row 1 */
+    };
+
+    for (int r = 0; r &lt; 2; r++) {
+        for (int c = 0; c &lt; 3; c++)
+            printf(&quot;%d &quot;, m[r][c]);
+        printf(&quot;\n&quot;);
+    }
+    printf(&quot;sizeof m    = %zu\n&quot;, sizeof m);     /* whole grid */
+    printf(&quot;sizeof m[0] = %zu\n&quot;, sizeof m[0]);  /* one row    */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc grid.c -o grid &amp;&amp; ./grid
+1 2 3
+4 5 6
+sizeof m    = 24
+sizeof m[0] = 12</pre></figure>
+<p><code>sizeof m[0]</code> is 12 — one whole row. That confirms the "array of arrays" story: <code>m[1]</code> is a real <code>int[3]</code>, and <code>m[1][2]</code> indexes into it.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What exactly is <code>m[1]</code> for <code>int m[2][3]</code>?</p><ul><li>An int</li><li>A pointer stored in memory next to m[0]</li><li>The second row — a real <code>int[3]</code> array</li><li>A syntax error without a second index</li></ul><details><summary>Show answer</summary><p><b>The second row — a real <code>int[3]</code> array</b> — A 2-D array is an array of arrays: m[1] is the second row, an int[3] living 12 bytes after the start. (In expressions it happily decays to an int* like any array.)</p></details></div>
+
+<h2>Row-major: the grid, flattened</h2>
+<p>The rows are laid end-to-end in one contiguous block — row 0 first, then row 1. This is called <strong>row-major order</strong>:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/multidim-arrays">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<p>So the address math for <code>m[r][c]</code> is: <code>base + (r * COLS + c) * sizeof(int)</code>. Skip <code>r</code> full rows, then <code>c</code> elements into the row. We can prove the flatness by walking the whole grid with a single pointer:</p>
+<figure class="code"><figcaption>flat.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int m[2][3] = {{1, 2, 3}, {4, 5, 6}};
+    int *flat = &amp;m[0][0];             /* first int of the block */
+
+    /* m[r][c] lives (r*3 + c) elements from the start: */
+    printf(&quot;m[1][2]     = %d\n&quot;, m[1][2]);
+    printf(&quot;flat[1*3+2] = %d\n&quot;, flat[1*3 + 2]);
+
+    printf(&quot;&amp;m[0][0] = %p\n&quot;, (void *)&amp;m[0][0]);
+    printf(&quot;&amp;m[1][0] = %p\n&quot;, (void *)&amp;m[1][0]);  /* +12 bytes */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc flat.c -o flat &amp;&amp; ./flat
+m[1][2]     = 6
+flat[1*3+2] = 6
+&amp;m[0][0] = 0x7ffcd58e91b0
+&amp;m[1][0] = 0x7ffcd58e91bc
+# 0x1bc - 0x1b0 = 0xc = 12 bytes = one full row</pre></figure>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Performance bonus:</b> because rows are contiguous, looping <em>row by row</em> (the inner loop over columns) touches memory sequentially and keeps the CPU cache happy. Loop column-first over a big matrix and you can easily go several times slower — same math, worse order.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> For <code>int m[4][5]</code> (4-byte ints), what is the byte offset of <code>m[2][3]</code> from the start?</p><ul><li>23</li><li>32</li><li>52</li><li>92</li></ul><details><summary>Show answer</summary><p><b>52</b> — Offset = (r × COLS + c) × sizeof(int) = (2×5 + 3) × 4 = 13 × 4 = 52 bytes. Skip two full rows (40 bytes), then three ints (12 more).</p></details></div>
+
+<h2>Passing 2-D arrays to functions</h2>
+<p>When a 2-D array decays, it becomes a pointer to its first element — and the first element is a <em>row</em>. So <code>int m[2][3]</code> decays to <code>int (*)[3]</code>: "pointer to array of 3 ints". That's why the parameter must spell out the inner size:</p>
+<figure class="code"><figcaption>pass2d.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+/* the inner size (3) is REQUIRED — it sets the row stride */
+int sum(int rows, int m[][3]) {       /* same as int (*m)[3] */
+    int s = 0;
+    for (int r = 0; r &lt; rows; r++)
+        for (int c = 0; c &lt; 3; c++)
+            s += m[r][c];
+    return s;
+}
+
+int main(void) {
+    int grid[2][3] = {{1, 2, 3}, {4, 5, 6}};
+    printf(&quot;sum = %d\n&quot;, sum(2, grid));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc pass2d.c -o pass2d &amp;&amp; ./pass2d
+sum = 21</pre></figure>
+<p>Why is the 3 mandatory? Look at the address math above: computing <code>m[r][c]</code> needs <code>COLS</code>. Without the inner dimension the compiler literally cannot find row 1. (The <em>outer</em> size is still decorative, as always.)</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why must a 2-D array parameter be written <code>int m[][4]</code> — what is the 4 for?</p><ul><li>Pure documentation</li><li>The compiler needs the row width to compute the address of m[i][j]</li><li>It makes the compiler bounds-check columns</li><li>It limits callers to exactly 4 rows</li></ul><details><summary>Show answer</summary><p><b>The compiler needs the row width to compute the address of m[i][j]</b> — m[i][j] compiles to base + (i×4 + j)×sizeof(int). Drop the 4 and the stride is unknown — the compiler rejects it. The OUTER dimension can be omitted, as usual.</p></details></div>
+
+<h2>The impostor: arrays of pointers</h2>
+<p><code>char *menu[3]</code> looks 2-D when you write <code>menu[i][j]</code>, but it's a completely different animal: an array of 3 <em>pointers</em>, each aiming at a separately-stored string, possibly of different lengths ("jagged"). Two dereferences instead of one address calculation:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/multidim-arrays">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<p>Both support <code>x[i][j]</code> syntax — which is exactly why people mix them up. True 2-D: one block, address math. Array of pointers: a table of arrows. You'll build the jagged kind yourself once you can <code>malloc</code> — which is the very next lesson.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/multidim-arrays">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<a class="cta" href="../../index.html#/lesson/multidim-arrays">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../strings/">← Strings: char arrays with a secret handshake</a>
+<a href="../dynamic-memory/">malloc &amp; friends: memory on demand →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

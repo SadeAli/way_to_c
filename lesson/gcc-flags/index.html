@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCC flags worth knowing by heart — The C Path</title>
+<meta name="description" content="The example file in this lesson contains two genuine bugs, and plain gcc compiles it without a single complaint. Add four flags and the compiler points at…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="GCC flags worth knowing by heart — The C Path">
+<meta property="og:description" content="The example file in this lesson contains two genuine bugs, and plain gcc compiles it without a single complaint. Add four flags and the compiler points at…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"GCC flags worth knowing by heart","description":"The example file in this lesson contains two genuine bugs, and plain gcc compiles it without a single complaint. Add four flags and the compiler points at…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">⚙️ Compiler &amp; Toolchain Mastery</p>
+<h1>GCC flags worth knowing by heart</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/gcc-flags">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>The example file in this lesson contains two genuine bugs, and plain <code>gcc</code> compiles it without a single complaint. Add four flags and the compiler points at both broken lines before you ever run the program. A handful of well-chosen flags is the closest thing you'll get to a free expert reviewing every line you write — this lesson makes them muscle memory.</p></div>
+
+<p>GCC accepts <em>hundreds</em> of options. You need maybe twenty — but those twenty are the difference between a professional build and a bug factory. Let's tour them by job: warnings, standards, optimization, debugging, and the everyday plumbing (naming output files, finding headers and libraries).</p>
+
+<h2>Warnings: free code review, on by request</h2>
+<p>By default GCC is scandalously quiet. Fix that — always:</p>
+<ul>
+<li><code>-Wall</code> — the "sensible warnings" set (badly named: it's nowhere near <em>all</em>).</li>
+<li><code>-Wextra</code> — more good ones: unused parameters, signed/unsigned comparisons…</li>
+<li><code>-Wpedantic</code> — complain about anything that isn't strictly ISO C.</li>
+<li><code>-Werror</code> — promote warnings to errors. Great for your own code; be careful forcing it on code you distribute (new compiler versions add new warnings and break the build).</li>
+</ul>
+<p>Two underrated gems: <code>-Wshadow</code> (an inner variable hides an outer one — a silent logic-bug generator) and <code>-Wconversion</code> (implicit conversions that can lose data). Watch them catch two real bugs:</p>
+<figure class="code"><figcaption>warn.c — compiles silently with plain gcc!</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int total(const int *a, int n) {
+    int sum = 0;
+    for (int i = 0; i &lt; n; i++) {
+        int sum = a[i];        /* oops: shadows outer sum */
+        sum += sum;
+    }
+    return sum;                /* always returns 0        */
+}
+
+int main(void) {
+    double celsius = 36.6;
+    int rounded = celsius;     /* silently truncates to 36 */
+    int arr[] = {1, 2, 3};
+    printf(&quot;%d %d\n&quot;, total(arr, 3), rounded);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc warn.c -o warn          # not a peep!
+$ gcc -Wall -Wextra -Wshadow -Wconversion warn.c -o warn
+warn.c: In function 'total':
+warn.c:6:13: warning: declaration of 'sum' shadows a previous declaration [-Wshadow]
+    6 |         int sum = a[i];
+      |             ^~~
+warn.c:4:9: note: shadowed declaration is here
+    4 |     int sum = 0;
+      |         ^~~
+warn.c: In function 'main':
+warn.c:14:19: warning: conversion from 'double' to 'int' may change value [-Wfloat-conversion]
+   14 |     int rounded = celsius;
+      |                   ^~~~~~~
+# two genuine bugs, found for free.</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>-Werror</code> do?</p><ul><li>Enables every warning GCC knows</li><li>Turns all warnings into hard compile errors</li><li>Prints warnings in red</li><li>Warns about error-handling bugs</li></ul><details><summary>Show answer</summary><p><b>Turns all warnings into hard compile errors</b> — It promotes warnings to errors so nobody can ignore them. Combine it with -Wall -Wextra in your own projects — but think twice before forcing it on downstream users, since future GCC versions add new warnings.</p></details></div>
+
+<h2>Which C? <code>-std=</code></h2>
+<p>GCC defaults to a GNU dialect (currently <code>gnu17</code> on most installs). Pin it explicitly: <code>-std=c17</code> for portable ISO C, <code>-std=c23</code> for the shiny new stuff from Part 5, or <code>-std=gnu17</code> to opt into GNU extensions (next lesson!). The museum piece <code>-ansi</code> means <code>-std=c90</code> — you'll meet it in old build scripts.</p>
+
+<h2>Optimization levels: the speed dial</h2>
+<table>
+<tr><th>flag</th><th>meaning</th><th>trade-off</th></tr>
+<tr><td><code>-O0</code></td><td>default — no optimization</td><td>fast compiles, faithful line-by-line debugging, slow code</td></tr>
+<tr><td><code>-Og</code></td><td>optimize, but keep debuggable</td><td>the sweet spot for development builds</td></tr>
+<tr><td><code>-O1</code></td><td>basic optimizations</td><td>rarely used directly</td></tr>
+<tr><td><code>-O2</code></td><td>full optimization, no size explosion</td><td><b>the production standard</b></td></tr>
+<tr><td><code>-O3</code></td><td>-O2 + aggressive inlining/vectorization</td><td>sometimes faster, sometimes bigger &amp; slower — measure!</td></tr>
+<tr><td><code>-Os</code></td><td>optimize for size</td><td>embedded targets, cache-bound code</td></tr>
+</table>
+<figure class="code"><figcaption>bench.c — 200 million divisions</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    double sum = 0.0;
+    for (long i = 1; i &lt;= 200000000L; i++)
+        sum += 1.0 / (double)i;
+    printf(&quot;%f\n&quot;, sum);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>the speed dial, measured</figcaption><pre>$ gcc -O0 bench.c -o bench0 &amp;&amp; time ./bench0
+19.691044
+real    0m1.98s
+$ gcc -O2 bench.c -o bench2 &amp;&amp; time ./bench2
+19.691044
+real    0m0.61s
+$ gcc -O2 -march=native bench.c -o benchN &amp;&amp; time ./benchN
+19.691044
+real    0m0.42s
+# same answer every time — only the speed changes.</pre></figure>
+<p>Same source, 3× faster — the optimizer kept <code>sum</code> in a register, unrolled the loop, and used vector divides. Add <code>-march=native</code> and GCC may also use every instruction <em>your</em> CPU supports (AVX2, FMA…) — great for code that runs where it's built, wrong for binaries you ship to older machines.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> You are stepping through code in gdb and variables keep showing <code>&lt;optimized out&gt;</code>. Best flag combo for your dev builds?</p><ul><li>-O3 -g</li><li>-O0 alone</li><li>-Og -g</li><li>-Os -Werror</li></ul><details><summary>Show answer</summary><p><b>-Og -g</b> — -Og optimizes only in ways that don’t wreck the debugging experience, and -g provides the source mapping. -O3 aggressively deletes/merges variables; -O0 alone works too but lacks debug info without -g.</p></details></div>
+<div class="sq"><p class="sq-q">🤔 With <code>-O2</code>, what does GCC compile <code>return x * 8;</code> into — an <code>imul</code>?</p><details><summary>Think first</summary><p>No — a single left shift: <code>lea eax, [0+rdi*8]</code> (or <code>sal eax, 3</code>). Multiplying by a power of two is just shifting bits left, and the compiler knows it. This is why micro-optimizing <code>x &lt;&lt; 3</code> by hand in source buys you nothing but unreadable code: write <code>x * 8</code> and let -O2 do its job.</p></details></div>
+
+<h2>Debug info and sanitizers</h2>
+<p><code>-g</code> embeds DWARF debug info — the tables mapping machine code back to your source lines and variable names. Without it, gdb shows you raw addresses. It does <b>not</b> slow the program down; it just makes the file bigger. There is never a reason to omit <code>-g</code> during development.</p>
+<p><code>-fsanitize=address,undefined</code> compiles in runtime detectives that catch buffer overflows, use-after-free, signed overflow and friends the moment they happen. They're the star of the debugging-tools lesson — for now, know that the flag exists and belongs in your dev builds.</p>
+
+<h2>The plumbing flags</h2>
+<table>
+<tr><th>flag</th><th>does</th><th>example</th></tr>
+<tr><td><code>-o file</code></td><td>name the output</td><td><code>gcc app.c -o app</code> (default is the immortal <code>a.out</code>)</td></tr>
+<tr><td><code>-DNAME[=val]</code></td><td>define a macro from the command line</td><td><code>-DDEBUG -DVERSION=3</code></td></tr>
+<tr><td><code>-Idir</code></td><td>add a directory to the <code>#include</code> search path</td><td><code>-Iinclude/</code></td></tr>
+<tr><td><code>-Ldir</code></td><td>add a directory to the library search path</td><td><code>-Lbuild/lib</code></td></tr>
+<tr><td><code>-lname</code></td><td>link against lib<i>name</i></td><td><code>-lm</code> → libm, the math library</td></tr>
+</table>
+<figure class="code term"><figcaption>-D, -I, -l in the wild</figcaption><pre>$ cat version.c
+#include &lt;stdio.h&gt;
+#include &lt;math.h&gt;
+int main(void) {
+#ifdef DEBUG
+    fprintf(stderr, &quot;debug build v%d\n&quot;, VERSION);
+#endif
+    printf(&quot;sqrt(2) = %f\n&quot;, sqrt(2));
+    return 0;
+}
+$ gcc -DDEBUG -DVERSION=3 version.c -o version -lm
+$ ./version
+debug build v3
+sqrt(2) = 1.414214
+# no -DDEBUG?  The #ifdef block simply vanishes at preprocess time.</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>-Iinclude/</code> do?</p><ul><li>Links the library "include"</li><li>Adds include/ to the directories searched for <code>#include</code> headers</li><li>Installs headers into include/</li><li>Ignores all headers in include/</li></ul><details><summary>Show answer</summary><p><b>Adds include/ to the directories searched for <code>#include</code> headers</b> — Capital -I extends the header search path (used by the preprocessor). Its sibling -L extends the library search path, and lowercase -l names an actual library to link. Three different letters, three different stages.</p></details></div>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Your everyday invocation</b> — make it muscle memory (or a shell alias):<br><code>gcc -std=c17 -Wall -Wextra -Wshadow -g -Og program.c -o program</code><br>Ship with <code>-O2</code> and keep <code>-g</code> anyway — you can strip symbols later, but you can't conjure them back when a core dump lands on your desk.</p></div></div>
+
+<div class="callout fun"><div class="co-ic">🎉</div><div class="co-body"><p><b>Clang compatibility:</b> nearly every flag on this page works identically in Clang — <code>clang -std=c17 -Wall -Wextra -O2</code> just works. The two compilers deliberately share a command-line dialect, so learning one is learning both. Clang's error messages are famously friendly; try both on the same buggy file some day.</p></div></div>
+
+<h2>Practice</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/gcc-flags">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Flags configure the <em>standard</em> compiler — but GCC also speaks a whole private dialect of C, and that's where we go next.</p>
+
+<a class="cta" href="../../index.html#/lesson/gcc-flags">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../compilation-pipeline/">← The pipeline, under the microscope</a>
+<a href="../gcc-extensions/">The GNU dialect: __attribute__ and friends →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

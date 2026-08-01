@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>malloc &amp; friends: memory on demand — The C Path</title>
+<meta name="description" content="That browser that gets slower and slower until you restart it? Odds are it's leaking memory — the signature failure of the by-hand memory management you're…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="malloc &amp; friends: memory on demand — The C Path">
+<meta property="og:description" content="That browser that gets slower and slower until you restart it? Odds are it's leaking memory — the signature failure of the by-hand memory management you're…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"malloc & friends: memory on demand","description":"That browser that gets slower and slower until you restart it? Odds are it's leaking memory — the signature failure of the by-hand memory management you're…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎯 Pointers &amp; Memory</p>
+<h1>malloc &amp; friends: memory on demand</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/dynamic-memory">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>That browser that gets slower and slower until you restart it? Odds are it's leaking memory — the signature failure of the by-hand memory management you're about to learn. <code>malloc</code> is how programs handle data whose size nobody knows until a user shows up with it: their file, their message, their playlist. Every array you've built so far had its size baked in at compile time; after this lesson, that restriction is gone.</p></div>
+
+<p>Every array so far had a size fixed at compile time (or lived dangerously on the stack as a VLA). But real programs read files, take input, grow lists — they need memory whose size is known only at <em>runtime</em>, and which can <em>outlive</em> the function that created it. That memory lives on the <strong>heap</strong>, and you manage it by hand.</p>
+
+<h2>The core pair: <code>malloc</code> and <code>free</code></h2>
+<p><code>malloc(n)</code> (from <code>&lt;stdlib.h&gt;</code>) requests <code>n</code> bytes from the heap and returns a pointer to them — or <code>NULL</code> if the system can't oblige. The bytes are <em>uninitialized garbage</em>. When you're done, and not before, you return them with <code>free(p)</code>:</p>
+<figure class="code"><figcaption>firstmalloc.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(void) {
+    int n = 5;                        /* runtime size — fine!  */
+    int *a = malloc(n * sizeof *a);
+    if (a == NULL) {                  /* malloc CAN fail       */
+        fprintf(stderr, &quot;out of memory\n&quot;);
+        return 1;
+    }
+
+    for (int i = 0; i &lt; n; i++)       /* contents were garbage */
+        a[i] = i * i;
+    printf(&quot;a[4] = %d\n&quot;, a[4]);
+
+    free(a);                          /* give it back          */
+    a = NULL;                         /* defuse the dangler    */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc firstmalloc.c -o firstmalloc &amp;&amp; ./firstmalloc
+a[4] = 16</pre></figure>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>The <code>sizeof *a</code> idiom:</b> writing <code>malloc(n * sizeof *a)</code> instead of <code>malloc(n * sizeof(int))</code> means the size expression is tied to the pointer itself — change <code>a</code>'s type later and the allocation stays correct automatically. Also note: no cast on malloc's result needed in C (that's a C++ habit).</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why prefer <code>malloc(n * sizeof *a)</code> over <code>malloc(n * sizeof(int))</code>?</p><ul><li>It allocates faster</li><li>It stays correct automatically if a’s type ever changes</li><li>sizeof(int) is deprecated</li><li>The compiler requires it since C11</li></ul><details><summary>Show answer</summary><p><b>It stays correct automatically if a’s type ever changes</b> — sizeof *a means "the size of whatever a points to" — refactor int* to long* and the allocation follows along. The spelled-out type is a bug waiting for a refactor.</p></details></div>
+
+<h2><code>calloc</code> and <code>realloc</code></h2>
+<p><code>calloc(count, size)</code> allocates <em>and zeroes</em> the memory (and checks that <code>count × size</code> doesn't overflow). <code>realloc(p, newsize)</code> resizes an allocation — possibly by <strong>moving it somewhere else entirely</strong>, copying your data over:</p>
+<figure class="code"><figcaption>grow.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(void) {
+    int *a = calloc(4, sizeof *a);     /* 4 ints, all ZERO    */
+    if (!a) return 1;
+    printf(&quot;a[3] = %d (calloc zeroes)\n&quot;, a[3]);
+
+    int *bigger = realloc(a, 8 * sizeof *a);
+    if (bigger == NULL) {              /* old block STILL ok  */
+        free(a);
+        return 1;
+    }
+    a = bigger;                        /* may have MOVED!     */
+
+    a[7] = 99;                         /* new bytes: garbage, */
+    printf(&quot;a[0] = %d, a[7] = %d\n&quot;, a[0], a[7]); /* not 0  */
+    free(a);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc grow.c -o grow &amp;&amp; ./grow
+a[3] = 0 (calloc zeroes)
+a[0] = 0, a[7] = 99
+# realloc kept bytes 0-15 intact, even if it moved the block</pre></figure>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Never write <code>p = realloc(p, n)</code>.</b> If realloc fails it returns NULL but leaves the old block allocated — and you just overwrote your only pointer to it. That's a guaranteed leak. Always catch the result in a fresh variable, check it, <em>then</em> assign.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>calloc</code> give you that <code>malloc</code> doesn’t?</p><ul><li>Stack allocation</li><li>Zero-filled memory, plus an overflow check on count × size</li><li>Automatic freeing at scope exit</li><li>Faster allocation</li></ul><details><summary>Show answer</summary><p><b>Zero-filled memory, plus an overflow check on count × size</b> — calloc zeroes every byte and safely detects if count × size would overflow. malloc hands you uninitialized garbage — reading it before writing is UB.</p></details></div>
+
+<h2>The three deadly sins</h2>
+<p>Manual memory management has exactly three classic failure modes. Learn their names — you will meet all of them:</p>
+<ul>
+<li><b>Memory leak:</b> losing the last pointer to a block without freeing it. The program's memory use grows forever; long-running servers die slowly.</li>
+<li><b>Use-after-free:</b> dereferencing a pointer after <code>free</code>. The allocator may have recycled those bytes for something else — you're reading or corrupting a stranger's data.</li>
+<li><b>Double free:</b> freeing the same pointer twice corrupts the allocator's own bookkeeping. Modern allocators often abort with <code>free(): double free detected</code>.</li>
+</ul>
+<figure class="code"><figcaption>sins.c — all three, do NOT run this</figcaption><pre><code>int *p = malloc(sizeof *p);
+*p = 42;
+p = malloc(sizeof *p);   /* SIN 1: leak — first block lost   */
+
+free(p);
+printf(&quot;%d\n&quot;, *p);      /* SIN 2: use-after-free — UB       */
+free(p);                  /* SIN 3: double free — UB, often   */
+                          /*        aborts the program        */</code></pre></figure>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/dynamic-memory">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b><code>free(p)</code> does not change <code>p</code>.</b> The pointer still holds the old address — now a <em>dangling pointer</em>. The pro habit: <code>free(p); p = NULL;</code>. Dereferencing NULL crashes loudly and immediately; dereferencing a dangling pointer corrupts quietly and ruins your week. (Bonus: <code>free(NULL)</code> is defined as a harmless no-op.)</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> After <code>free(p);</code>, what is the state of <code>p</code> itself?</p><ul><li>It becomes NULL automatically</li><li>It still holds the old address — a dangling pointer</li><li>It’s deallocated along with the block</li><li>Reading p (not *p) is a crash</li></ul><details><summary>Show answer</summary><p><b>It still holds the old address — a dangling pointer</b> — free receives a COPY of the address, so it can’t modify your variable. p dangles until you overwrite it — hence the discipline: free(p); p = NULL;</p></details></div>
+
+<h2>Your new best friend: valgrind</h2>
+<p>You don't have to hunt these bugs with printf. <strong>valgrind</strong> runs your program in an instrumented sandbox and reports every leak, use-after-free, and out-of-bounds access with a stack trace:</p>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -g leaky.c -o leaky &amp;&amp; valgrind ./leaky
+==7412== HEAP SUMMARY:
+==7412==     in use at exit: 40 bytes in 1 blocks
+==7412==   total heap usage: 2 allocs, 1 frees
+==7412== 40 bytes in 1 blocks are definitely lost in loss record 1 of 1
+==7412==    at 0x4846828: malloc (vg_replace_malloc.c:446)
+==7412==    by 0x109172: main (leaky.c:6)
+# &quot;definitely lost&quot; = a leak, with the exact line that allocated it</pre></figure>
+<p>We'll tour valgrind and AddressSanitizer properly in the toolchain part — for now, just know that <code>valgrind ./myprog</code> is one command and it catches what your eyes can't.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/dynamic-memory">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>So far the heap has held plain arrays — next we'll teach C to allocate <em>records</em> with named fields: structs.</p>
+
+<a class="cta" href="../../index.html#/lesson/dynamic-memory">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../multidim-arrays/">← Multidimensional arrays: grids in a flat world</a>
+<a href="../structs/">Structs: inventing your own types →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structs: inventing your own types — The C Path</title>
+<meta name="description" content="Real data travels in bundles: a game character has a name, health, and a position; a contact has a name and a number. An array can't hold that mix, because…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Structs: inventing your own types — The C Path">
+<meta property="og:description" content="Real data travels in bundles: a game character has a name, health, and a position; a contact has a name and a number. An array can't hold that mix, because…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Structs: inventing your own types","description":"Real data travels in bundles: a game character has a name, health, and a position; a contact has a name and a number. An array can't hold that mix, because…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎯 Pointers &amp; Memory</p>
+<h1>Structs: inventing your own types</h1>
+<p class="meta">⏱ 13 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/structs">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Real data travels in bundles: a game character has a name, health, and a position; a contact has a name and a number. An array can't hold that mix, because every element must be the same type. Structs let you weld different pieces into one value you can copy, pass to functions, and return — your first step from <em>using</em> C's types to <em>inventing</em> your own.</p></div>
+
+<p>Arrays hold many values of <em>one</em> type. But the world is made of records: a point has an x <em>and</em> a y; a player has a name, a score, and health. A <strong>struct</strong> bundles differently-typed members into one new type — your first taste of designing types instead of just using them.</p>
+
+<h2>Defining and using</h2>
+<figure class="code"><figcaption>point.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+struct Point {          /* a new type: struct Point */
+    int x;
+    int y;
+};
+
+int main(void) {
+    struct Point p = { .x = 3, .y = 7 };  /* designated init */
+
+    p.x += 1;                     /* dot: access a member    */
+    printf(&quot;p = (%d, %d)\n&quot;, p.x, p.y);
+
+    struct Point q = p;           /* copies BOTH members     */
+    q.y = 0;
+    printf(&quot;p.y=%d q.y=%d\n&quot;, p.y, q.y);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc point.c -o point &amp;&amp; ./point
+p = (4, 7)
+p.y=7 q.y=0
+# q was a full copy — changing it left p alone</pre></figure>
+<p>Note what assignment did: <code>struct Point q = p;</code> copied <em>every member</em>. Structs are values — they copy, pass, and return whole, unlike arrays (which decay into pointers the moment you look at them).</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> After <code>struct Point q = p; q.x = 99;</code> — what is <code>p.x</code>?</p><ul><li>99</li><li>Unchanged — struct assignment copies the whole value</li><li>Undefined behavior</li><li>Compile error: structs can’t be assigned</li></ul><details><summary>Show answer</summary><p><b>Unchanged — struct assignment copies the whole value</b> — Structs are first-class values: =, argument passing, and return all copy member-by-member. If you WANT sharing, pass a pointer — that’s the next section.</p></details></div>
+
+<h2>Pointers to structs: the <code>-&gt;</code> arrow</h2>
+<p>Copying a big struct into every function call is wasteful, and copies can't modify the original — so in practice you pass a <em>pointer</em> to the struct. Accessing a member through a pointer is so common it earned its own operator: <code>p-&gt;x</code> is sugar for <code>(*p).x</code>:</p>
+<figure class="code"><figcaption>arrow.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+struct Point { int x, y; };
+
+void move(struct Point *p, int dx, int dy) {
+    p-&gt;x += dx;                /* same as (*p).x += dx */
+    p-&gt;y += dy;
+}
+
+int main(void) {
+    struct Point pt = {10, 20};
+    move(&amp;pt, 1, -2);          /* pass the ADDRESS     */
+    printf(&quot;(%d, %d)\n&quot;, pt.x, pt.y);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc arrow.c -o arrow &amp;&amp; ./arrow
+(11, 18)
+# move() reached back through the pointer — swap() all over again</pre></figure>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Why the parentheses in <code>(*p).x</code>?</b> Because <code>.</code> binds tighter than <code>*</code>: the unparenthesized <code>*p.x</code> parses as <code>*(p.x)</code> — "dereference the member x of p" — which is a type error. The arrow exists precisely so you never have to remember this.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> You have <code>struct Point *p</code>. Which expression reads member x?</p><ul><li><code>p.x</code></li><li><code>*p.x</code></li><li><code>p-&gt;x</code> (equivalently <code>(*p).x</code>)</li><li><code>&amp;p.x</code></li></ul><details><summary>Show answer</summary><p><b><code>p-&gt;x</code> (equivalently <code>(*p).x</code>)</b> — Dot needs an actual struct, not a pointer. *p.x parses as *(p.x) — wrong. The arrow is exactly "dereference, then dot", precedence handled for you.</p></details></div>
+
+<h2>Memory layout: mind the gaps</h2>
+<p>You might expect <code>struct { char c; int n; }</code> to take 1 + 4 = 5 bytes. It takes <strong>8</strong>. Why? CPUs load an <code>int</code> fastest when its address is a multiple of 4, so the compiler inserts invisible <strong>padding</strong> after <code>c</code> to push <code>n</code> to an aligned offset:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/structs">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<figure class="code"><figcaption>padding.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stddef.h&gt;
+
+struct Bad  { char a; int n; char b; };   /* 1+3pad+4+1+3pad */
+struct Good { int n; char a; char b; };   /* 4+1+1+2pad      */
+
+int main(void) {
+    printf(&quot;Bad : %zu bytes\n&quot;, sizeof(struct Bad));
+    printf(&quot;  a@%zu n@%zu b@%zu\n&quot;,
+           offsetof(struct Bad, a),
+           offsetof(struct Bad, n),
+           offsetof(struct Bad, b));
+    printf(&quot;Good: %zu bytes\n&quot;, sizeof(struct Good));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc padding.c -o padding &amp;&amp; ./padding
+Bad : 12 bytes
+  a@0 n@4 b@8
+Good: 8 bytes
+# same three members, 33% smaller — order matters</pre></figure>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Order members from largest to smallest</b> and padding mostly disappears — that's how <code>Good</code> saved 4 bytes over <code>Bad</code> with identical members. In an array of a million structs, that's 4 MB for free. (The exact padding is implementation-defined; <code>offsetof</code> from <code>&lt;stddef.h&gt;</code> tells you the truth on your platform. And never compare structs with <code>memcmp</code> — the padding bytes are indeterminate.)</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why is <code>sizeof(struct { char c; int n; })</code> typically 8, not 5?</p><ul><li>Compilers round every struct to a power of two</li><li>Three padding bytes align n to a 4-byte boundary</li><li>The struct tag itself occupies bytes</li><li>char secretly takes 4 bytes inside structs</li></ul><details><summary>Show answer</summary><p><b>Three padding bytes align n to a 4-byte boundary</b> — Alignment: int wants an address divisible by 4, so the compiler pads after c. The struct’s total size is also padded to a multiple of the strictest alignment so arrays of it stay aligned.</p></details></div>
+
+<h2>The <code>typedef struct</code> pattern</h2>
+<p>Tired of typing <code>struct Point</code> everywhere? <code>typedef</code> gives the type a one-word name — this is the idiom you'll see in virtually every C library, along with designated initializers and compound literals:</p>
+<figure class="code"><figcaption>vec2.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+typedef struct {
+    double x, y;
+} Vec2;                      /* now just &quot;Vec2&quot;          */
+
+Vec2 add(Vec2 a, Vec2 b) {   /* in by value, out by value */
+    return (Vec2){ a.x + b.x, a.y + b.y };
+}
+
+int main(void) {
+    Vec2 v = add((Vec2){1, 2}, (Vec2){3, 4});
+    printf(&quot;(%g, %g)\n&quot;, v.x, v.y);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc vec2.c -o vec2 &amp;&amp; ./vec2
+(4, 6)</pre></figure>
+<p>Passing and returning structs <em>by value</em> like this is perfectly fine for small types (a couple of words). For big structs, pass <code>const struct Big *</code> instead: pointer-sized cost, and <code>const</code> documents that you won't modify it.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/structs">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>A struct gives every member its own bytes. Next: a stranger beast where all the members <em>share</em> the same bytes.</p>
+
+<a class="cta" href="../../index.html#/lesson/structs">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../dynamic-memory/">← malloc &amp; friends: memory on demand</a>
+<a href="../unions-bitfields/">Unions &amp; bit-fields: one space, many shapes →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

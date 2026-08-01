@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointers: variables that hold addresses — The C Path</title>
+<meta name="description" content="Back in Part 1 you typed scanf(&quot;%d&quot;, &amp;amp;x) and were told &quot;just put the &amp;amp; there.&quot; You were secretly handing over your variable's address — today the…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Pointers: variables that hold addresses — The C Path">
+<meta property="og:description" content="Back in Part 1 you typed scanf(&quot;%d&quot;, &amp;amp;x) and were told &quot;just put the &amp;amp; there.&quot; You were secretly handing over your variable's address — today the…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Pointers: variables that hold addresses","description":"Back in Part 1 you typed scanf(\"%d\", &amp;x) and were told \"just put the &amp; there.\" You were secretly handing over your variable's address — today the…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎯 Pointers &amp; Memory</p>
+<h1>Pointers: variables that hold addresses</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/pointers-intro">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Back in Part 1 you typed <code>scanf("%d", &amp;x)</code> and were told "just put the <code>&amp;</code> there." You were secretly handing over your variable's address — today the secret comes out. It cracks a genuine puzzle, too: a function that tries to swap two variables and silently changes nothing. By the end you'll know exactly why it fails, and you'll have the tool that fixes it.</p></div>
+
+<p>This is it — the lesson C is famous for. A <strong>pointer</strong> is nothing mystical: it is a variable whose value is <em>the address of another variable</em>. You already know every variable lives somewhere in memory; a pointer simply writes that "somewhere" down so you can come back to it later.</p>
+
+<h2>Every variable has an address</h2>
+<p>The <code>&amp;</code> operator (read: "address of") asks: <em>where does this variable live?</em> You can print the answer with <code>printf</code>'s <code>%p</code> (p for pointer); the <code>(void *)</code> in front converts the address to the generic "pointer to anything" type that <code>%p</code> expects:</p>
+<figure class="code"><figcaption>address.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int x = 42;
+
+    printf(&quot;value  : %d\n&quot;, x);
+    printf(&quot;address: %p\n&quot;, (void *)&amp;x);
+    printf(&quot;size   : %zu bytes\n&quot;, sizeof x);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc address.c -o address &amp;&amp; ./address
+value  : 42
+address: 0x7ffee4c01a9c
+size   : 4 bytes
+# your address WILL differ — that's normal (ASLR)</pre></figure>
+<p>Your address will differ — and change between runs, because modern OSes randomize the layout (ASLR). The exact number never matters; what matters is that <em>there is one</em>, and you can store it.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Given <code>int x = 5;</code>, what is <code>&amp;x</code>?</p><ul><li>The value 5</li><li>A copy of x</li><li>The memory address where x is stored</li><li>Always 0x100</li></ul><details><summary>Show answer</summary><p><b>The memory address where x is stored</b> — <code>&amp;</code> is the address-of operator: it yields where x lives (a value of type <code>int *</code>), not what x contains.</p></details></div>
+
+<h2>Pointer variables: <code>int *p</code></h2>
+<p><code>int *p = &amp;x;</code> declares <code>p</code> as a <em>pointer to int</em> and stores <code>x</code>'s address in it. The type matters: <code>p</code> doesn't just remember an address, it remembers that an <code>int</code> lives there — which controls how many bytes a read grabs, and (next lesson) how far <code>p + 1</code> jumps.</p>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>The <code>*</code> binds to the name, not the type.</b> <code>int* a, b;</code> declares a pointer <code>a</code> and a plain <code>int b</code>! That's why C veterans write the star next to the variable: <code>int *a, *b;</code>. One star per pointer, always.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/pointers-intro">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<p>The <code>*</code> operator (read: "the thing at") <strong>dereferences</strong> a pointer — it follows the address. <code>*p</code> is, for all purposes, another name for <code>x</code>: reading <code>*p</code> reads <code>x</code>, and writing <code>*p = 99;</code> changes <code>x</code>. Yes, the same symbol declares pointers and dereferences them. Context tells them apart; it's confusing for about a week, then permanent.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> After <code>int *p = &amp;x;</code>, what does <code>*p = 10;</code> do?</p><ul><li>Makes p point to address 10</li><li>Sets x to 10</li><li>Undefined behavior</li><li>Declares a second pointer</li></ul><details><summary>Show answer</summary><p><b>Sets x to 10</b> — Dereferencing follows the stored address, so the assignment writes 10 into x’s memory. <code>p</code> itself (the address it holds) is unchanged.</p></details></div>
+
+<h2>NULL: pointing at nothing</h2>
+<p>Sometimes a pointer has nowhere to point <em>yet</em>. For that, C provides <code>NULL</code> — a special value guaranteed to compare unequal to the address of any real object. It's the universal "empty" sentinel: functions return it on failure, lists end with it, and you should initialize pointers to it instead of leaving them as random garbage.</p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>Dereferencing NULL is undefined behavior</b> — on mainstream systems it's the classic <em>segmentation fault</em>. Before following a pointer that might be empty, check it: <code>if (p != NULL) ...</code> (or just <code>if (p)</code> — NULL is falsy).</p></div></div>
+
+<h2>The payoff: <code>swap()</code></h2>
+<p>Why do we even need pointers? Here's the classic motivation. Try to write a function that swaps two ints — without pointers:</p>
+<figure class="code"><figcaption>swap_broken.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+void swap_broken(int a, int b) {   /* receives COPIES  */
+    int tmp = a;
+    a = b;
+    b = tmp;                       /* swaps the copies */
+}                                  /* copies die here  */
+
+int main(void) {
+    int x = 3, y = 7;
+    swap_broken(x, y);
+    printf(&quot;x=%d y=%d\n&quot;, x, y);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc swap_broken.c -o swap &amp;&amp; ./swap
+x=3 y=7
+# completely unchanged — we only swapped copies</pre></figure>
+<p>Nothing happened! C passes arguments <strong>by value</strong>: <code>swap_broken</code> received <em>copies</em> of <code>x</code> and <code>y</code>, dutifully swapped the copies, and threw them away on return. To modify the caller's variables, we must pass their <em>addresses</em> — then the function can reach back through them. Step through the fixed version:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/pointers-intro">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why does <code>swap_broken(x, y)</code> fail to swap?</p><ul><li>Ints can’t be swapped in C</li><li>The compiler optimizes the call away</li><li>C passes arguments by value — the function gets copies</li><li>swap must return two values, which C forbids</li></ul><details><summary>Show answer</summary><p><b>C passes arguments by value — the function gets copies</b> — Every C argument is copied into the callee’s parameters. To let a function modify YOUR variable, hand it the variable’s address — that’s what pointer parameters are for.</p></details></div>
+
+<p>This pattern — pass an address so the callee can modify your variable — is everywhere in C: <code>scanf("%d", &amp;x)</code> is exactly it.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/pointers-intro">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>You can now hold an address. Next: the surprisingly clever rules for doing <em>arithmetic</em> on one.</p>
+
+<a class="cta" href="../../index.html#/lesson/pointers-intro">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../scope-lifetime/">← Scope &amp; lifetime: who sees what, and for how long</a>
+<a href="../pointer-arithmetic/">Pointer arithmetic: +1 is not one byte →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

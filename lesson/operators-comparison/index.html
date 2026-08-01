@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparisons &amp; logic: how C decides — The C Path</title>
+<meta name="description" content="One missing character — typing = where you meant == — can turn a password check into one that always says yes. Comparisons are how programs decide anything…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Comparisons &amp; logic: how C decides — The C Path">
+<meta property="og:description" content="One missing character — typing = where you meant == — can turn a password check into one that always says yes. Comparisons are how programs decide anything…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Comparisons & logic: how C decides","description":"One missing character — typing = where you meant == — can turn a password check into one that always says yes. Comparisons are how programs decide anything…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>Comparisons &amp; logic: how C decides</h1>
+<p class="meta">⏱ 13 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/operators-comparison">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>One missing character — typing <code>=</code> where you meant <code>==</code> — can turn a password check into one that always says yes. Comparisons are how programs decide anything at all, and by the end of this lesson you'll recognize that one-character bug on sight and know how to make the compiler catch it for you.</p></div>
+
+<p>Every decision a program makes — checking a password, deciding whether to keep going — boils down to a comparison. C's comparison operators are <code>==</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code>, and here's the twist: they don't produce some special true/false type of value. They return a plain <code>int</code> — <strong>1 for true, 0 for false</strong>.</p>
+
+<figure class="code"><figcaption>compare.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int x = 7, y = 10;
+
+    printf(&quot;x == y : %d\n&quot;, x == y);
+    printf(&quot;x != y : %d\n&quot;, x != y);
+    printf(&quot;x &lt;  y : %d\n&quot;, x &lt;  y);
+    printf(&quot;x &gt;= y : %d\n&quot;, x &gt;= y);
+
+    int adult = 1, has_ticket = 0;
+    printf(&quot;adult &amp;&amp; has_ticket : %d\n&quot;, adult &amp;&amp; has_ticket);
+    printf(&quot;adult || has_ticket : %d\n&quot;, adult || has_ticket);
+    printf(&quot;!has_ticket         : %d\n&quot;, !has_ticket);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc compare.c -o compare &amp;&amp; ./compare
+x == y : 0
+x != y : 1
+x &lt;  y : 1
+x &gt;= y : 0
+adult &amp;&amp; has_ticket : 0
+adult || has_ticket : 1
+!has_ticket         : 1</pre></figure>
+
+<h2>Truthiness: zero is false, everything else is true</h2>
+<p>Going the other way, wherever C expects a condition, it applies one rule: <strong>0 means false; any nonzero value means true</strong>. <code>-3</code> is true. <code>0.5</code> is true. <code>'A'</code> (which is 65) is true. This simple rule powers idioms you'll see everywhere, like <code>if (count)</code> meaning "if count isn't zero".</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In a C condition, which of these values counts as TRUE?</p><ul><li><code>0</code></li><li><code>0.0</code></li><li><code>-1</code></li><li><code>'\0'</code></li></ul><details><summary>Show answer</summary><p><b><code>-1</code></b> — The rule is brutally simple: zero (in any type) is false, everything else is true. −1 is nonzero, so it’s true. <code>'\0'</code> is the character with value 0 — false.</p></details></div>
+
+<h2>The bug that launched a thousand debugging sessions: <code>=</code> vs <code>==</code></h2>
+<figure class="code"><figcaption>the-bug.c — spot it before running</figcaption><pre><code>int logged_in = 0;
+
+/* meant to check, actually assigns! */
+if (logged_in = 1) {
+    printf(&quot;Welcome back, admin!\n&quot;);   /* runs EVERY time */
+}</code></pre></figure>
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b><code>=</code> assigns, <code>==</code> compares — and both are valid in a condition.</b> <code>if (x = 0)</code> <em>assigns</em> 0 to x, and the assignment's value (0) makes the condition false — always. <code>if (x = 5)</code> is always true. No error, just silently wrong logic. Compile with <code>-Wall</code> (GCC suggests extra parens when you really mean assignment) and this bug can't hide.</p></div></div>
+
+<h2>Combining conditions: <code>&&</code>, <code>||</code>, <code>!</code></h2>
+<ul>
+<li><code>a && b</code> — true if <b>both</b> are true (logical AND)</li>
+<li><code>a || b</code> — true if <b>at least one</b> is true (logical OR)</li>
+<li><code>!a</code> — flips truth: <code>!0</code> is 1, <code>!anything_else</code> is 0</li>
+</ul>
+<p>And they hide a superpower: <strong>short-circuit evaluation</strong>. C evaluates left to right and <em>stops as soon as the answer is known</em>. If the left side of <code>&&</code> is false, the right side is <b>never evaluated at all</b>. Watch <code>calls</code> in this trace — it counts how many times <code>noisy()</code> actually runs:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/operators-comparison">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+
+<p>This isn't just an optimization — it's a guarantee you can lean on. The classic idiom <code>if (n != 0 && total / n &gt; 10)</code> is <em>safe</em>: the division simply cannot happen when <code>n</code> is zero.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In <code>if (p != NULL && *p > 0)</code>, what happens when <code>p</code> is NULL?</p><ul><li>Crash — *p is still evaluated</li><li>The whole condition is false; *p is never touched</li><li>Compile error</li><li>Undefined behavior</li></ul><details><summary>Show answer</summary><p><b>The whole condition is false; *p is never touched</b> — Short-circuit && guarantees left-to-right evaluation with an early exit: once <code>p != NULL</code> is false, the dereference on the right is skipped. This guard pattern is everywhere in real C.</p></details></div>
+
+<h2>The ternary operator: <code>?:</code></h2>
+<p>C's only three-operand operator is an <code>if/else</code> that fits inside an expression: <code>condition ? value_if_true : value_if_false</code>.</p>
+<figure class="code"><figcaption>ternary.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a = 12, b = 30;
+
+    int max = (a &gt; b) ? a : b;
+    printf(&quot;max is %d\n&quot;, max);
+    printf(&quot;b is %s\n&quot;, (b % 2 == 0) ? &quot;even&quot; : &quot;odd&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc ternary.c -o ternary &amp;&amp; ./ternary
+max is 30
+b is even</pre></figure>
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p>Ternaries shine for small choices — a max, a label, a sign. Nest them twice and readability dies. If it doesn't fit comfortably on one line, use a real <code>if</code>.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/operators-comparison">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>x = (5 > 3) ? 10 : 20;</code> assign?</p><ul><li>10</li><li>20</li><li>1</li><li>5</li></ul><details><summary>Show answer</summary><p><b>10</b> — 5 > 3 evaluates to 1 (true), so the ternary yields its first branch: 10. The second branch, 20, is not even evaluated.</p></details></div>
+
+<p>Comparisons treat variables as whole values — but you can also reach <em>inside</em> them and flip individual bits. Next: the bitwise operators.</p>
+
+<a class="cta" href="../../index.html#/lesson/operators-comparison">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../operators-arithmetic/">← Arithmetic: +, −, ×, ÷ and the truncation trap</a>
+<a href="../operators-bitwise/">Bitwise operators: surgery on individual bits →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

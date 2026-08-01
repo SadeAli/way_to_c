@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The GNU dialect: __attribute__ and friends — The C Path</title>
+<meta name="description" content="Linux — the system inside every Android phone and most of the internet's servers — isn't written in quite the C you've been learning. It's written in GCC's…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="The GNU dialect: __attribute__ and friends — The C Path">
+<meta property="og:description" content="Linux — the system inside every Android phone and most of the internet's servers — isn't written in quite the C you've been learning. It's written in GCC's…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"The GNU dialect: __attribute__ and friends","description":"Linux — the system inside every Android phone and most of the internet's servers — isn't written in quite the C you've been learning. It's written in GCC's…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">⚙️ Compiler &amp; Toolchain Mastery</p>
+<h1>The GNU dialect: __attribute__ and friends</h1>
+<p class="meta">⏱ 16 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/gcc-extensions">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Linux — the system inside every Android phone and most of the internet's servers — isn't written in quite the C you've been learning. It's written in GCC's souped-up version of the language, and since that's what <code>gcc</code> compiles by default, you've been using it without knowing. Learn its extra powers and you can read real operating-system source, run code before <code>main()</code> even starts, and pack a struct with no wasted bytes between its fields.</p></div>
+
+<p>Compile with <code>-std=gnu17</code> (GCC's default!) and you're not writing standard C — you're writing <b>GNU C</b>, a dialect stacked with decades of extensions: extra powers the official standard never adopted. The Linux kernel is written in it. Some extensions were so good they became standard C; others remain gloriously nonportable (use them and your code only builds with GCC or Clang). Let's tour the greatest hits.</p>
+
+<h2><code>__attribute__((...))</code>: annotations with teeth</h2>
+<p>Attributes bolt extra semantics onto declarations. The layout-changing ones first:</p>
+<figure class="code"><figcaption>layout.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+struct normal { char tag; int value; };                       /* padded  */
+struct __attribute__((packed)) tight { char tag; int value; };/* crammed */
+struct vec { float x, y, z, w; } __attribute__((aligned(16)));
+
+int main(void) {
+    printf(&quot;normal : %zu bytes\n&quot;, sizeof(struct normal));
+    printf(&quot;packed : %zu bytes\n&quot;, sizeof(struct tight));
+    printf(&quot;aligned: %zu, _Alignof = %zu\n&quot;,
+           sizeof(struct vec), _Alignof(struct vec));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=gnu17 layout.c -o layout &amp;&amp; ./layout
+normal : 8 bytes
+packed : 5 bytes
+aligned: 16, _Alignof = 16</pre></figure>
+<p><code>packed</code> deletes the padding you learned about in the structs lesson — 5 bytes instead of 8. The price: <code>value</code> is now misaligned, so access is slower on x86 and can outright <b>fault</b> on some ARM cores. Use it for wire formats and file headers, not general data. <code>aligned(16)</code> goes the other way — over-aligning for SIMD or cache-line purposes.</p>
+
+<p>Then the behavioral ones — these run code or move warnings around:</p>
+<figure class="code"><figcaption>attribs.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+__attribute__((constructor))
+static void before_main(void) {
+    puts(&quot;constructor: I run before main!&quot;);
+}
+
+__attribute__((deprecated(&quot;use greet_v2() instead&quot;)))
+static void greet(void) { puts(&quot;hello (old api)&quot;); }
+
+/* teach -Wall to type-check OUR format function */
+__attribute__((format(printf, 1, 2)))
+static void logf_(const char *fmt, ...);
+
+int main(void) {
+    greet();                 /* warning arrives at compile time */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=gnu17 -Wall attribs.c -o attribs
+attribs.c: In function 'main':
+attribs.c:16:5: warning: 'greet' is deprecated: use greet_v2() instead [-Wdeprecated-declarations]
+   16 |     greet();
+      |     ^~~~~
+$ ./attribs
+constructor: I run before main!
+hello (old api)</pre></figure>
+<ul>
+<li><code>constructor</code> / <code>destructor</code> — run before <code>main</code> / after <code>exit</code>. Libraries use these for self-registration.</li>
+<li><code>deprecated("msg")</code> — every caller gets a compile-time warning with your message.</li>
+<li><code>unused</code> — suppresses the unused-variable warning on purpose-built spares.</li>
+<li><code>format(printf, 1, 2)</code> — teaches GCC that <em>your</em> function takes printf-style formats, so <code>-Wall</code> type-checks its arguments. Any logging function you write deserves this.</li>
+<li><code>cleanup(fn)</code> — calls <code>fn(&var)</code> automatically when the variable leaves scope. Poor man's destructors: systemd builds all its resource management on this.</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is the cost of <code>__attribute__((packed))</code>?</p><ul><li>The struct becomes read-only</li><li>Members may be misaligned — slower access, and faults on some CPUs</li><li>It only works on global structs</li><li>sizeof stops working</li></ul><details><summary>Show answer</summary><p><b>Members may be misaligned — slower access, and faults on some CPUs</b> — Packing removes padding, so multi-byte members land on odd addresses. x86 tolerates that (slower); some ARM/embedded cores trap. Reserve packed for matching external byte layouts like network packets and file headers.</p></details></div>
+
+<h2><code>typeof</code> and statement expressions: macros grow up</h2>
+<p>Two extensions that team up to make macros hygienic:</p>
+<figure class="code"><figcaption>maxmacro.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+/* typeof + statement expression = a MAX that is type-generic
+   AND evaluates each argument exactly once */
+#define MAX(a, b) ({        \
+    typeof(a) _a = (a);     \
+    typeof(b) _b = (b);     \
+    _a &gt; _b ? _a : _b;      \
+})
+
+int main(void) {
+    int i = 3;
+    printf(&quot;%d\n&quot;, MAX(i++, 2));        /* i++ happens ONCE  */
+    printf(&quot;i is now %d\n&quot;, i);
+    printf(&quot;%.2f\n&quot;, MAX(2.5, 1.0/3));  /* works for doubles */
+    return 0;
+}</code></pre></figure>
+<p><code>typeof(x)</code> gives you the <em>type</em> of an expression — so the macro works for <code>int</code>, <code>double</code>, pointers, anything. The <code>({ ... })</code> <b>statement expression</b> lets a block produce a value (its last expression), giving the macro local variables so <code>a</code> and <code>b</code> are evaluated exactly once — <code>MAX(x++, y)</code> is finally safe. This duo was so useful that <b>C23 standardized <code>typeof</code></b>; statement expressions remain GNU-only.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which GNU extension was adopted into standard C23?</p><ul><li>statement expressions <code>({ ... })</code></li><li>computed goto <code>&&label</code></li><li><code>typeof</code></li><li>nested functions</li></ul><details><summary>Show answer</summary><p><b><code>typeof</code></b> — C23 standardized typeof (and typeof_unqual). Statement expressions, computed goto, and nested functions remain compiler extensions — the first two widely supported by GCC and Clang, the last GCC-only.</p></details></div>
+
+<h2>Computed goto: <code>&&label</code></h2>
+<p>GNU C lets you take the <em>address of a label</em> with <code>&amp;&amp;label</code>, store it in a <code>void *</code>, and jump to it with <code>goto *ptr;</code>. That sounds unhinged until you write an interpreter — it's the classic "threaded dispatch" technique used by real VMs (CPython used a giant switch until it adopted computed goto for a measurable speedup):</p>
+<figure class="code"><figcaption>vm.c — a 3-opcode virtual machine</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int run(const int *prog) {
+    static void *ops[] = { &amp;&amp;op_halt, &amp;&amp;op_inc, &amp;&amp;op_dbl };
+    int acc = 0, pc = 0;
+
+    goto *ops[prog[pc]];                 /* dispatch!            */
+op_inc:  acc += 1; goto *ops[prog[++pc]];
+op_dbl:  acc *= 2; goto *ops[prog[++pc]];
+op_halt: return acc;
+}
+
+int main(void) {
+    int prog[] = {1, 1, 2, 2, 1, 0};     /* inc inc dbl dbl inc halt */
+    printf(&quot;result: %d\n&quot;, run(prog));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=gnu17 vm.c -o vm &amp;&amp; ./vm
+result: 9
+# ((0+1+1) * 2 * 2) + 1 = 9 — each opcode jumps STRAIGHT to the next,
+# no central switch, no bounds re-check: that's threaded dispatch.</pre></figure>
+<div class="sq"><p class="sq-q">🤔 What is the type of <code>&&op_halt</code>, and why can a plain <code>switch</code> not be compiled this efficiently?</p><details><summary>Think first</summary><p><code>&amp;&amp;label</code> has type <code>void *</code>. A <code>switch</code> funnels every iteration through one central jump, so the CPU’s branch predictor sees a single chaotic indirect branch. With computed goto, each opcode’s handler ends in its <em>own</em> jump, giving the predictor per-opcode history — measurably faster in interpreter loops (this is why CPython adopted it).</p></details></div>
+
+<h2>Builtins: talking to the optimizer</h2>
+<figure class="code"><figcaption>builtins.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+#define likely(x)   __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+
+int main(void) {
+    unsigned v = 0x00FF00F0u;
+    printf(&quot;popcount(v) = %d\n&quot;, __builtin_popcount(v));
+    printf(&quot;clz(v)      = %d\n&quot;, __builtin_clz(v));  /* leading zeros  */
+    printf(&quot;ctz(v)      = %d\n&quot;, __builtin_ctz(v));  /* trailing zeros */
+
+    int fd = 3;                     /* imagine: result of open() */
+    if (unlikely(fd &lt; 0)) {
+        fprintf(stderr, &quot;open failed\n&quot;);
+        return 1;
+    }
+    puts(&quot;hot path laid out fall-through-first&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=gnu17 -O2 builtins.c -o builtins &amp;&amp; ./builtins
+popcount(v) = 12
+clz(v)      = 8
+ctz(v)      = 4
+hot path laid out fall-through-first
+# with -O2 -march=native, popcount compiles to ONE popcnt instruction.</pre></figure>
+<p><code>__builtin_expect</code> tells the compiler which branch is the common case so it lays out the hot path fall-through-first — you've seen the kernel's <code>likely()</code>/<code>unlikely()</code> macros; this is all they are. The bit-counting builtins compile to single instructions (<code>popcnt</code>, <code>lzcnt</code>, <code>tzcnt</code>) where the CPU has them. C23 finally standardized this family as <code>&lt;stdbit.h&gt;</code> (<code>stdc_count_ones</code> and friends).</p>
+
+<h2>Odds and ends worth recognizing</h2>
+<figure class="code"><figcaption>grabbag.c</figcaption><pre><code>/* flexible array member — STANDARD since C99 */
+struct message {
+    size_t len;
+    char   data[];            /* sized at malloc time            */
+};
+/* struct message *m = malloc(sizeof *m + len); */
+
+/* case ranges — GNU only (mind the spaces around ...) */
+const char *classify(char c) {
+    switch (c) {
+    case '0' ... '9':               return &quot;digit&quot;;
+    case 'a' ... 'z': case 'A' ... 'Z': return &quot;letter&quot;;
+    default:                        return &quot;other&quot;;
+    }
+}
+
+/* nested function — GCC only; pointer to it needs a stack
+   trampoline (historically: executable stack). Avoid. */
+int sum3(int a, int b, int c) {
+    int add(int x, int y) { return x + y; }   /* sees a,b,c too */
+    return add(add(a, b), c);
+}</code></pre></figure>
+<ul>
+<li><b>Flexible array members</b> — a struct ending in <code>char data[];</code> sized at <code>malloc</code> time. This one is <em>fully standard</em> since C99 (GCC's older zero-length <code>data[0]</code> spelling is the extension). The single best way to allocate a header plus payload in one block.</li>
+<li><b>Case ranges</b> — <code>case '0' ... '9':</code> in a switch. Pure GNU sugar; note the spaces around <code>...</code> are required.</li>
+<li><b>Nested functions</b> — a function inside a function, able to see the enclosing locals. GCC-only and controversial: taking a pointer to one forces GCC to generate a <em>trampoline on the stack</em>, historically requiring an executable stack — a security hole. Clang refuses to implement them. Know they exist; don't use them.</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why do nested functions have a bad reputation even among GNU-extension fans?</p><ul><li>They cannot access enclosing variables</li><li>Taking their address needs a stack trampoline, historically forcing an executable stack</li><li>They only work at -O0</li><li>They are slower than macros</li></ul><details><summary>Show answer</summary><p><b>Taking their address needs a stack trampoline, historically forcing an executable stack</b> — A pointer to a nested function must carry the enclosing frame, so GCC writes a tiny code stub (“trampoline”) onto the stack — which then must be executable, weakening a key exploit mitigation. Clang never implemented them.</p></details></div>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Portability discipline:</b> every use of a GNU extension is a promise that your code only builds with GCC/Clang. Guard the optional ones: <code>#ifdef __GNUC__</code> … <code>#else</code> provide a plain-C fallback <code>#endif</code>. And know which dialect you're compiling: <code>-std=c17</code> disables some extensions and defines <code>__STRICT_ANSI__</code>, while <code>-std=gnu17</code> keeps them all on.</p></div></div>
+
+<h2>Practice</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/gcc-extensions">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>One extension we skipped deserves an entire lesson: embedding raw assembly in your C — let's go there now.</p>
+
+<a class="cta" href="../../index.html#/lesson/gcc-extensions">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../gcc-flags/">← GCC flags worth knowing by heart</a>
+<a href="../inline-assembly/">Inline assembly: when C must step aside →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

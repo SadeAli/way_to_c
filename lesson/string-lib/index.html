@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>string.h: the null-terminated toolbox — The C Path</title>
+<meta name="description" content="Part 2 showed you how C stores text; the standard library supplies the tools that work on it, and they all have sharp edges — mishandled text is behind some…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="string.h: the null-terminated toolbox — The C Path">
+<meta property="og:description" content="Part 2 showed you how C stores text; the standard library supplies the tools that work on it, and they all have sharp edges — mishandled text is behind some…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"string.h: the null-terminated toolbox","description":"Part 2 showed you how C stores text; the standard library supplies the tools that work on it, and they all have sharp edges — mishandled text is behind some…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📚 The Standard Library</p>
+<h1>string.h: the null-terminated toolbox</h1>
+<p class="meta">⏱ 16 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/string-lib">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Part 2 showed you how C stores text; the standard library supplies the tools that work on it, and they all have sharp edges — mishandled text is behind some of the most famous security disasters in computing history, where one too-long input overwrites memory and an attacker walks in. In this lesson you'll copy, compare, search, and split text safely, starting with the trap everyone hits first: comparing two strings with <code>==</code> and silently getting the wrong answer.</p></div>
+
+<p>C strings are just <code>char</code> arrays ending in <code>'\0'</code> (Part 2), and <code>string.h</code> is the toolbox for working with them. It's small, fast, and full of decades-old traps. Let's tour the whole thing, traps included.</p>
+
+<h2>The core five</h2>
+<table>
+<tr><th>function</th><th>one-liner</th></tr>
+<tr><td><code>strlen(s)</code></td><td>characters before the <code>'\0'</code> — an O(n) walk, not a stored field!</td></tr>
+<tr><td><code>strcpy(dst, src)</code></td><td>copy including <code>'\0'</code> — dst must be big enough, nothing checks</td></tr>
+<tr><td><code>strcat(dst, src)</code></td><td>append src at dst's <code>'\0'</code> — same "trust me" contract</td></tr>
+<tr><td><code>strcmp(a, b)</code></td><td>lexicographic compare: &lt;0, 0, &gt;0 — <b>never</b> <code>if (a == b)</code>, that compares pointers!</td></tr>
+<tr><td><code>strchr(s, c)</code> / <code>strrchr</code></td><td>pointer to first / last occurrence of char c, or NULL</td></tr>
+</table>
+<figure class="code"><figcaption>tour.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(void) {
+    const char *s = &quot;hello, world&quot;;
+
+    printf(&quot;strlen: %zu\n&quot;, strlen(s));
+    printf(&quot;strcmp(\&quot;abc\&quot;,\&quot;abd\&quot;): %s\n&quot;,
+           strcmp(&quot;abc&quot;, &quot;abd&quot;) &lt; 0 ? &quot;negative&quot; : &quot;other&quot;);
+
+    const char *comma = strchr(s, ',');       /* first ',' */
+    printf(&quot;strchr: found at index %td\n&quot;, comma - s);
+
+    const char *sub = strstr(s, &quot;world&quot;);     /* substring */
+    printf(&quot;strstr: \&quot;%s\&quot;\n&quot;, sub);
+
+    char line[] = &quot;value\n&quot;;                  /* fgets-style */
+    line[strcspn(line, &quot;\n&quot;)] = '\0';         /* strip \n    */
+    printf(&quot;stripped: [%s]\n&quot;, line);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc tour.c -o tour &amp;&amp; ./tour
+strlen: 12
+strcmp(&quot;abc&quot;,&quot;abd&quot;): negative
+strchr: found at index 5
+strstr: &quot;world&quot;
+stripped: [value]</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why is <code>if (name == "alice")</code> wrong for comparing strings?</p><ul><li>It compares lengths only</li><li>It compares the two pointers, not the characters</li><li>String literals can’t be compared</li><li>It’s fine — this works</li></ul><details><summary>Show answer</summary><p><b>It compares the two pointers, not the characters</b> — == on pointers asks "same address?", not "same text?". Two identical strings at different addresses compare unequal (and identical literals may or may not be merged — implementation-defined). Use strcmp(name, "alice") == 0.</p></details></div>
+
+<h2>The strncpy trap</h2>
+<p>"Just use <code>strncpy</code>, it's the safe one" — beware. <code>strncpy(dst, src, n)</code> has a genuinely weird contract: if src is <em>longer</em> than n, it copies n bytes and <b>does not write a <code>'\0'</code></b>. Your "string" is now an unterminated byte array, and the next <code>strlen</code> reads off the end into the void:</p>
+<figure class="code"><figcaption>strncpy_trap.c — the missing terminator</figcaption><pre><code>char dst[8];
+strncpy(dst, &quot;a short fit&quot;, 8);
+/* src has 11 chars: strncpy copies exactly 8 bytes,
+   &quot;a short &quot; — and NO '\0'. dst is not a string!    */
+
+printf(&quot;%s\n&quot;, dst);      /* 💀 UB: reads past dst[7] */
+
+/* the ritual fix:                                    */
+dst[sizeof dst - 1] = '\0';
+
+/* the better tool — always terminated:               */
+snprintf(dst, sizeof dst, &quot;%s&quot;, &quot;a short fit&quot;);</code></pre></figure>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>strncpy does not guarantee termination.</b> If you must use it, always follow with <code>dst[n-1] = '\0';</code>. Better: use <code>snprintf(dst, sizeof dst, "%s", src)</code>, which always terminates and tells you (via its return value) if truncation happened. (<code>strncat</code> is saner — it always terminates — but its <code>n</code> counts what to <em>append</em>, not the buffer size.)</p></div></div>
+
+<h2>Search: strstr, strspn & friends</h2>
+<table>
+<tr><th>function</th><th>one-liner</th></tr>
+<tr><td><code>strstr(hay, needle)</code></td><td>pointer to first occurrence of substring, or NULL</td></tr>
+<tr><td><code>strpbrk(s, set)</code></td><td>pointer to the first char of s that's in set</td></tr>
+<tr><td><code>strspn(s, set)</code></td><td>length of the prefix made only of chars in set</td></tr>
+<tr><td><code>strcspn(s, set)</code></td><td>length of the prefix containing none of set — great for stripping fgets' newline: <code>s[strcspn(s, "\n")] = 0;</code></td></tr>
+</table>
+
+<h2>strtok: useful, stateful, destructive</h2>
+<p><code>strtok(str, delims)</code> splits a string into tokens — but it does two surprising things. It <b>mutates your string</b>, stamping <code>'\0'</code> over each delimiter; and it keeps <b>hidden static state</b>, which is why every call after the first passes <code>NULL</code> ("continue where you left off"). Step through it:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/string-lib">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p>Because of the hidden state, you can't interleave two strtok loops, use it on a string literal (mutating one is UB!), or call it from multiple threads. C11's <code>strtok_s</code> / POSIX <code>strtok_r</code> take the state as an explicit parameter and fix all three.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> After a full strtok pass over <code>char s[] = "a,b";</code> what does <code>printf("%s", s)</code> print?</p><ul><li><code>a,b</code></li><li><code>a</code></li><li><code>ab</code></li><li>nothing — s is freed</li></ul><details><summary>Show answer</summary><p><b><code>a</code></b> — strtok replaced the "," with \0, so the array now holds "a\0b\0…". %s stops at the first \0 and prints just "a". The original string is gone — copy it first if you still need it.</p></details></div>
+
+<h2>The mem family: raw bytes, no '\0' involved</h2>
+<p>These work on arbitrary memory and take explicit lengths — they never look for a terminator: <code>memset(p, byte, n)</code> fills, <code>memcmp(a, b, n)</code> compares, <code>memchr(p, byte, n)</code> finds a byte, and <code>memcpy(dst, src, n)</code> copies… with one famous restriction. If the regions <b>overlap</b>, memcpy is undefined behavior — a forward-copying implementation clobbers source bytes before reading them:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/string-lib">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+<p><code>memmove</code> handles overlap correctly (it copies backwards when needed, as if via a temporary buffer). Rule of thumb: same array, or any doubt at all → <code>memmove</code>.</p>
+<figure class="code"><figcaption>shift.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(void) {
+    char a[] = &quot;ABCDEF&quot;;
+    memmove(a + 2, a, 4);        /* overlap: memmove is safe */
+    printf(&quot;after memmove: %s\n&quot;, a);
+
+    char b[8];
+    memset(b, '-', 7);           /* fill 7 bytes with '-'    */
+    b[7] = '\0';
+    printf(&quot;after memset : %s\n&quot;, b);
+
+    printf(&quot;memcmp: %d\n&quot;, memcmp(&quot;abc&quot;, &quot;abd&quot;, 3) &lt; 0);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc shift.c -o shift &amp;&amp; ./shift
+after memmove: ABABCD
+after memset : -------
+memcmp: 1</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> When must you use <code>memmove</code> instead of <code>memcpy</code>?</p><ul><li>When copying more than 4 KB</li><li>When source and destination might overlap</li><li>When copying structs</li><li>Always — memcpy is deprecated</li></ul><details><summary>Show answer</summary><p><b>When source and destination might overlap</b> — memcpy is allowed to assume no overlap (and is often faster because of it); overlapping regions make it UB. memmove behaves as if it copies through a temporary buffer, so shifting data within one array is its home turf.</p></details></div>
+
+<h2>snprintf: the safe string builder</h2>
+<p>Building strings from pieces with strcpy+strcat is verbose and risky. <code>snprintf</code> does it in one bounded call, always terminates, and returns the length it <em>wanted</em> to write — so you can detect truncation:</p>
+<figure class="code"><figcaption>builder.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    char url[32];
+    int need = snprintf(url, sizeof url,
+                        &quot;https://%s:%d/%s&quot;, &quot;api.example.com&quot;, 443, &quot;v2/users&quot;);
+
+    if (need &gt;= (int)sizeof url)
+        printf(&quot;truncated! needed %d bytes, had %zu\n&quot;, need, sizeof url);
+
+    printf(&quot;url = %s\n&quot;, url);   /* always '\0'-terminated  */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc builder.c -o builder &amp;&amp; ./builder
+truncated! needed 36 bytes, had 32
+url = https://api.example.com:443/v2/</pre></figure>
+
+<div class="callout fun"><div class="co-ic">🎉</div><div class="co-body"><p><b>strdup graduates:</b> <code>strdup(s)</code> — malloc a copy of a string — lived in POSIX for decades while portable C had to hand-roll it. C23 finally adopted <code>strdup</code> and <code>strndup</code> into the standard. Remember the copy is malloc'd: you <code>free</code> it.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/string-lib">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Strings and bytes handled — time for numbers and clocks: <code>math.h</code> and <code>time.h</code>.</p>
+
+<a class="cta" href="../../index.html#/lesson/string-lib">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../stdlib-lib/">← stdlib.h: conversions, random, qsort &amp; exits</a>
+<a href="../math-time/">math.h &amp; time.h: numbers and clocks →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

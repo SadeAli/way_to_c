@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hash tables: the O(1) dictionary — The C Path</title>
+<meta name="description" content="When you log in, a website picks your account out of a billion others in a blink — no scanning down a list, no guessing games. That trick is the hash table,…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hash tables: the O(1) dictionary — The C Path">
+<meta property="og:description" content="When you log in, a website picks your account out of a billion others in a blink — no scanning down a list, no guessing games. That trick is the hash table,…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Hash tables: the O(1) dictionary","description":"When you log in, a website picks your account out of a billion others in a blink — no scanning down a list, no guessing games. That trick is the hash table,…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📈 Algorithms &amp; Complexity</p>
+<h1>Hash tables: the O(1) dictionary</h1>
+<p class="meta">⏱ 15 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/hash-tables">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>When you log in, a website picks your account out of a billion others in a blink — no scanning down a list, no guessing games. That trick is the hash table, the same structure behind Python's dictionaries and JavaScript's objects, and you're about to build one from scratch in C.</p><p>You'll also see its one weak spot — and how attackers once used it to knock real web servers offline.</p></div>
+
+<p>Every structure so far finds things by <em>position</em> (index 3) or by <em>searching</em> (O(n) scan, O(log n) binary search). But the lookup you actually want most is by <strong>name</strong> — a <em>key</em>: "what's the value stored under <code>"dog"</code>?" — and you want it in <b>O(1)</b>, no matter if there are ten keys or ten million. That structure is the hash table, and it powers Python dicts, JavaScript objects, the indexes that make databases fast, and the way your terminal finds each command you type.</p>
+
+<h2>The big idea: compute where things live</h2>
+<p>An array gives O(1) access <em>if you know the index</em>. So… what if we could <em>calculate</em> an index from the key itself? That calculator is a <strong>hash function</strong>: it chews the bytes of the key and spits out a number. Same key in, same number out, every time. A beloved classic is <strong>djb2</strong> (Daniel J. Bernstein, 1991):</p>
+
+<figure class="code"><figcaption>djb2.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+unsigned long djb2(const char *s) {
+    unsigned long h = 5381;            /* magic seed        */
+    while (*s)
+        h = h * 33 + (unsigned char)*s++;   /* mix each byte */
+    return h;
+}
+
+int main(void) {
+    const char *w[] = {&quot;ant&quot;,&quot;bee&quot;,&quot;cat&quot;,&quot;cow&quot;,&quot;dog&quot;,&quot;emu&quot;,&quot;owl&quot;};
+    for (int i = 0; i &lt; 7; i++)
+        printf(&quot;%-3s -&gt; %10lu %% 8 = bucket %lu\n&quot;,
+               w[i], djb2(w[i]), djb2(w[i]) % 8);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc djb2.c -o djb2 &amp;&amp; ./djb2
+ant -&gt;  193486376 % 8 = bucket 0
+bee -&gt;  193487153 % 8 = bucket 1
+cat -&gt;  193488125 % 8 = bucket 5
+cow -&gt;  193488590 % 8 = bucket 6
+dog -&gt;  193489663 % 8 = bucket 7
+emu -&gt;  193490700 % 8 = bucket 4
+owl -&gt;  193501911 % 8 = bucket 7   # &lt;- same as dog. collision!</pre></figure>
+
+<p>Why <code>h * 33 + c</code>? Honestly: nobody fully knows — it's empirical magic that mixes bits cheaply and spreads real-world strings well. (33 = 32 + 1, so compilers do it as a shift and an add.) The unsigned overflow that happens on long strings is fine — unsigned wraparound is well-defined in C, and hashing <em>wants</em> the scrambling.</p>
+
+<h2>Buckets: hash, then modulo</h2>
+<p>A hash is a huge number; the table has, say, 8 slots. <code>hash % 8</code> maps every key to a <strong>bucket</strong>. Here are those seven animals landing in an 8-bucket table:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/hash-tables">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why must a hash function be deterministic (same key → same hash, always)?</p><ul><li>To make hashes uniformly distributed</li><li>C functions cannot use randomness</li><li>Otherwise you could store a key in one bucket and later look for it in another</li><li>To prevent integer overflow</li></ul><details><summary>Show answer</summary><p><b>Otherwise you could store a key in one bucket and later look for it in another</b> — Insert computes a bucket from the key; lookup recomputes it and goes to that bucket. If the two computations could disagree, stored keys would be unfindable. (Per-process random SEEDS are fine — the function stays deterministic within one run.)</p></details></div>
+
+<h2>Collisions are not a bug — they're a certainty</h2>
+<p>Notice <code>dog</code> and <code>owl</code> both landed in bucket 7. Inevitable: there are infinitely many possible strings and only 8 buckets — by the <strong>pigeonhole principle</strong>, some keys <em>must</em> share. A hash table isn't defined by avoiding collisions but by <em>surviving</em> them. The classic survival strategy is <strong>chaining</strong>: each bucket holds a linked list of everything that landed there.</p>
+
+<figure class="code"><figcaption>map.c — a complete chained hash map</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define NBUCKETS 8
+
+typedef struct Entry {
+    char *key;
+    int value;
+    struct Entry *next;       /* the chain */
+} Entry;
+
+typedef struct { Entry *bucket[NBUCKETS]; } Map;
+
+static unsigned long djb2(const char *s) {
+    unsigned long h = 5381;
+    while (*s) h = h * 33 + (unsigned char)*s++;
+    return h;
+}
+
+void map_put(Map *m, const char *key, int value) {
+    unsigned long b = djb2(key) % NBUCKETS;
+    for (Entry *e = m-&gt;bucket[b]; e; e = e-&gt;next)
+        if (strcmp(e-&gt;key, key) == 0) { e-&gt;value = value; return; }
+    Entry *e = malloc(sizeof *e);           /* new entry:     */
+    e-&gt;key = malloc(strlen(key) + 1);       /* own copy of    */
+    strcpy(e-&gt;key, key);                    /*   the key      */
+    e-&gt;value = value;
+    e-&gt;next = m-&gt;bucket[b];                 /* push onto the  */
+    m-&gt;bucket[b] = e;                       /*   chain: O(1)  */
+}
+
+int *map_get(Map *m, const char *key) {
+    for (Entry *e = m-&gt;bucket[djb2(key) % NBUCKETS]; e; e = e-&gt;next)
+        if (strcmp(e-&gt;key, key) == 0) return &amp;e-&gt;value;
+    return NULL;                            /* absent         */
+}
+
+void map_free(Map *m) {
+    for (int b = 0; b &lt; NBUCKETS; b++)
+        for (Entry *e = m-&gt;bucket[b]; e; ) {
+            Entry *next = e-&gt;next;
+            free(e-&gt;key); free(e);
+            e = next;
+        }
+}
+
+int main(void) {
+    Map m = {0};                 /* all buckets start NULL */
+    map_put(&amp;m, &quot;dog&quot;, 4);
+    map_put(&amp;m, &quot;owl&quot;, 2);       /* bucket 7 too — chained! */
+    map_put(&amp;m, &quot;cat&quot;, 9);
+    map_put(&amp;m, &quot;dog&quot;, 5);       /* update, not duplicate  */
+
+    int *v = map_get(&amp;m, &quot;dog&quot;);
+    printf(&quot;dog -&gt; %d\n&quot;, v ? *v : -1);
+    printf(&quot;owl -&gt; %d\n&quot;, *map_get(&amp;m, &quot;owl&quot;));
+    printf(&quot;fox -&gt; %s\n&quot;, map_get(&amp;m, &quot;fox&quot;) ? &quot;found&quot; : &quot;not found&quot;);
+
+    map_free(&amp;m);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc map.c -o map &amp;&amp; ./map
+dog -&gt; 5
+owl -&gt; 2
+fox -&gt; not found
+# &quot;dog&quot; was inserted then UPDATED in place — still one entry.
+# valgrind reports 0 leaks: every malloc has its free.</pre></figure>
+
+<p>Read <code>map_put</code> carefully: it first walks the chain to <em>update</em> an existing key (a real map has no duplicate keys), and only then pushes a new entry onto the front of the bucket's list — O(1). Lookup hashes to the right bucket, then walks a chain that is, on average, <em>tiny</em>.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In the chained map, why does <code>map_put</code> walk the bucket’s chain BEFORE inserting?</p><ul><li>To find the end of the list — new entries go at the back</li><li>To check whether the key already exists and update it instead of duplicating</li><li>To count the load factor</li><li>To sort the chain for faster lookup</li></ul><details><summary>Show answer</summary><p><b>To check whether the key already exists and update it instead of duplicating</b> — A map means one value per key. Skipping the check would create duplicate entries, and lookups would forever return the newer one while the stale twin leaks memory. New entries go at the FRONT precisely so insertion stays O(1).</p></details></div>
+
+<h2>Load factor: how full is too full?</h2>
+<p>The <strong>load factor</strong> is entries ÷ buckets. With a good hash and load factor around 1, the average chain has ~1 link — lookups are O(1) <em>on average</em>. Let the table overfill (load factor 10, 100…) and chains stretch — performance slides toward O(n). Real implementations watch the load factor and <strong>resize</strong>: allocate ~double the buckets and re-insert every key (positions change because <code>% nbuckets</code> changed!). One expensive O(n) rehash, amortized over all the O(1) inserts that preceded it — the same doubling trick as the dynamic array from the Big-O lesson.</p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>The worst case is real:</b> if every key lands in one bucket, the "hash table" is a linked list — lookup Θ(n). It happens with awful hash functions, and it happens <em>on purpose</em>: attackers have DoS'd web servers by sending thousands of keys crafted to collide (the 2011 "HashDoS" attack). That's why modern languages seed their hash functions randomly per process.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/hash-tables">This spot has an interactive bigo widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> A hash table’s lookup is best described as…</p><ul><li>Θ(1) guaranteed, always</li><li>O(log n) like all tree structures</li><li>O(1) on average with a good hash & load factor — but Θ(n) worst case</li><li>O(n) on average</li></ul><details><summary>Show answer</summary><p><b>O(1) on average with a good hash & load factor — but Θ(n) worst case</b> — Expected O(1) relies on keys spreading evenly and chains staying short. All keys in one bucket (terrible hash, or a crafted attack) means walking one long chain: Θ(n). Know both halves of that sentence — interviewers check.</p></details></div>
+
+<h2>Why doesn't C just have one built in?</h2>
+<p>Because C has no generics, no standard allocator policy hooks, and a fierce "you don't pay for what you don't use" culture — a one-size-fits-all hash table would fit nobody well. (POSIX does offer the crusty <code>hsearch</code>; almost nobody uses it.) In practice C programmers either write a small one per project, tuned to its keys — like we just did — or grab a library: <b>uthash</b> (a delightfully evil header of macros that hangs a hash handle inside <em>your</em> struct), or GLib's <code>GHashTable</code>. Either way, now you know exactly what's under the hood.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/hash-tables">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>And that's the algorithms toolkit! You can now reason about cost, search, sort, and structure data — next we descend into the machinery that builds it all: the compiler and its toolchain.</p>
+
+<a class="cta" href="../../index.html#/lesson/hash-tables">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../stacks-queues/">← Stacks &amp; queues: LIFO meets FIFO</a>
+<a href="../compilation-pipeline/">The pipeline, under the microscope →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

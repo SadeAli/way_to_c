@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Libraries: static, shared &amp; shipping your code — The C Path</title>
+<meta name="description" content="To draw graphics, compress files, or store data the way real apps do, your program needs code other people wrote — a library — and the first time you try,…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Libraries: static, shared &amp; shipping your code — The C Path">
+<meta property="og:description" content="To draw graphics, compress files, or store data the way real apps do, your program needs code other people wrote — a library — and the first time you try,…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Libraries: static, shared & shipping your code","description":"To draw graphics, compress files, or store data the way real apps do, your program needs code other people wrote — a library — and the first time you try,…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">⚙️ Compiler &amp; Toolchain Mastery</p>
+<h1>Libraries: static, shared &amp; shipping your code</h1>
+<p class="meta">⏱ 16 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/linking-libraries">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>To draw graphics, compress files, or store data the way real apps do, your program needs code other people wrote — a library — and the first time you try, you'll meet two of the most-Googled error messages in all of C: "undefined reference" and "cannot open shared object file". By the end of this final lesson you'll fix both on sight, and you'll know how to package your own code so other programmers can build on it.</p></div>
+
+<p>Every C program you've ever run uses libraries — you've been linking against libc, the library that holds <code>printf</code>, since <code>hello.c</code>. In this final lesson you cross to the other side: <b>building</b> libraries, understanding how the two flavors load, and mastering the linker quirks that generate the internet's most-asked C questions.</p>
+
+<h2>Two flavors of library</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/linking-libraries">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+<table>
+<tr><th></th><th>static <code>.a</code></th><th>shared <code>.so</code></th></tr>
+<tr><td>what it is</td><td>an <code>ar</code> archive of <code>.o</code> files</td><td>a real ELF binary, position-independent</td></tr>
+<tr><td>when resolved</td><td>at link time — code <em>copied into</em> your executable</td><td>at load time — by the dynamic loader <code>ld.so</code></td></tr>
+<tr><td>result</td><td>bigger, self-contained binary</td><td>small binary, one lib shared by all processes</td></tr>
+<tr><td>library updates</td><td>need relink to pick up fixes</td><td>fix the .so, every program benefits at next launch</td></tr>
+</table>
+
+<h2>Building libmymath, both ways</h2>
+<p>Our library is two files — <code>mymath.h</code> (the contract) and <code>mymath.c</code> (the goods):</p>
+<figure class="code"><figcaption>mymath.h + mymath.c + main.c</figcaption><pre><code>/* ---- mymath.h ---- */
+#ifndef MYMATH_H
+#define MYMATH_H
+int square(int x);
+int cube(int x);
+#endif
+
+/* ---- mymath.c ---- */
+#include &quot;mymath.h&quot;
+int square(int x) { return x * x; }
+int cube(int x)   { return x * x * x; }
+
+/* ---- main.c ---- */
+#include &lt;stdio.h&gt;
+#include &quot;mymath.h&quot;
+int main(void) {
+    printf(&quot;6 squared is %d, cubed is %d\n&quot;, square(6), cube(6));
+    return 0;
+}</code></pre></figure>
+<p><b>Static</b> is charmingly low-tech — an archive of object files, made with <code>ar</code>:</p>
+<figure class="code term"><figcaption>static: ar rcs</figcaption><pre>$ gcc -c mymath.c -o mymath.o
+$ ar rcs libmymath.a mymath.o        # r=insert, c=create, s=index
+$ ar t libmymath.a                   # list members
+mymath.o
+$ gcc main.c -L. -lmymath -o app_static
+$ ./app_static
+6 squared is 36, cubed is 216
+$ ls -l app_static                   # square()'s code is INSIDE this file
+-rwxr-xr-x 1 ali ali 16144 Aug  1 14:02 app_static</pre></figure>
+<p><b>Shared</b> needs position-independent code (<code>-fPIC</code>) because the .so may land at any address in any process — remember ASLR from the memory lessons:</p>
+<figure class="code term"><figcaption>shared: -fPIC -shared, and the rite of passage</figcaption><pre>$ gcc -fPIC -c mymath.c -o mymath.o
+$ gcc -shared mymath.o -o libmymath.so
+$ gcc main.c -L. -lmymath -o app
+$ ./app
+./app: error while loading shared libraries: libmymath.so:
+cannot open shared object file: No such file or directory
+# linker found it at build time; the LOADER can't at run time. Fixes:
+$ LD_LIBRARY_PATH=. ./app                      # 1: env var (testing)
+6 squared is 36, cubed is 216
+$ gcc main.c -L. -lmymath -Wl,-rpath,'$ORIGIN' -o app
+$ ./app                                        # 2: rpath baked in
+6 squared is 36, cubed is 216
+# 3 (system-wide): sudo cp libmymath.so /usr/local/lib &amp;&amp; sudo ldconfig</pre></figure>
+<p>That runtime error is the rite of passage: the linker found <code>libmymath.so</code> at <em>build</em> time (thanks to <code>-L.</code>), but the dynamic loader doesn't search your project directory at <em>run</em> time. Three fixes, in increasing order of permanence: <code>LD_LIBRARY_PATH</code> (quick test), an <b>rpath</b> baked into the binary (<code>-Wl,-rpath,'$ORIGIN'</code> = "look next to the executable"), or install to <code>/usr/local/lib</code> and run <code>ldconfig</code> to refresh the loader's cache.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Your program builds fine but at launch says <code>cannot open shared object file</code>. Which stage is failing?</p><ul><li>The compiler — missing header</li><li>The static linker ld at build time</li><li>The dynamic loader ld.so at run time</li><li>The preprocessor</li></ul><details><summary>Show answer</summary><p><b>The dynamic loader ld.so at run time</b> — Build-time -L told ld where the .so was, but that path is not recorded for run time. The dynamic loader searches its cache (ldconfig), standard dirs, rpath, and LD_LIBRARY_PATH — your project directory is in none of them until you act.</p></details></div>
+
+<h2><code>ldd</code>: who do you depend on?</h2>
+<figure class="code term"><figcaption>ldd: the dependency X-ray</figcaption><pre>$ ldd ./app
+        linux-vdso.so.1 (0x00007ffd8e5f2000)
+        libmymath.so =&gt; /home/ali/mathdemo/libmymath.so (0x00007f0e2a614000)
+        libc.so.6 =&gt; /usr/lib/libc.so.6 (0x00007f0e2a400000)
+        /lib64/ld-linux-x86-64.so.2 =&gt; /usr/lib64/ld-linux-x86-64.so.2
+$ ldd ./app_static
+        not a dynamic executable    # statically linked: needs nobody
+# security note: never run ldd on untrusted binaries — it may execute them.</pre></figure>
+
+<h2>The linking-order trap</h2>
+<p>The single most-Googled linker error is self-inflicted:</p>
+<figure class="code term"><figcaption>order matters!</figcaption><pre>$ gcc -lmymath main.c -L. -o app          # library BEFORE the code
+/usr/bin/ld: /tmp/ccJx4Fzq.o: in function `main':
+main.c:(.text+0x1a): undefined reference to `square'
+main.c:(.text+0x2c): undefined reference to `cube'
+collect2: error: ld returned 1 exit status
+$ gcc main.c -L. -lmymath -o app          # code first, THEN library
+$ echo $?
+0</pre></figure>
+<p>Why? The linker scans left to right, keeping a list of unresolved symbols. When it meets a library, it takes <em>only</em> the members that satisfy the list <em>so far</em> — then moves on and never looks back. <code>-lmymath</code> before <code>main.c</code> means: "any needs? no? moving on" — and by the time <code>main.o</code> asks for <code>square</code>, the library is behind us. <b>Rule: objects first, then <code>-l</code> flags, with libraries after the code that needs them.</b> (This is also why <code>-lm</code> traditionally goes last.)</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why does <code>gcc -lmymath main.c</code> fail while <code>gcc main.c -lmymath</code> works?</p><ul><li>-l flags are only valid at the end of the line</li><li>The linker scans left to right and pulls from a library only symbols already known to be needed</li><li>main.c shadows the library’s symbols</li><li>Libraries must be compiled last for ABI reasons</li></ul><details><summary>Show answer</summary><p><b>The linker scans left to right and pulls from a library only symbols already known to be needed</b> — A single left-to-right pass: when libmymath is visited, nothing needs square() yet, so nothing is taken. main.o’s needs arise later, unmet. Objects and sources first, libraries after — with each library after the code that uses it.</p></details></div>
+
+<h2>Using any third-party library: the universal recipe</h2>
+<p>Every C library on Earth is consumed the same two-part way — <b>header for the compiler, lib for the linker</b>:</p>
+<figure class="code"><figcaption>using an installed library: header + lib</figcaption><pre><code>/* zdemo.c — compress a string with zlib, the classic C library */
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;zlib.h&gt;                 /* 1) header: declarations   */
+
+int main(void) {
+    const char *text = &quot;hello hello hello hello hello!&quot;;
+    unsigned char out[128];
+    uLongf outlen = sizeof out;
+
+    compress(out, &amp;outlen, (const Bytef *)text, strlen(text) + 1);
+    printf(&quot;%zu bytes -&gt; %lu bytes\n&quot;, strlen(text) + 1, outlen);
+    return 0;
+}                                 /* 2) lib: gcc ... -lz       */</code></pre></figure>
+<figure class="code term"><figcaption>pkg-config: ask, don’t guess</figcaption><pre>$ gcc zdemo.c -o zdemo
+/usr/bin/ld: /tmp/ccj2mQ8v.o: undefined reference to `compress'
+# header satisfied the COMPILER; the LINKER still needs the code:
+$ pkg-config --cflags --libs zlib
+-lz
+$ gcc zdemo.c $(pkg-config --cflags --libs zlib) -o zdemo
+$ ./zdemo
+31 bytes -&gt; 19 bytes
+# same recipe for every library: sdl2, gtk4, openssl, sqlite3...
+$ pkg-config --cflags --libs sqlite3
+-lsqlite3</pre></figure>
+<p><code>pkg-config</code> is the standard directory service: installed libraries register their flags, and you splice them in with shell substitution. No more guessing include paths.</p>
+
+<h2>Symbol visibility: a library's public face</h2>
+<p>By default, <em>every</em> non-<code>static</code> function in your .so is exported — your internal helpers become someone's load-bearing dependency. Professionals flip the default with <code>-fvisibility=hidden</code>, then explicitly mark the API:</p>
+<figure class="code"><figcaption>visibility.c — a deliberate public API</figcaption><pre><code>/* build with: gcc -fPIC -shared -fvisibility=hidden ... */
+#define API __attribute__((visibility(&quot;default&quot;)))
+
+API int mylib_open(const char *path);   /* exported            */
+API int mylib_close(int h);             /* exported            */
+
+int helper_parse(const char *s);        /* hidden: internal    */
+static int table_size;                  /* static: file-local  */</code></pre></figure>
+<p>Smaller symbol tables, faster load times, freedom to refactor internals. (This is the extern/static distinction from the scope lesson, scaled up to whole libraries.)</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> A library is built with <code>-fvisibility=hidden</code>. What happens to functions not marked <code>visibility("default")</code>?</p><ul><li>They are deleted from the binary</li><li>They still exist and work inside the .so but are invisible to programs linking against it</li><li>They become static and can’t cross files</li><li>They cause a link error</li></ul><details><summary>Show answer</summary><p><b>They still exist and work inside the .so but are invisible to programs linking against it</b> — Hidden symbols work normally within the library — internal callers are unaffected — but they don’t appear in the dynamic export table, so outside code can’t link to them. Your internals stay yours.</p></details></div>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Naming ritual:</b> the file must be named <code>lib<i>name</i>.a</code> / <code>lib<i>name</i>.so</code> for <code>-l<i>name</i></code> to find it — <code>-lmymath</code> literally means "search the -L paths for libmymath.so, then libmymath.a". Forget the <code>lib</code> prefix on the file and the linker will never find it.</p></div></div>
+
+<h2>Practice</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/linking-libraries">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<h2>🎓 You made it</h2>
+<p>Look at the road behind you: bits and two's complement, pointers and the heap, every qualifier and storage class, the preprocessor, C23, the standard library, algorithms — and now the entire toolchain, from preprocessor tokens to relocated ELF symbols. <b>You are not a beginner anymore. You are a C programmer.</b></p>
+<div class="callout fun"><div class="co-ic">🎉</div><div class="co-body"><p><b>Where to go next:</b></p>
+<ul>
+<li><b>Build things.</b> Nothing cements C like projects: a shell, an HTTP server, a text editor, an interpreter, a ray tracer. Pick one that scares you slightly.</li>
+<li><b>Read the classics:</b> Kernighan &amp; Ritchie's <i>The C Programming Language</i> (see the language through its creators' eyes) and Jens Gustedt's <i>Modern C</i> (free online — the C17/C23 view).</li>
+<li><b>Read real code:</b> curl, SQLite, Redis, and the Linux kernel are masterclasses in C style — and every <code>__attribute__</code>, Makefile, and linker trick you now recognize.</li>
+<li><b>Contribute to open source:</b> find a C project you use, run its test suite under ASan, fix a warning, submit the patch. Welcome to the community.</li>
+</ul></div></div>
+
+<p>The toolchain is yours, the language is yours — now go compile something that didn't exist yesterday. 🚀</p>
+
+<a class="cta" href="../../index.html#/lesson/linking-libraries">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../debugging-tools/">← The debugging arsenal: gdb, valgrind &amp; sanitizers</a>
+<span></span>
+</nav>
+</article>
+</div>
+</body>
+</html>

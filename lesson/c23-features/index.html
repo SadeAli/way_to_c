@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C23: the grand tour — The C Path</title>
+<meta name="description" content="Remember pulling in a whole header just to get true and false , or discovering that NULL is secretly the number 0? The newest edition of C fixes those…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="C23: the grand tour — The C Path">
+<meta property="og:description" content="Remember pulling in a whole header just to get true and false , or discovering that NULL is secretly the number 0? The newest edition of C fixes those…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"C23: the grand tour","description":"Remember pulling in a whole header just to get true and false , or discovering that NULL is secretly the number 0? The newest edition of C fixes those…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🚀 Modern C (C11 → C23)</p>
+<h1>C23: the grand tour</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/c23-features">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Remember pulling in a whole header just to get <code>true</code> and <code>false</code>, or discovering that <code>NULL</code> is secretly the number 0? The newest edition of C fixes those everyday annoyances you've been living with all course. This tour shows you the C you'll be reading for the next decade — and tells you exactly which parts your compiler already supports today.</p></div>
+
+<p>C23 (the 2024 edition of the official C standard) is the biggest update to C since C99. Its theme: <em>make the clean way the default way</em> — real booleans, a null pointer that finally has a type of its own, honest constants, and a bag of features C programmers had been faking with macros for decades. Fair warning: your playground compiler here is older, so this lesson's examples are read-and-believe; to run them yourself you'll need <strong>gcc 13+ or clang 16+</strong> with <code>-std=c23</code> (older gcc spells it <code>-std=c2x</code>).</p>
+
+<h2>The everyday wins</h2>
+<p><code>bool</code>, <code>true</code>, and <code>false</code> are now <strong>keywords</strong> — no more <code>&lt;stdbool.h&gt;</code>. <code>nullptr</code> is a null pointer constant with its own type <code>nullptr_t</code>, fixing the old ambiguity where <code>NULL</code> might be plain <code>0</code> (an int!). <code>constexpr</code> makes genuine compile-time constant <em>objects</em> — something <code>const</code> never was in C. And <code>auto</code> + <code>typeof</code> let you name types you'd rather not spell:</p>
+
+<figure class="code"><figcaption>tour1.c — needs gcc 13+ / clang 16+, -std=c23</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    bool ok = true;                /* keywords — no &lt;stdbool.h&gt;      */
+    int *p = nullptr;              /* typed null (type: nullptr_t)   */
+
+    constexpr int max_users = 64;  /* a REAL compile-time constant   */
+    int table[max_users];          /* fixed-size array, not a VLA!   */
+    static_assert(max_users % 8 == 0, &quot;must be a multiple of 8&quot;);
+
+    auto half = max_users / 2;     /* type inferred: int             */
+    typeof(half) other = 7;        /* &quot;same type as half&quot; — int      */
+
+    printf(&quot;ok=%d slots=%zu half=%d other=%d p-null=%d\n&quot;,
+           ok, sizeof table / sizeof table[0], half, other,
+           p == nullptr);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c23 -Wall tour1.c -o tour1 &amp;&amp; ./tour1
+ok=1 slots=64 half=32 other=7 p-null=1
+# printf has no bool/nullptr conversions — %d for bool and a
+# comparison for the pointer do the job</pre></figure>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Why <code>constexpr</code> matters:</b> in C17, <code>const int n = 64; int a[n];</code> gives you a <em>variable-length array</em>, because a const variable is not a constant expression — one of C's oldest gotchas (and why everyone used <code>#define</code> or <code>enum</code> for sizes). A <code>constexpr</code> object is a true constant: usable in array sizes, <code>case</code> labels, and <code>static_assert</code>. Note C23 has constexpr <em>objects</em> only — no constexpr functions; that's still C++-land.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In C17, why was <code>const int n = 64; int a[n];</code> a VLA, and what fixes it in C23?</p><ul><li>It wasn’t a VLA; nothing to fix</li><li>const variables aren’t constant expressions; <code>constexpr</code> objects are</li><li>VLAs were removed in C23</li><li>The fix is <code>static const</code></li></ul><details><summary>Show answer</summary><p><b>const variables aren’t constant expressions; <code>constexpr</code> objects are</b> — In C, const means "read-only", not "known at compile time" — so n can’t size a fixed array or label a case. constexpr n = 64 is a genuine integer constant expression, closing a 30-year gap with C++.</p></details></div>
+
+<h2>New numbers: <code>_BitInt</code>, binary literals, digit separators</h2>
+<p>Need exactly 12 bits — for a hardware register, a file format, an FPGA interface? <code>_BitInt(N)</code> is an integer type of exactly N bits, for any N up to at least 64 (gcc on x86-64 allows 65535!). Unlike <code>char</code>/<code>short</code>, small <code>_BitInt</code>s do <em>not</em> promote to <code>int</code> behind your back. Alongside: binary literals (<code>0b1010</code>) are finally standard, and <code>'</code> separates digit groups:</p>
+
+<figure class="code"><figcaption>tour2.c — needs gcc 14+ / clang 14+, -std=c23</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    /* exactly 12 bits, with a binary literal + digit separators: */
+    unsigned _BitInt(12) reg = 0b1111'1111'1111uwb;   /* 4095 */
+
+    unsigned _BitInt(4) nibble = 15uwb;
+    nibble++;                       /* wraps mod 2^4              */
+
+    int budget = 1'000'000;         /* separators work everywhere */
+
+    printf(&quot;reg    = %u (max of 12 bits)\n&quot;, (unsigned)reg);
+    printf(&quot;nibble = %u (15 + 1 wrapped)\n&quot;, (unsigned)nibble);
+    printf(&quot;budget = %d\n&quot;, budget);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c23 tour2.c -o tour2 &amp;&amp; ./tour2
+reg    = 4095 (max of 12 bits)
+nibble = 0 (15 + 1 wrapped)
+budget = 1000000
+# wb/uwb suffixes make _BitInt literals; unsigned _BitInt wraps
+# like any unsigned type — just at YOUR chosen width</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is <code>unsigned _BitInt(12)</code>?</p><ul><li>A 12-byte integer</li><li>A bit-field only usable in structs</li><li>An unsigned integer of exactly 12 bits</li><li>A gcc extension, not standard C</li></ul><details><summary>Show answer</summary><p><b>An unsigned integer of exactly 12 bits</b> — C23’s _BitInt(N) gives an integer of exactly N bits, usable anywhere a normal integer is — parameters, arrays, arithmetic. Value range here: 0 to 4095. Bonus: unlike short/char, small _BitInts don’t silently promote to int.</p></details></div>
+
+<h2>Attributes: <code>[[...]]</code></h2>
+<p>C23 standardizes the double-bracket attribute syntax (shared with C++) — portable replacements for a zoo of <code>__attribute__((...))</code> extensions:</p>
+
+<figure class="code"><figcaption>attrs.c — needs gcc 13+ / clang 16+, -std=c23</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+[[nodiscard]] int reserve(int n) { return n &gt; 0 ? 0 : -1; }
+
+[[deprecated(&quot;use reserve() instead&quot;)]]
+int old_reserve(int n) { return reserve(n); }
+
+int main(void) {
+    reserve(8);                     /* warning: value ignored     */
+    old_reserve(8);                 /* warning: deprecated        */
+
+    [[maybe_unused]] int dbg = 42;  /* no unused-variable warning */
+
+    int x = 1;
+    switch (x) {
+    case 1:
+        puts(&quot;one&quot;);
+        [[fallthrough]];            /* intentional — no warning   */
+    case 2:
+        puts(&quot;two&quot;);
+        break;
+    }
+
+    int zeros[4] = {};              /* C23 empty initializer      */
+    printf(&quot;%d %d\n&quot;, zeros[0], zeros[3]);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c23 -Wall -Wextra attrs.c -o attrs
+attrs.c:9:5: warning: ignoring return value of 'reserve', declared with attribute 'nodiscard'
+attrs.c:10:5: warning: 'old_reserve' is deprecated: use reserve() instead
+$ ./attrs
+one
+two
+0 0
+# attributes turn code-review comments into compiler-enforced rules</pre></figure>
+
+<table>
+<tr><th>attribute</th><th>meaning</th></tr>
+<tr><td><code>[[nodiscard]]</code></td><td>warn if a caller ignores the return value (great for error codes)</td></tr>
+<tr><td><code>[[deprecated("why")]]</code></td><td>warn on any use, with your migration hint</td></tr>
+<tr><td><code>[[maybe_unused]]</code></td><td>suppress unused-variable/parameter warnings, on purpose</td></tr>
+<tr><td><code>[[fallthrough]]</code></td><td>"yes, this switch case falls through intentionally"</td></tr>
+<tr><td><code>[[noreturn]]</code></td><td>the modern spelling from the noreturn lesson</td></tr>
+</table>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>[[nodiscard]]</code> on a function do?</p><ul><li>Prevents the function being optimized out</li><li>Warns when a caller ignores its return value</li><li>Makes the return value constexpr</li><li>Stops the value being copied</li></ul><details><summary>Show answer</summary><p><b>Warns when a caller ignores its return value</b> — It’s for functions whose return value IS the point — error codes, handles, computed results. Ignoring such a value is almost always a bug (think: ignoring malloc’s result), and nodiscard makes the compiler say so.</p></details></div>
+
+<h2>The rest of the goodie bag</h2>
+<ul>
+<li><b>Empty initializer:</b> <code>int arr[100] = {};</code> — zero everything, no more <code>{0}</code> folklore.</li>
+<li><b>Enums grow up:</b> pick the underlying type — <code>enum flags : unsigned char { … };</code> — and enumerators may exceed <code>int</code> range.</li>
+<li><b><code>#embed</code>:</b> include a binary file's bytes directly in an array — the end of xxd-generated header files:</li>
+</ul>
+
+<figure class="code"><figcaption>embed.c — needs gcc 15+ / clang 19+</figcaption><pre><code>/* The whole file logo.png becomes bytes in the array —
+   at PREPROCESSING time. No xxd, no build scripts. */
+static const unsigned char logo[] = {
+    #embed &quot;logo.png&quot;
+};
+
+/* before C23, everyone generated this by hand:
+   static const unsigned char logo[] = { 0x89, 0x50, 0x4e, 0x47, ... }; */</code></pre></figure>
+
+<div class="sq"><p class="sq-q">🤔 C23 quickie: <code>constexpr int n = 3; auto x = n + 0.5;</code> — what does <code>printf("%zu", sizeof x);</code> print on x86-64?</p><details><summary>Think first</summary><p><b>8.</b> The expression <code>n + 0.5</code> mixes int with double, so usual arithmetic conversions make it a <code>double</code> — and <code>auto</code> deduces exactly that: <code>x</code> is a <code>double</code> (8 bytes), not an int. <code>auto</code> saves typing, but the type it picks follows C’s ordinary expression rules — keep them in your head, not just in the compiler’s.</p></details></div>
+
+<h2>Can I actually use it?</h2>
+<table>
+<tr><th>feature</th><th>gcc</th><th>clang</th></tr>
+<tr><td>bool/true/false, nullptr, typeof, auto, {}, attributes</td><td>13+</td><td>16+</td></tr>
+<tr><td><code>_BitInt</code></td><td>14+</td><td>14+ (it pioneered as _ExtInt)</td></tr>
+<tr><td><code>constexpr</code> objects</td><td>13+</td><td>19+</td></tr>
+<tr><td><code>#embed</code></td><td>15+</td><td>19+</td></tr>
+</table>
+<p>Compile with <code>gcc -std=c23 -Wall</code> (gcc 13: <code>-std=c2x</code>). Check <code>__STDC_VERSION__</code> — C23 defines it as <code>202311L</code>. Broad rule: on a 2024-or-later toolchain, everything above just works; on distro compilers a year or two older, the everyday wins work but check the table.</p>
+
+<p>🎉 And with that, you've met <b>every keyword in the C language</b> — from <code>auto</code> (both meanings!) to <code>_Static_assert</code>. Next stop, Part 6: the standard library, where we put the whole language to work.</p>
+
+<a class="cta" href="../../index.html#/lesson/c23-features">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../complex-imaginary/">← _Complex: C does imaginary numbers natively</a>
+<a href="../stdio-lib/">stdio.h: printf, scanf &amp; files, done right →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

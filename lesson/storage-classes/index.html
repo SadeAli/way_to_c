@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>auto, register, static, extern: who lives where, seen by whom — The C Path</title>
+<meta name="description" content="You've already met a variable that quietly survives between function calls — that was static at work, one of four small keywords with outsized power. And…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="auto, register, static, extern: who lives where, seen by whom — The C Path">
+<meta property="og:description" content="You've already met a variable that quietly survives between function calls — that was static at work, one of four small keywords with outsized power. And…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"auto, register, static, extern: who lives where, seen by whom","description":"You've already met a variable that quietly survives between function calls — that was static at work, one of four small keywords with outsized power. And…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🧬 Types &amp; Qualifiers, In Depth</p>
+<h1>auto, register, static, extern: who lives where, seen by whom</h1>
+<p class="meta">⏱ 15 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/storage-classes">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>You've already met a variable that quietly survives between function calls — that was <code>static</code> at work, one of four small keywords with outsized power. And the moment your project grows past a single file, the same keywords decide which names other files can use and which stay hidden: <code>static</code> doubles as C's version of "private".</p></div>
+
+<p>Every variable in a C program has two hidden properties: a <strong>storage duration</strong> (how long it exists) and a <strong>linkage</strong> (which parts of the program can refer to it by name). Four keywords — <code>auto</code>, <code>register</code>, <code>static</code>, <code>extern</code> — are how you control both; C calls them the <em>storage classes</em>.</p>
+
+<h2>The two easy ones: auto and register</h2>
+<p><code>auto</code> means "ordinary local variable, dies with its block" — which is the <em>default</em> for locals, so nobody ever writes it. (C23 recycled the keyword for type inference, <code>auto x = 3.14;</code>, giving it its first real job in 50 years.)</p>
+<p><code>register</code> asks the compiler to keep a variable in a CPU register. Modern optimizers ignore the hint — they allocate registers far better than you — but one enforceable effect remains: <strong>you cannot take the address</strong> of a <code>register</code> variable. <code>&amp;r</code> is a compile error.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is the only <em>enforced</em> effect of <code>register int r;</code> in modern C?</p><ul><li>r is guaranteed to live in a CPU register</li><li>Programs run measurably faster</li><li>Taking &amp;r is a compile error</li><li>r cannot be modified</li></ul><details><summary>Show answer</summary><p><b>Taking &amp;r is a compile error</b> — The register hint is freely ignorable (and ignored), but the address-of ban is real: something with no memory address cannot yield one, so the standard forbids &r outright.</p></details></div>
+
+<h2>static, meaning #1: the local that never dies</h2>
+<p>Inside a function, <code>static</code> moves a variable from the stack to static storage. It's initialized <em>once, before main runs</em>, and keeps its value between calls — while remaining visible only inside its function:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/storage-classes">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> How many times does <code>static int id = 0;</code> initialize <code>id</code> across 1000 calls?</p><ul><li>1000 times</li><li>Once per program run, before main begins</li><li>Once per call, but only if id changed</li><li>Zero — statics are never initialized</li></ul><details><summary>Show answer</summary><p><b>Once per program run, before main begins</b> — Static-duration objects are initialized exactly once, at program startup (conceptually — the value is baked into the .data segment of the executable). The = 0 line is not executable code.</p></details></div>
+
+<h2>Translation units and linkage: the mental model</h2>
+<p>Each <code>.c</code> file (after preprocessing) is a <strong>translation unit</strong>, compiled in complete isolation. The linker later stitches them together by matching names. Linkage is a name's "networking setting":</p>
+<table>
+<tr><th>linkage</th><th>who can reference it</th><th>how you get it</th></tr>
+<tr><td><b>external</b></td><td>any translation unit</td><td>file-scope things, by default</td></tr>
+<tr><td><b>internal</b></td><td>this translation unit only</td><td>file-scope + <code>static</code></td></tr>
+<tr><td><b>none</b></td><td>just its own scope</td><td>locals, parameters</td></tr>
+</table>
+
+<h2>static, meanings #2 and #3: privacy at file scope</h2>
+<p>At file scope, <code>static</code> means something completely different: <strong>internal linkage</strong>. A <code>static</code> global or a <code>static</code> function is invisible to every other <code>.c</code> file — it's <code>private</code>, C style. Marking every helper function <code>static</code> is a hallmark of well-organized C: it prevents name collisions across files and tells readers "the whole story of this function is right here."</p>
+
+<h2>extern: "it exists, but elsewhere"</h2>
+<p><code>extern</code> turns a definition into a mere <em>declaration</em> — a promise to the compiler that some other translation unit defines the object. Here's the whole dance in two files:</p>
+<figure class="code"><figcaption>counter.c — the defining file</figcaption><pre><code>/* counter.c */
+static int secret = 0;      /* internal linkage: THIS file only */
+int counter = 0;            /* external linkage: the definition */
+
+static void audit(void) {   /* private helper — file-local      */
+    /* ... */
+}
+
+void bump(void) {           /* external: callable from anywhere */
+    secret++;
+    counter++;
+    audit();
+}</code></pre></figure>
+<figure class="code"><figcaption>main.c — the using file</figcaption><pre><code>/* main.c */
+#include &lt;stdio.h&gt;
+
+extern int counter;   /* declaration: &quot;defined in another TU&quot; */
+void bump(void);      /* function declarations are extern-by-default */
+
+int main(void) {
+    bump(); bump(); bump();
+    printf(&quot;counter = %d\n&quot;, counter);
+
+    /* audit();            link error: internal to counter.c  */
+    /* printf(&quot;%d&quot;, secret);  compile error: not declared here */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc main.c counter.c -o app &amp;&amp; ./app
+counter = 3
+# each .c compiled separately; the linker matched 'counter' and 'bump'</pre></figure>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Definition vs declaration:</b> <code>int counter = 0;</code> allocates storage — exactly one TU may do this. <code>extern int counter;</code> allocates nothing and may appear in a thousand files (put it in a header!). A file-scope <code>int counter;</code> with no initializer is a <em>tentative definition</em> — it becomes a real zero-initialized definition if nothing else in the TU defines it. Historically linkers merged duplicate tentative definitions across files ("common symbols"), but since GCC 10 (<code>-fno-common</code> default) duplicates are a link error — as the standard always intended. Define once; <code>extern</code> everywhere else.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> A helper function in <code>parse.c</code> should not be callable from other files. The idiomatic fix?</p><ul><li>Name it with a leading underscore</li><li>Declare it <code>static</code> — internal linkage hides it from the linker</li><li>Declare it <code>extern</code></li><li>Move it inside main()</li></ul><details><summary>Show answer</summary><p><b>Declare it <code>static</code> — internal linkage hides it from the linker</b> — static at file scope is C's "private". Bonus effects: no risk of colliding with a same-named function elsewhere, and the compiler can optimize harder (even discard it entirely after inlining) since it can see every caller.</p></details></div>
+
+<h2>Cheat sheet</h2>
+<table>
+<tr><th>where written</th><th>keyword</th><th>duration</th><th>linkage</th></tr>
+<tr><td>in a function</td><td>(none / <code>auto</code>)</td><td>the block</td><td>none</td></tr>
+<tr><td>in a function</td><td><code>static</code></td><td>whole program</td><td>none</td></tr>
+<tr><td>file scope</td><td>(none)</td><td>whole program</td><td>external</td></tr>
+<tr><td>file scope</td><td><code>static</code></td><td>whole program</td><td><b>internal</b></td></tr>
+<tr><td>anywhere</td><td><code>extern</code></td><td>—</td><td>refers to external</td></tr>
+</table>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/storage-classes">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>One function-shaped keyword remains in the storage-class family tree, and it's the strangest of the bunch: <code>inline</code>.</p>
+
+<a class="cta" href="../../index.html#/lesson/storage-classes">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../sizeof/">← sizeof: the measuring-tape operator</a>
+<a href="../inline/">inline: a hint, a header trick, and a weird rule →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

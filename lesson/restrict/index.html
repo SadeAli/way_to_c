@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>restrict: the no-aliasing promise — The C Path</title>
+<meta name="description" content="The C library ships two functions — memcpy and memmove — that seem to do exactly the same job. The entire difference is one promise about overlapping data:…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="restrict: the no-aliasing promise — The C Path">
+<meta property="og:description" content="The C library ships two functions — memcpy and memmove — that seem to do exactly the same job. The entire difference is one promise about overlapping data:…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"restrict: the no-aliasing promise","description":"The C library ships two functions — memcpy and memmove — that seem to do exactly the same job. The entire difference is one promise about overlapping data:…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🧬 Types &amp; Qualifiers, In Depth</p>
+<h1>restrict: the no-aliasing promise</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/restrict">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>The C library ships two functions — <code>memcpy</code> and <code>memmove</code> — that seem to do exactly the same job. The entire difference is one promise about overlapping data: a promise that lets the compiler copy dramatically faster, and silently breaks your program if you ever make it falsely. This lesson shows you when to make that promise in your own code — and when you absolutely must not.</p></div>
+
+<p>Two pointers <strong>alias</strong> when they refer to the same memory. Aliasing is legal, common — and quietly devastating for performance, because the compiler must assume it's happening <em>everywhere</em>. <code>restrict</code>, added in C99 — the 1999 edition of the C standard — is your way of saying: "through this pointer, and this pointer alone, will this data be accessed — optimize accordingly."</p>
+
+<h2>Seeing the problem</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/restrict">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+<figure class="code"><figcaption>alias.c — same function, two personalities</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+void add_twice(int *val, int *inc) {
+    *val += *inc;
+    *val += *inc;
+}
+
+int main(void) {
+    int a = 3, b = 10;
+    add_twice(&amp;a, &amp;b);      /* distinct objects        */
+    printf(&quot;distinct: %d\n&quot;, a);
+
+    int x = 3;
+    add_twice(&amp;x, &amp;x);      /* aliased! val == inc     */
+    printf(&quot;aliased : %d\n&quot;, x);
+    return 0;
+}</code></pre></figure>
+<div class="sq"><p class="sq-q">🤔 What are the two printed values?</p><details><summary>Think first</summary><p><code>distinct: 23</code> (3+10+10) but <code>aliased : 12</code> — the first <code>*val += *inc</code> doubles x to 6, and the second one reads the <em>updated</em> value: 6+6 = 12. Same source line, different meaning, purely because of aliasing. This is why the compiler cannot rewrite the body into the "obvious" <code>*val += 2 * *inc;</code>.</p></details></div>
+<p>Because that aliased outcome is <em>possible</em>, the compiler must compile the paranoid version: load <code>*inc</code>, add, <strong>store</strong>, load <code>*inc</code> <em>again</em> (it might have changed!), add, store. Every write through one pointer forces re-reads through others. In a loop over big arrays, this poisons everything — especially vectorization, which needs to process many elements in flight at once.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why must the compiler re-load <code>*inc</code> after the store to <code>*val</code> (without restrict)?</p><ul><li>int loads cannot be cached in registers</li><li>val and inc might point to the same object, so the store may have changed *inc</li><li>Function parameters are always volatile</li><li>It does not — compilers always keep it in a register</li></ul><details><summary>Show answer</summary><p><b>val and inc might point to the same object, so the store may have changed *inc</b> — The mere possibility of aliasing forces the reload. The compiler must generate code that is correct for EVERY legal call, including add_twice(&x, &x).</p></details></div>
+
+<h2>The fix: a promise, and the payoff</h2>
+<figure class="code"><figcaption>restrict.c — the promise and the generated code</figcaption><pre><code>void add_twice(int *restrict val, int *restrict inc) {
+    *val += *inc;      /* compiler may now assume val != inc  */
+    *val += *inc;
+}
+
+/* gcc -O2, x86-64:
+      without restrict          with restrict
+      mov  eax, [rsi]           mov  eax, [rsi]
+      add  [rdi], eax           add  eax, eax      ; 2 * *inc
+      mov  eax, [rsi]  ; reload mov  [rdi]... one store, no reload
+      add  [rdi], eax                                            */</code></pre></figure>
+<p>With <code>restrict</code>, the second <code>*inc</code> load disappears — the compiler keeps it in a register. In real loops the win is far bigger: proving arrays don't overlap is exactly what lets the compiler unleash SIMD instructions and process 4–8 elements per cycle.</p>
+
+<h2>The standard library's own example: memcpy vs memmove</h2>
+<p>You've been using restrict all along — look at these real prototypes from <code>&lt;string.h&gt;</code>:</p>
+<figure class="code"><figcaption>string.h (excerpt) — restrict in the wild</figcaption><pre><code>void *memcpy(void *restrict dst,
+             const void *restrict src, size_t n);
+                        /* YOU promise: no overlap    */
+
+void *memmove(void *dst, const void *src, size_t n);
+                        /* overlap allowed, handled   */</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ cat overlap.c
+# shifting &quot;abcdef&quot; right by two, in place:
+#   memmove(s + 2, s, 4)  -&gt; safe, prints &quot;ababcd&quot;
+#   memcpy (s + 2, s, 4)  -&gt; UB: breaks memcpy's restrict contract
+$ gcc -O2 overlap.c &amp;&amp; ./a.out
+ababcd
+# the memcpy version may &quot;work&quot;, corrupt data, or change with any upgrade</pre></figure>
+<p><code>memcpy</code> declares both pointers <code>restrict</code>: you promise no overlap, so it may copy with the fastest possible wide, reordered loads and stores. <code>memmove</code> makes no such promise — it must check the direction and copy carefully, slightly slower but overlap-safe. Same job, different contract: that's restrict in a nutshell.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> You need to copy a region two bytes to the right <em>within the same buffer</em>. Which call is correct?</p><ul><li><code>memcpy(buf+2, buf, n)</code> — it is faster</li><li><code>memmove(buf+2, buf, n)</code> — its contract permits overlap</li><li>Either; they are interchangeable</li><li>Neither; overlapping copies are impossible in C</li></ul><details><summary>Show answer</summary><p><b><code>memmove(buf+2, buf, n)</code> — its contract permits overlap</b> — The regions overlap, and memcpy's restrict-qualified parameters make overlap UB. memmove exists precisely for this: it detects direction and copies safely. When in doubt, memmove — correctness first.</p></details></div>
+
+<h2>It's a promise YOU make — and UB if you break it</h2>
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><code>restrict</code> is completely unchecked. The compiler cannot verify your pointers don't overlap — it simply <em>believes you</em> and optimizes on that basis. Call <code>memcpy</code> with overlapping buffers, or pass the same array as both <code>src</code> and <code>dst</code> of a restrict-qualified function, and you get <strong>undefined behavior</strong>: code that "worked for years" breaks on the next compiler upgrade, and the compiler is blameless. If overlap is even <em>possible</em>, don't write restrict.</p></div></div>
+
+<p>Precisely stated, the promise is: during the lifetime of a <code>restrict</code> pointer, if the object it points to is <em>modified</em>, then all access to that object happens through that pointer (or expressions derived from it, like <code>p + i</code>). Read-only sharing is fine — modification is what triggers the exclusivity clause.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What happens if you break a restrict promise?</p><ul><li>The compiler detects it and warns</li><li>A runtime exception</li><li>Nothing — restrict is only documentation</li><li>Undefined behavior: the optimizer generated code assuming no aliasing</li></ul><details><summary>Show answer</summary><p><b>Undefined behavior: the optimizer generated code assuming no aliasing</b> — restrict is an unchecked contract. The compiler bakes the no-aliasing assumption into the generated instructions; if reality disagrees, those instructions compute garbage. No diagnostic is required, and none typically comes.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/restrict">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>restrict is one honest conversation between you and the optimizer; next we tackle the whole system of type conversations C holds behind your back — implicit conversions, promotions, and casts.</p>
+
+<a class="cta" href="../../index.html#/lesson/restrict">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../inline/">← inline: a hint, a header trick, and a weird rule</a>
+<a href="../casting-conversions/">Conversions &amp; casts: C changes your types behind your back →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

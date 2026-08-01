@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inline assembly: when C must step aside — The C Path</title>
+<meta name="description" content="How do benchmarking tools time code more precisely than any stopwatch? They ask the CPU itself how many ticks have passed — using an instruction that C has…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Inline assembly: when C must step aside — The C Path">
+<meta property="og:description" content="How do benchmarking tools time code more precisely than any stopwatch? They ask the CPU itself how many ticks have passed — using an instruction that C has…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Inline assembly: when C must step aside","description":"How do benchmarking tools time code more precisely than any stopwatch? They ask the CPU itself how many ticks have passed — using an instruction that C has…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">⚙️ Compiler &amp; Toolchain Mastery</p>
+<h1>Inline assembly: when C must step aside</h1>
+<p class="meta">⏱ 16 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/inline-assembly">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>How do benchmarking tools time code more precisely than any stopwatch? They ask the CPU itself how many ticks have passed — using an instruction that C has no words for. Today you'll learn to smuggle raw CPU instructions into ordinary C, and as a finale you'll print text by talking straight to the operating system, with zero help from any library.</p></div>
+
+<p>Sometimes you need an instruction C simply cannot express: read the CPU's cycle counter (the chip's own tick-counting clock), ask the processor what features it supports, or call the operating system directly with no library in between. GCC's <b>extended asm</b> lets you drop assembly into a C function — with the compiler still deciding which registers your values live in. Honest advice up front: you will need this <em>almost never</em>, and intrinsics — friendlier function-shaped versions of special instructions, covered below — are usually saner. But understanding it beats blindly pasting snippets from forums, and it teaches you how the compiler really thinks.</p>
+
+<h2>Anatomy: four sections, separated by colons</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/inline-assembly">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+<figure class="code"><figcaption>asmadd.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a = 40, b = 2, sum;
+    __asm__ (&quot;lea (%1,%2), %0&quot;     /* sum = a + b, the scenic way */
+             : &quot;=r&quot;(sum)           /* output: any register, write-only */
+             : &quot;r&quot;(a), &quot;r&quot;(b));    /* inputs: any registers            */
+    printf(&quot;%d\n&quot;, sum);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc asmadd.c -o asmadd &amp;&amp; ./asmadd
+42
+$ gcc -S -O2 asmadd.c &amp;&amp; grep -A1 lea asmadd.s
+        lea (%eax,%edx), %ecx
+# GCC chose eax, edx, ecx for %1, %2, %0 — our template, its registers.</pre></figure>
+<p>Read it like a contract with the compiler: "here's a template; put these C values in registers for me; I'll leave results in those; and by the way, I also trash these." The <code>%0</code>, <code>%1</code>, <code>%2</code> in the template are the operands, numbered in the order listed — outputs first. GCC picks the actual registers, then pastes the template into its own output. It <b>never parses your assembly</b> — it trusts the contract completely, which is exactly why lying in the contract causes spectacular bugs.</p>
+
+<h2>The constraint mini-language</h2>
+<table>
+<tr><th>constraint</th><th>meaning</th></tr>
+<tr><td><code>r</code></td><td>any general-purpose register</td></tr>
+<tr><td><code>m</code></td><td>a memory operand (the variable's address)</td></tr>
+<tr><td><code>i</code></td><td>an immediate (compile-time constant)</td></tr>
+<tr><td><code>a d S D</code></td><td>specifically rax, rdx, rsi, rdi (x86)</td></tr>
+<tr><td><code>=</code> prefix</td><td>write-only output</td></tr>
+<tr><td><code>+</code> prefix</td><td>read <em>and</em> written</td></tr>
+<tr><td><code>"cc" / "memory"</code> clobbers</td><td>"I modify the flags" / "I read-write memory you don't see"</td></tr>
+</table>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In an output constraint, what is the difference between <code>"=r"</code> and <code>"+r"</code>?</p><ul><li>= is x86, + is ARM</li><li>= means write-only; + means the asm both reads and writes the operand</li><li>+ allows two registers</li><li>= makes the operand const</li></ul><details><summary>Show answer</summary><p><b>= means write-only; + means the asm both reads and writes the operand</b> — With "=r" GCC assumes the old value is irrelevant and may hand you a register full of garbage to overwrite. If your asm reads the value first (like "add %1, %0" does with %0), you must say "+r" — or the bug only shows up at -O2.</p></details></div>
+
+<h2>Real example: reading the timestamp counter</h2>
+<p>x86's <code>rdtsc</code> returns a 64-bit cycle count split across <code>edx:eax</code> — those fixed registers are why we need the <code>a</code> and <code>d</code> constraints:</p>
+<figure class="code"><figcaption>rdtsc.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+
+static uint64_t rdtsc(void) {
+    uint32_t lo, hi;
+    __asm__ __volatile__ (&quot;rdtsc&quot; : &quot;=a&quot;(lo), &quot;=d&quot;(hi));
+    return ((uint64_t)hi &lt;&lt; 32) | lo;
+}
+
+int main(void) {
+    uint64_t t0 = rdtsc();
+    for (volatile int i = 0; i &lt; 1000; i++)
+        ;
+    uint64_t t1 = rdtsc();
+    printf(&quot;~%llu cycles for 1000 empty iterations\n&quot;,
+           (unsigned long long)(t1 - t0));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -O2 rdtsc.c -o rdtsc &amp;&amp; ./rdtsc
+~3708 cycles for 1000 empty iterations
+$ ./rdtsc
+~3652 cycles for 1000 empty iterations
+# varies run to run — you are watching the actual silicon clock.</pre></figure>
+
+<h2><code>volatile</code>, or: the optimizer versus your asm</h2>
+<p>GCC treats an asm statement like any expression: <b>if its outputs are unused, it deletes it; if inputs are unchanged inside a loop, it hoists it out</b>. That's catastrophic for <code>rdtsc</code> (same "time" every iteration!) or an I/O port write with no outputs at all. <code>asm volatile</code> means "this has side effects you can't see — execute it exactly as written, every time". Rule of thumb: reading a value that changes behind the compiler's back, or causing any side effect → <code>volatile</code>. Pure computation like our <code>lea</code> add → leave it off and let the optimizer schedule it.</p>
+
+<div class="sq"><p class="sq-q">🤔 Remove <code>__volatile__</code> from the <code>rdtsc()</code> function and compile with <code>-O2</code>. What can go wrong?</p><details><summary>Think first</summary><p>GCC sees two calls to a "pure-looking" asm with identical (empty) inputs — so it may compute it once and reuse the value, or reorder it across the loop. Result: <code>t1 - t0 == 0</code>, or a measurement of nothing. <code>volatile</code> pins each execution in place. (For serious benchmarking you’d also add barriers, since the CPU itself reorders — <code>rdtscp</code> or <code>lfence</code> — but that’s a performance-engineering rabbit hole.)</p></details></div>
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> An asm statement with no outputs and no <code>volatile</code>, compiled at -O2, will typically be…</p><ul><li>executed once at program start</li><li>deleted entirely as dead code</li><li>a compile error</li><li>run in a separate thread</li></ul><details><summary>Show answer</summary><p><b>deleted entirely as dead code</b> — No outputs used + not volatile = no observable effect, as far as GCC knows — so the optimizer removes it, exactly as it would remove an unused variable. Any asm executed purely for its side effects must be volatile.</p></details></div>
+
+<h2>Full thrill: a raw Linux syscall</h2>
+<p>Let's call <code>write(1, msg, len)</code> with no libc at all. The Linux x86-64 ABI: syscall number in <code>rax</code> (1 = write), args in <code>rdi, rsi, rdx</code>; the <code>syscall</code> instruction itself clobbers <code>rcx</code> and <code>r11</code>:</p>
+<figure class="code"><figcaption>rawwrite.c</figcaption><pre><code>int main(void) {
+    const char msg[] = &quot;hello from a raw syscall\n&quot;;
+    long ret;
+
+    /* write(fd=1, buf=msg, count=sizeof msg - 1) */
+    __asm__ __volatile__ (
+        &quot;syscall&quot;
+        : &quot;=a&quot;(ret)                       /* return value in rax  */
+        : &quot;a&quot;(1),                         /* rax = 1  -&gt; write    */
+          &quot;D&quot;(1),                         /* rdi = fd 1 (stdout)  */
+          &quot;S&quot;(msg),                       /* rsi = buffer         */
+          &quot;d&quot;(sizeof msg - 1)             /* rdx = length         */
+        : &quot;rcx&quot;, &quot;r11&quot;, &quot;memory&quot;);        /* syscall trashes these */
+
+    return ret == (long)(sizeof msg - 1) ? 0 : 1;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -O2 rawwrite.c -o rawwrite &amp;&amp; ./rawwrite
+hello from a raw syscall
+$ echo $?
+0
+$ strace ./rawwrite 2&gt;&amp;1 | grep ^write
+write(1, &quot;hello from a raw syscall\n&quot;, 25) = 25
+# strace confirms: one write syscall, no printf, no libc buffering.</pre></figure>
+<p>The <code>"memory"</code> clobber is essential: it tells GCC the kernel <em>reads</em> the buffer, so the stores initializing <code>msg</code> must actually happen before the syscall instead of being reordered or dead-store-eliminated.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why must the raw-syscall example list <code>"memory"</code> in its clobbers?</p><ul><li>syscalls always allocate memory</li><li>It tells GCC the asm reads/writes memory it can’t see, so pending stores to <code>msg</code> must be flushed first</li><li>It reserves stack space for the kernel</li><li>Without it the program cannot link</li></ul><details><summary>Show answer</summary><p><b>It tells GCC the asm reads/writes memory it can’t see, so pending stores to <code>msg</code> must be flushed first</b> — GCC only knows the asm touches the listed operands. The kernel reads the buffer through a pointer, which GCC can’t see from the template — "memory" forces all memory writes to complete before the asm and stops caching across it.</p></details></div>
+
+<h2>The saner alternative: intrinsics</h2>
+<p>For 95% of "I need this one instruction" cases, GCC and Clang ship <b>intrinsics</b> — plain C functions that compile to the instruction, with the compiler fully aware of their semantics (so optimization stays safe, no constraint contracts to get wrong):</p>
+<figure class="code"><figcaption>intrinsics.c — the civilized route</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;x86intrin.h&gt;       /* pulls in immintrin.h + friends */
+
+int main(void) {
+    unsigned long long t0 = __rdtsc();      /* our whole rdtsc()  */
+    int bits = _popcnt32(0x00FF00F0);       /* one popcnt insn    */
+    unsigned long long t1 = __rdtsc();
+
+    printf(&quot;popcount = %d (measured in %llu cycles)\n&quot;,
+           bits, t1 - t0);
+    return 0;
+}</code></pre></figure>
+<p><code>&lt;immintrin.h&gt;</code> is the umbrella header for the whole x86 SIMD universe (SSE/AVX). If you find yourself writing more than a handful of asm lines, you almost certainly want intrinsics — or to just check godbolt and discover the compiler already emits what you wanted.</p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>The classic inline-asm bug:</b> forgetting a clobber. If your asm modifies a register you didn't declare, GCC may keep a live value there — and your function corrupts a random variable, but only at <code>-O2</code>, only sometimes. Undeclared side effects are UB by contract. When in doubt: more clobbers, or use an intrinsic.</p></div></div>
+
+<h2>Practice</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/inline-assembly">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>You can now out-argue the compiler instruction by instruction — next we zoom back out and automate whole builds with <code>make</code>.</p>
+
+<a class="cta" href="../../index.html#/lesson/inline-assembly">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../gcc-extensions/">← The GNU dialect: __attribute__ and friends</a>
+<a href="../makefiles/">Makefiles: builds that rebuild themselves →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorting: from bubble to quicksort — The C Path</title>
+<meta name="description" content="Behind every &quot;sort by price&quot; click on a shopping site and every game leaderboard, one of a handful of classic algorithms is doing the work — and picking the…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Sorting: from bubble to quicksort — The C Path">
+<meta property="og:description" content="Behind every &quot;sort by price&quot; click on a shopping site and every game leaderboard, one of a handful of classic algorithms is doing the work — and picking the…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Sorting: from bubble to quicksort","description":"Behind every \"sort by price\" click on a shopping site and every game leaderboard, one of a handful of classic algorithms is doing the work — and picking the…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📈 Algorithms &amp; Complexity</p>
+<h1>Sorting: from bubble to quicksort</h1>
+<p class="meta">⏱ 16 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/sorting">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Behind every "sort by price" click on a shopping site and every game leaderboard, one of a handful of classic algorithms is doing the work — and picking the naive one is the difference between the page appearing instantly and a spinner of death.</p><p>In this lesson you'll watch five sorts race live on screen, learn why the fast ones win, and find out which one real libraries actually ship.</p></div>
+
+<p>Sorting is the most-studied problem in computer science — not because sorted data is pretty, but because it <em>unlocks</em> other speed: binary search, spotting duplicates, combining two sorted lists into one, finding the top 10 of anything. And it's the perfect showcase for Big-O, because the gap between the simple Θ(n²) sorts and the clever Θ(n log n) ones is the difference between "instant" and "go get coffee" on real data.</p>
+
+<h2>The simple three: Θ(n²) but worth knowing</h2>
+
+<h3>Bubble sort — swap neighbors until calm</h3>
+<p>Sweep the array, swapping any adjacent pair that's out of order. Each sweep "bubbles" the largest remaining element to the end. Watch the green sorted zone grow from the right:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/sorting">This spot has an interactive arrayviz widget — open the interactive lesson to play with it.</a></p>
+<figure class="code"><figcaption>bubble.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdbool.h&gt;
+
+void bubble_sort(int *a, int n) {
+    for (int pass = 0; pass &lt; n - 1; pass++) {
+        bool swapped = false;
+        for (int j = 0; j &lt; n - 1 - pass; j++) {
+            if (a[j] &gt; a[j + 1]) {          /* out of order?  */
+                int t = a[j];               /* swap neighbors */
+                a[j] = a[j + 1];
+                a[j + 1] = t;
+                swapped = true;
+            }
+        }
+        if (!swapped) break;   /* full pass, no swaps: sorted */
+    }
+}
+
+int main(void) {
+    int a[] = {5, 1, 4, 2, 8};
+    bubble_sort(a, 5);
+    for (int i = 0; i &lt; 5; i++) printf(&quot;%d &quot;, a[i]);
+    printf(&quot;\n&quot;);
+    return 0;
+}</code></pre></figure>
+
+<h3>Insertion sort — how you sort playing cards</h3>
+<p>Keep the left part sorted; take the next element and slide it left into its place. Crucially, if the data is <em>already nearly sorted</em>, elements barely move — best case Θ(n). Remember that; it matters later.</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/sorting">This spot has an interactive arrayviz widget — open the interactive lesson to play with it.</a></p>
+
+<h3>Selection sort — find the min, swap it home</h3>
+<p>Scan for the smallest remaining element, swap it into the next position. Simple, and it makes the fewest <em>swaps</em> of any sort (n−1) — but always n(n−1)/2 comparisons, even on sorted input.</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/sorting">This spot has an interactive arrayviz widget — open the interactive lesson to play with it.</a></p>
+
+<figure class="code"><figcaption>insertion_selection.c (fragments)</figcaption><pre><code>void insertion_sort(int *a, int n) {
+    for (int i = 1; i &lt; n; i++) {
+        int key = a[i], j = i - 1;
+        while (j &gt;= 0 &amp;&amp; a[j] &gt; key) {  /* shift bigger ones  */
+            a[j + 1] = a[j];            /*   one slot right   */
+            j--;
+        }
+        a[j + 1] = key;                 /* drop key in gap    */
+    }
+}
+
+void selection_sort(int *a, int n) {
+    for (int i = 0; i &lt; n - 1; i++) {
+        int min = i;
+        for (int j = i + 1; j &lt; n; j++) /* find the smallest  */
+            if (a[j] &lt; a[min]) min = j; /*   of the rest      */
+        int t = a[i]; a[i] = a[min]; a[min] = t;
+    }
+}</code></pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> You feed an ALREADY-SORTED array to each algorithm. Which finishes in Θ(n)?</p><ul><li>Selection sort</li><li>Insertion sort (and bubble with the early-exit flag)</li><li>Neither — all Θ(n²) sorts stay Θ(n²)</li><li>Only quicksort</li></ul><details><summary>Show answer</summary><p><b>Insertion sort (and bubble with the early-exit flag)</b> — Insertion sort’s inner while-loop exits immediately when nothing needs shifting: n−1 comparisons total. Bubble with the swapped flag notices the clean pass and stops. Selection sort still scans everything: Θ(n²) always. And sorted input is quicksort’s WORST case with naive pivots!</p></details></div>
+
+<h2>Quicksort: divide and conquer</h2>
+<p>The Θ(n²) sorts all share a flaw: they compare elements that tell you almost nothing new. Quicksort's insight (Tony Hoare, 1959) is to make every comparison count. Pick a <strong>pivot</strong>; <strong>partition</strong> the array into smaller-than-pivot | pivot | larger-than-pivot. The pivot is now in its <em>final sorted position</em> — recurse on the two sides independently.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/sorting">This spot has an interactive arrayviz widget — open the interactive lesson to play with it.</a></p>
+
+<figure class="code"><figcaption>quicksort.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+static void swap(int *a, int *b) { int t = *a; *a = *b; *b = t; }
+
+/* Lomuto partition: returns the pivot's final index.
+   Afterwards: a[lo..p-1] &lt; pivot &lt;= a[p+1..hi]        */
+static int partition(int *a, int lo, int hi) {
+    int pivot = a[hi];              /* last element as pivot */
+    int i = lo;                     /* a[lo..i-1] = smalls   */
+    for (int j = lo; j &lt; hi; j++)
+        if (a[j] &lt; pivot)
+            swap(&amp;a[i++], &amp;a[j]);   /* grow the smalls zone  */
+    swap(&amp;a[i], &amp;a[hi]);            /* pivot between zones   */
+    return i;
+}
+
+void quicksort(int *a, int lo, int hi) {
+    if (lo &gt;= hi) return;           /* 0/1 elements: sorted  */
+    int p = partition(a, lo, hi);
+    quicksort(a, lo, p - 1);        /* smalls                */
+    quicksort(a, p + 1, hi);        /* bigs (skip the pivot) */
+}
+
+int main(void) {
+    int a[] = {33, 10, 55, 71, 29, 3, 64, 18};
+    quicksort(a, 0, 7);
+    for (int i = 0; i &lt; 8; i++) printf(&quot;%d &quot;, a[i]);
+    printf(&quot;\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc quicksort.c -o quicksort &amp;&amp; ./quicksort
+3 10 18 29 33 55 64 71</pre></figure>
+
+<p>Each partition pass is Θ(n) work, and a decent pivot splits the array roughly in half, so there are about log₂ n levels of recursion: <b>Θ(n log n) on average</b>. But a <em>terrible</em> pivot (always the smallest or largest element) splits n into 0 and n−1 — that's n levels, and quicksort degrades to Θ(n²).</p>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>The classic worst case:</b> with last-element pivots, an <em>already-sorted</em> array is the disaster input — every pivot is the maximum, every split is maximally lopsided. Real implementations dodge this with random or median-of-three pivots. Punchline for interviews: quicksort is Θ(n log n) average, <b>Θ(n²) worst case</b>.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> With a last-element pivot, which input drives quicksort to its Θ(n²) worst case?</p><ul><li>A random shuffle</li><li>All elements equal to 42… only</li><li>An already-sorted array</li><li>Reverse-sorted arrays only</li></ul><details><summary>Show answer</summary><p><b>An already-sorted array</b> — Sorted input makes every pivot the largest of its slice: the split is n−1 elements vs 0, recursion depth becomes n, and total work 1+2+…+n = Θ(n²). (Reverse-sorted and all-equal inputs are ALSO degenerate for plain Lomuto — but sorted is the famous, most ironic one: quicksort choking on already-done work.)</p></details></div>
+
+<h2>Merge sort: guaranteed n log n</h2>
+<p>Split in half, sort each half recursively, then <strong>merge</strong> the two sorted halves by repeatedly taking the smaller front element. Merging is Θ(n), the halving gives exactly log₂ n levels — <b>Θ(n log n) in every case</b>, no bad inputs. The price: it needs a scratch buffer (O(n) extra memory), unlike the in-place sorts above.</p>
+
+<figure class="code"><figcaption>mergesort.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+/* sort a[lo..hi) — hi is EXCLUSIVE — using tmp as scratch */
+void merge_sort(int *a, int *tmp, int lo, int hi) {
+    if (hi - lo &lt; 2) return;            /* 0/1 element: done */
+    int mid = lo + (hi - lo) / 2;
+    merge_sort(a, tmp, lo, mid);        /* sort left  half   */
+    merge_sort(a, tmp, mid, hi);        /* sort right half   */
+
+    int i = lo, j = mid, k = lo;        /* merge: take the   */
+    while (i &lt; mid &amp;&amp; j &lt; hi)           /* smaller front     */
+        tmp[k++] = (a[i] &lt;= a[j]) ? a[i++] : a[j++];
+    while (i &lt; mid) tmp[k++] = a[i++];  /* leftovers         */
+    while (j &lt; hi)  tmp[k++] = a[j++];
+    for (k = lo; k &lt; hi; k++) a[k] = tmp[k];
+}
+
+int main(void) {
+    int a[] = {38, 27, 43, 3, 9, 82, 10};
+    int tmp[7];
+    merge_sort(a, tmp, 0, 7);
+    for (int i = 0; i &lt; 7; i++) printf(&quot;%d &quot;, a[i]);
+    printf(&quot;\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc mergesort.c -o mergesort &amp;&amp; ./mergesort
+3 9 10 27 38 43 82
+# note the &lt;= on the merge comparison: taking from the LEFT
+# half on ties is exactly what makes merge sort stable.</pre></figure>
+
+<h2>n² vs n log n — feel the gap</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/sorting">This spot has an interactive bigo widget — open the interactive lesson to play with it.</a></p>
+
+<h2>Stability, and the properties scoreboard</h2>
+<p>A sort is <strong>stable</strong> if equal elements keep their original relative order. Sort people by first name, then stably by last name — people with the same last name stay sorted by first name. Non-stable sorts scramble ties, which silently breaks that kind of layered sorting.</p>
+
+<table>
+<tr><th>algorithm</th><th>best</th><th>average</th><th>worst</th><th>extra space</th><th>stable?</th></tr>
+<tr><td>bubble</td><td>Θ(n)</td><td>Θ(n²)</td><td>Θ(n²)</td><td>O(1)</td><td>yes</td></tr>
+<tr><td>insertion</td><td>Θ(n)</td><td>Θ(n²)</td><td>Θ(n²)</td><td>O(1)</td><td>yes</td></tr>
+<tr><td>selection</td><td>Θ(n²)</td><td>Θ(n²)</td><td>Θ(n²)</td><td>O(1)</td><td>no</td></tr>
+<tr><td>quicksort</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>Θ(n²)</td><td>O(log n) stack</td><td>no (typical)</td></tr>
+<tr><td>merge sort</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>O(n)</td><td>yes</td></tr>
+</table>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>When the "slow" sort wins:</b> for tiny arrays (n ≲ 20) and nearly-sorted data, insertion sort's tiny constant factor and Θ(n) best case beat quicksort's recursive overhead. That's why production sorts (glibc's qsort, C++'s std::sort, Python's Timsort) are hybrids that hand small subarrays to insertion sort. Big-O picks the champion for large n — engineering picks it for your n.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> You sort records by AGE with a STABLE sort, having already sorted them by NAME. Two people are both 25. Who comes first?</p><ul><li>Unpredictable — ties are arbitrary</li><li>The one whose name sorts first — stability preserves the earlier order</li><li>The one that appeared later in the input</li><li>Stable sorts forbid equal keys</li></ul><details><summary>Show answer</summary><p><b>The one whose name sorts first — stability preserves the earlier order</b> — Stability means equal-key elements keep their previous relative order — so within each age group, the name ordering survives. This layered-sort trick only works with stable sorts (merge: yes; typical quicksort: no).</p></details></div>
+
+<h2>In practice: <code>qsort</code></h2>
+<p>You met <code>qsort</code> in the stdlib tour — it's how you actually sort in C: generic over element type, driven by your comparison function. (Despite the name, the standard doesn't require quicksort — glibc actually uses merge sort when memory allows!)</p>
+
+<figure class="code"><figcaption>use_qsort.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int cmp_int(const void *pa, const void *pb) {
+    int a = *(const int *)pa, b = *(const int *)pb;
+    return (a &gt; b) - (a &lt; b);   /* NEVER a - b: overflow! */
+}
+
+int main(void) {
+    int a[] = {42, 7, 19, 3, 88, 19, 5};
+    int n = sizeof a / sizeof a[0];
+
+    qsort(a, n, sizeof a[0], cmp_int);
+
+    for (int i = 0; i &lt; n; i++) printf(&quot;%d &quot;, a[i]);
+    printf(&quot;\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc use_qsort.c -o use_qsort &amp;&amp; ./use_qsort
+3 5 7 19 19 42 88</pre></figure>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>Never write <code>return a - b;</code></b> in an int comparator: the subtraction can overflow (e.g. INT_MIN − 1), which is undefined behavior and gives garbage orderings. Use the safe idiom <code>(a &gt; b) - (a &lt; b)</code> — it can only produce −1, 0, or +1.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/sorting">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Quicksort and merge sort both leaned on a technique we sneaked past you — a function calling <em>itself</em>. Time to look recursion straight in the eye.</p>
+
+<a class="cta" href="../../index.html#/lesson/sorting">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../searching/">← Searching: linear vs binary</a>
+<a href="../recursion/">Recursion: functions that call themselves →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

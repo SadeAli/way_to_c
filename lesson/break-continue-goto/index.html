@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>break, continue &amp; goto: bending the flow — The C Path</title>
+<meta name="description" content="When your music app finds the song you searched for, it stops — it doesn't keep scanning the other 10,000 tracks. break and continue are the stop and skip…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="break, continue &amp; goto: bending the flow — The C Path">
+<meta property="og:description" content="When your music app finds the song you searched for, it stops — it doesn't keep scanning the other 10,000 tracks. break and continue are the stop and skip…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"break, continue & goto: bending the flow","description":"When your music app finds the song you searched for, it stops — it doesn't keep scanning the other 10,000 tracks. break and continue are the stop and skip…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>break, continue &amp; goto: bending the flow</h1>
+<p class="meta">⏱ 13 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/break-continue-goto">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>When your music app finds the song you searched for, it stops — it doesn't keep scanning the other 10,000 tracks. <code>break</code> and <code>continue</code> are the stop and skip buttons of loops, and you'll also discover why the "forbidden" <code>goto</code> still appears thousands of times, on purpose, in the code that runs Linux.</p></div>
+
+<p>Loops usually end when their condition says so — but real code often needs an emergency exit ("found it, stop searching!") or a skip button ("not interested in this one, next!"). C provides three flow-bending keywords: <code>break</code>, <code>continue</code>, and the notorious <code>goto</code>.</p>
+
+<h2><code>break</code>: eject from the loop</h2>
+<p><code>break</code> immediately terminates the innermost enclosing loop (or switch, as you saw last lesson) and resumes after its closing brace:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/break-continue-goto">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<figure class="code"><figcaption>firstdiv.c — break when found</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int n = 91;   /* is it prime? find a divisor */
+    int divisor = 0;
+
+    for (int d = 2; d * d &lt;= n; d++) {
+        if (n % d == 0) {
+            divisor = d;
+            break;            /* found one — stop searching */
+        }
+    }
+
+    if (divisor)
+        printf(&quot;%d = %d x %d\n&quot;, n, divisor, n / divisor);
+    else
+        printf(&quot;%d is prime\n&quot;, n);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc firstdiv.c -o firstdiv &amp;&amp; ./firstdiv
+91 = 7 x 13
+# without break we'd keep testing 8, 9, ... for nothing</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>break</code> inside the inner one of two nested loops do?</p><ul><li>Exits both loops</li><li>Exits only the inner loop; the outer continues</li><li>Skips one iteration of the inner loop</li><li>Ends the program</li></ul><details><summary>Show answer</summary><p><b>Exits only the inner loop; the outer continues</b> — break always escapes exactly one level — the innermost loop or switch it sits in. The outer loop never notices. Multi-level escapes need a flag, a return, or a forward goto.</p></details></div>
+
+<h2><code>continue</code>: skip to the next lap</h2>
+<p><code>continue</code> abandons the <em>current iteration</em> only: it jumps straight to the next condition check (in a <code>for</code>, the step still runs first — the loop stays healthy). The loop itself keeps going:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/break-continue-goto">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<figure class="code"><figcaption>odds.c — continue to filter</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    for (int i = 1; i &lt;= 8; i++) {
+        if (i % 2 == 0) {
+            continue;         /* even? not interested */
+        }
+        printf(&quot;%d is odd\n&quot;, i);
+    }
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc odds.c -o odds &amp;&amp; ./odds
+1 is odd
+3 is odd
+5 is odd
+7 is odd</pre></figure>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>break only escapes ONE level.</b> In nested loops, a <code>break</code> in the inner loop returns you to the outer loop, which happily continues. There is no <code>break 2;</code> in C (sorry, PHP folks). To exit several levels you can set a flag and test it in each condition, move the loops into a function and <code>return</code>… or use the one legitimate <code>goto</code> below.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In a <code>for</code> loop, <code>continue</code> jumps to…</p><ul><li>the first line of the function</li><li>the condition, skipping the step</li><li>the step expression, then the condition</li><li>right after the loop</li></ul><details><summary>Show answer</summary><p><b>the step expression, then the condition</b> — In for loops the step is sacred: continue runs it before re-testing. (In a while loop, continue jumps straight to the condition — which is why converting a for to a while with continue inside can create an infinite loop!)</p></details></div>
+
+<h2><code>goto</code>: the keyword with a reputation</h2>
+<p><code>goto</code> jumps to a <strong>label</strong> — a name followed by a colon, marking a spot in the same function. Dijkstra's famous 1968 letter "Go To Statement Considered Harmful" made it programming's boogeyman, and yes: spaghetti of upward, criss-crossing gotos is unmaintainable.</p>
+<p>But modern C has two <em>respectable</em> uses, both jumping strictly forward and downward:</p>
+<ul>
+<li><b>Escaping nested loops</b> — one clean hop instead of flag gymnastics.</li>
+<li><b>Centralized error-handling cleanup</b> — the pattern below, used all over the Linux kernel, CPython, and virtually every serious C codebase.</li>
+</ul>
+<figure class="code"><figcaption>cleanup.c — the respectable goto</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int process(void) {
+    int status = -1;
+    FILE *log = NULL;
+    char *buf = NULL;
+
+    log = fopen(&quot;run.log&quot;, &quot;w&quot;);
+    if (log == NULL) goto out;          /* nothing to undo yet  */
+
+    buf = malloc(4096);
+    if (buf == NULL) goto close_log;    /* must undo the fopen  */
+
+    /* ... real work with log and buf ... */
+    status = 0;                         /* success!             */
+
+    free(buf);                          /* fall into cleanup    */
+close_log:
+    fclose(log);
+out:
+    return status;
+}</code></pre></figure>
+<p>Why this is good design: every failure path releases <em>exactly</em> the resources acquired so far, in reverse order, with a single copy of the cleanup code. Without <code>goto</code> you'd repeat the frees in every error branch — and one day forget one (hello, memory leak). Don't worry about the <code>malloc</code>/<code>NULL</code> details yet; Part 2 covers them properly. The <em>shape</em> is what matters.</p>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>The house rules for goto:</b> jump forward only, jump downward only, target cleanup/exit labels only. Within those fences it's not spaghetti — it's C's substitute for exceptions.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why is the goto-cleanup pattern considered good C style?</p><ul><li>goto is faster than function calls</li><li>It lets loops run backwards</li><li>Every error path funnels through one copy of the cleanup code, released in reverse order</li><li>It replaces the need for return</li></ul><details><summary>Show answer</summary><p><b>Every error path funnels through one copy of the cleanup code, released in reverse order</b> — One exit ramp, one copy of each fclose/free, impossible to "forget a free in the third error branch". Forward-only jumps to cleanup labels are idiomatic C — the Linux kernel does it thousands of times.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/break-continue-goto">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Our loops are getting long enough to want names of their own — time to package code into <b>functions</b>.</p>
+
+<a class="cta" href="../../index.html#/lesson/break-continue-goto">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../loops-for/">← for loops: init, test, step — all in one line</a>
+<a href="../functions/">Functions: name it once, use it forever →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

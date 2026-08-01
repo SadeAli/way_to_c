@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hello, World: your first C program — The C Path</title>
+<meta name="description" content="The operating system on your laptop, the games you play, and the language Python itself were all written in C — and every one of their authors once sat…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hello, World: your first C program — The C Path">
+<meta property="og:description" content="The operating system on your laptop, the games you play, and the language Python itself were all written in C — and every one of their authors once sat…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Hello, World: your first C program","description":"The operating system on your laptop, the games you play, and the language Python itself were all written in C — and every one of their authors once sat…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>Hello, World: your first C program</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/hello-world">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>The operating system on your laptop, the games you play, and the language Python itself were all written in C — and every one of their authors once sat exactly where you are, typing a five-line first program. In the next ten minutes you'll write it, turn it into real machine code, and run it. Part 0 gave you the map; this is where you start the engine.</p></div>
+
+<p>This is it — the moment every programmer remembers. You're about to write a real program in <strong>C</strong>, the language that built Unix, Linux, Windows, Python, Git, and probably the firmware in your toaster. And like millions before you, you'll start by making the computer say hello:</p>
+
+<figure class="code"><figcaption>hello.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    printf(&quot;Hello, World!\n&quot;);
+    return 0;
+}</code></pre></figure>
+
+<p>Five lines. Every single one earns its place. Let's dissect them like the tiny masterpiece they are.</p>
+
+<h2>Line 1: <code>#include &lt;stdio.h&gt;</code></h2>
+<p>C itself is famously minimal — it doesn't even know how to print! Printing lives in the <strong>standard library</strong>, and <code>stdio.h</code> (<em>st</em>andar<em>d</em> <em>i</em>nput/<em>o</em>utput <em>h</em>eader) is the file that <em>declares</em> functions like <code>printf</code>. The <code>#include</code> directive tells the preprocessor: "paste that entire file right here before compiling." Remember the compiler pipeline from Part 0? This is stage 1 doing its find-and-replace magic.</p>
+
+<h2>Line 3: <code>int main(void)</code></h2>
+<p>Every C program needs exactly one <code>main</code> — it's the agreed-upon <strong>entry point</strong>. When you run your program, the operating system (well, some startup code) calls <code>main</code> for you. The pieces:</p>
+<ul>
+<li><code>int</code> — main promises to hand back an integer when it finishes.</li>
+<li><code>main</code> — the sacred name. Spell it differently and the linker will complain it can't find it.</li>
+<li><code>(void)</code> — "I take no arguments." (Later you'll meet <code>main(int argc, char *argv[])</code> for command-line arguments.)</li>
+<li><code>{ … }</code> — the braces wrap the function's <em>body</em>: the statements to execute, top to bottom.</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why does every C program need a function called <code>main</code>?</p><ul><li>It runs faster than other names</li><li>The compiler deletes all other functions</li><li>It is the agreed-upon entry point the OS startup code calls</li><li>It is only needed on Linux</li></ul><details><summary>Show answer</summary><p><b>It is the agreed-upon entry point the OS startup code calls</b> — Execution always begins at <code>main</code> — that name is baked into the C standard and the startup code linked into your program. No main, no program.</p></details></div>
+
+<h2>Line 4: <code>printf("Hello, World!\n");</code></h2>
+<p>A <strong>function call</strong>: run the code named <code>printf</code> (<em>print formatted</em>), handing it the text between quotes — a <em>string literal</em>. The <code>\n</code> at the end is an <strong>escape sequence</strong> meaning "newline": without it, your shell prompt would glue itself to the end of your message. And the semicolon? Every statement in C ends with one. Forgetting it is the classic first-week rite of passage.</p>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p>Other escape sequences you'll use constantly: <code>\t</code> (tab), <code>\"</code> (a quote inside a string), <code>\\</code> (a literal backslash). They let you type the untypeable.</p></div></div>
+
+<h2>Line 5: <code>return 0;</code></h2>
+<p>Remember <code>main</code> promised an <code>int</code>? This delivers it. That number is the program's <strong>exit status</strong>, reported to the operating system: by convention <code>0</code> means "all good" and anything nonzero means "something went wrong". Shell scripts, Makefiles, and CI systems all read this value — it's how programs gossip about success and failure.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>return 0;</code> in main actually do?</p><ul><li>Reports "success" to the operating system as the exit status</li><li>Prints 0 to the screen</li><li>Restarts the program</li><li>Frees all memory</li></ul><details><summary>Show answer</summary><p><b>Reports "success" to the operating system as the exit status</b> — The return value of main becomes the process exit status. 0 = success, nonzero = failure. Try <code>echo $?</code> in your shell right after running a program to see it!</p></details></div>
+
+<h2>Making it real: compile and run</h2>
+<p>C is a <em>compiled</em> language — the source text must be translated into machine code before it can run. That's one command:</p>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc hello.c -o hello    # compile: hello.c -&gt; executable named 'hello'
+$ ./hello                 # run it (./ means &quot;in this directory&quot;)
+Hello, World!
+$ echo $?                 # ask the shell for the exit status
+0</pre></figure>
+<p>Your development loop, forever after, looks like this:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/hello-world">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>When the compiler yells at you</b> — and it will — read the <em>first</em> error, fix it, recompile. One missing semicolon can trigger an avalanche of bogus follow-up errors. First error first, always.</p></div></div>
+
+<h2>Your turn — break it, then make it yours</h2>
+<p>Reading about programs teaches you a little. <em>Changing</em> them teaches you everything. Edit the program below and run it:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/hello-world">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>\n</code> inside a string literal mean?</p><ul><li>A literal backslash and n</li><li>A newline character</li><li>The end of the string</li><li>A space</li></ul><details><summary>Show answer</summary><p><b>A newline character</b> — It is an escape sequence: the two characters \ and n in your source become ONE character (ASCII 10, newline) in the compiled string. The string terminator is a different character, <code>\0</code>.</p></details></div>
+
+<p>You've officially executed your own machine code — welcome to the club. Next, let's give programs a memory: <b>variables and types</b>.</p>
+
+<a class="cta" href="../../index.html#/lesson/hello-world">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../memory-model/">← Where data lives: stack, heap &amp; friends</a>
+<a href="../variables-types/">Variables &amp; types: naming your bytes →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

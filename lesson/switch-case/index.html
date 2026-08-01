@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>switch, case, default: the multi-way jump — The C Path</title>
+<meta name="description" content="In 1990, half of AT&amp;amp;T's long-distance phone network went silent for nine hours — engineers traced the collapse to one misplaced break in a C switch…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="switch, case, default: the multi-way jump — The C Path">
+<meta property="og:description" content="In 1990, half of AT&amp;amp;T's long-distance phone network went silent for nine hours — engineers traced the collapse to one misplaced break in a C switch…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"switch, case, default: the multi-way jump","description":"In 1990, half of AT&amp;T's long-distance phone network went silent for nine hours — engineers traced the collapse to one misplaced break in a C switch…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>switch, case, default: the multi-way jump</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/switch-case">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>In 1990, half of AT&amp;T's long-distance phone network went silent for nine hours — engineers traced the collapse to one misplaced <code>break</code> in a C switch statement. This lesson hands you the clean tool for menus and multi-way choices, then walks you straight into, and safely back out of, the exact trap behind that outage.</p></div>
+
+<p>When one value needs comparing against many fixed possibilities — a menu choice, a keypress, a day number — an else-if ladder works but reads like bureaucracy. C offers a dedicated construct built from four keywords: <code>switch</code>, <code>case</code>, <code>default</code>, and <code>break</code>.</p>
+
+<figure class="code"><figcaption>menu.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    char op = '*';
+    int a = 6, b = 7;
+
+    switch (op) {
+    case '+':
+        printf(&quot;%d\n&quot;, a + b);
+        break;
+    case '-':
+        printf(&quot;%d\n&quot;, a - b);
+        break;
+    case '*':
+        printf(&quot;%d\n&quot;, a * b);
+        break;
+    default:
+        printf(&quot;unknown operator '%c'\n&quot;, op);
+        break;
+    }
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc menu.c -o menu &amp;&amp; ./menu
+42</pre></figure>
+
+<p>How it flows: <code>switch (expr)</code> evaluates the expression once, jumps straight to the matching <code>case</code> label, and runs from there. <code>break</code> exits the switch; <code>default</code> catches anything unmatched (put one in — it's your safety net):</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/switch-case">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is the job of <code>default:</code> in a switch?</p><ul><li>It runs before every case</li><li>It handles any value no case label matched</li><li>It marks the fastest case</li><li>It is required by the compiler</li></ul><details><summary>Show answer</summary><p><b>It handles any value no case label matched</b> — default is the catch-all branch (and it may appear anywhere among the cases, though last is conventional). It’s optional — but omitting it means unmatched values silently do nothing.</p></details></div>
+
+<h2>The famous gotcha: fallthrough</h2>
+<p>Here's the part that surprises everyone: <strong>case labels are just labels, not walls</strong>. If you omit <code>break</code>, execution barrels straight into the next case:</p>
+<figure class="code"><figcaption>fallthrough.c — one break missing</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int level = 1;
+
+    switch (level) {
+    case 1:
+        printf(&quot;Bronze perks\n&quot;);
+        /* no break — falls through! */
+    case 2:
+        printf(&quot;Silver perks\n&quot;);
+        break;
+    case 3:
+        printf(&quot;Gold perks\n&quot;);
+        break;
+    }
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc fallthrough.c -o ft &amp;&amp; ./ft
+Bronze perks
+Silver perks
+# level is 1, yet the case-2 code ran too!</pre></figure>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>A forgotten <code>break</code> is the #1 switch bug</b> — the code compiles happily and quietly runs too many cases. GCC's <code>-Wimplicit-fallthrough</code> (included in <code>-Wextra</code>) warns you; in C23 you can mark <em>intentional</em> fallthrough with the <code>[[fallthrough]]</code> attribute so the warning stays useful.</p></div></div>
+
+<p>But fallthrough isn't purely a trap — it's also a feature. Stacking case labels with no code between them is the idiomatic way to say "these values share a branch":</p>
+<figure class="code"><figcaption>grouping.c — fallthrough used well</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    char c = 'E';
+
+    switch (c) {
+    case 'a': case 'e': case 'i': case 'o': case 'u':
+    case 'A': case 'E': case 'I': case 'O': case 'U':
+        printf(&quot;'%c' is a vowel\n&quot;, c);
+        break;
+    default:
+        printf(&quot;'%c' is not a vowel\n&quot;, c);
+        break;
+    }
+    return 0;
+}</code></pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In <code>fallthrough.c</code>, what would <code>level = 3</code> print?</p><ul><li>Gold perks</li><li>Bronze, Silver and Gold perks</li><li>Silver perks then Gold perks</li><li>Nothing</li></ul><details><summary>Show answer</summary><p><b>Gold perks</b> — switch jumps DIRECTLY to <code>case 3:</code> — earlier cases are never touched. Fallthrough only flows downward from wherever you land, and case 3 ends with a break.</p></details></div>
+
+<h2>The fine print: integers only</h2>
+<p>A <code>switch</code> works on <strong>integer types only</strong> — <code>int</code>, <code>char</code> (it's a small integer!), <code>enum</code> values, <code>long</code>… Each <code>case</code> label must be a <em>constant</em> integer expression, known at compile time, with no duplicates. That means:</p>
+<ul>
+<li>No strings: <code>case "yes":</code> won't compile (you'll use <code>strcmp</code> in an if-ladder instead).</li>
+<li>No floats: <code>case 3.14:</code> is rejected.</li>
+<li>No runtime values or ranges: <code>case x:</code> and <code>case 1 ... 5:</code> aren't standard C (the latter is a GCC extension).</li>
+</ul>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>switch vs if-ladder:</b> use <code>switch</code> when comparing <em>one integer expression against fixed constants</em> — it states that intent clearly, the compiler checks for duplicate cases, and it can compile to a lightning-fast jump table. Use an if-ladder for ranges (<code>score >= 90</code>), floats, strings, or conditions on different variables.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/switch-case">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which of these can legally follow <code>case</code> in standard C?</p><ul><li><code>case "add":</code></li><li><code>case 3.5:</code></li><li><code>case x:</code> where x is a variable</li><li><code>case 'q':</code></li></ul><details><summary>Show answer</summary><p><b><code>case 'q':</code></b> — Case labels must be compile-time constant INTEGER expressions. A char literal like 'q' is an integer (113), so it qualifies. Strings, floats, and runtime variables are all out.</p></details></div>
+
+<p>Branching lets programs choose a path; next comes the real superpower — doing something <b>over and over</b> with <code>while</code>.</p>
+
+<a class="cta" href="../../index.html#/lesson/switch-case">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../if-else/">← if &amp; else: teaching programs to choose</a>
+<a href="../loops-while/">while &amp; do-while: repeat until told otherwise →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

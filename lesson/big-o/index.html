@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big-O: measuring work, not seconds — The C Path</title>
+<meta name="description" content="Your phone finds one contact among thousands the instant you type, yet a program written the &quot;obvious&quot; way can freeze for minutes on the same amount of…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Big-O: measuring work, not seconds — The C Path">
+<meta property="og:description" content="Your phone finds one contact among thousands the instant you type, yet a program written the &quot;obvious&quot; way can freeze for minutes on the same amount of…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Big-O: measuring work, not seconds","description":"Your phone finds one contact among thousands the instant you type, yet a program written the \"obvious\" way can freeze for minutes on the same amount of…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📈 Algorithms &amp; Complexity</p>
+<h1>Big-O: measuring work, not seconds</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/big-o">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Your phone finds one contact among thousands the instant you type, yet a program written the "obvious" way can freeze for minutes on the same amount of data. The difference isn't the hardware — it's the algorithm.</p><p>This lesson hands you a thirty-second pencil test that predicts, <em>before you ever run the code</em>, whether it will feel instant or hang forever — plus the notation the whole industry uses to talk about it.</p></div>
+
+<p>Here is a question that sounds simple: <em>"how fast is this function?"</em> You could time it with a stopwatch — but on whose machine? Your laptop, a phone, a 1998 server? Same code, wildly different seconds. And next year's CPU changes the answer again. Seconds measure the <em>hardware</em>; we want to measure the <em>algorithm</em>.</p>
+
+<p>So computer scientists count something machine-independent instead: <strong>how many operations the algorithm performs as a function of the input size n</strong> — an "operation" being one small step, like a comparison or an addition. Double the input — does the work double? Quadruple? Explode? How the work grows as the input grows is the algorithm's <em>growth rate</em> — its true speed — and Big-O notation is how we write it down.</p>
+
+<figure class="code"><figcaption>count_ops.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int n = 1000;
+    long ops = 0;
+
+    for (int i = 0; i &lt; n; i++)        /* one pass          */
+        ops++;
+    printf(&quot;O(n)     : %ld ops\n&quot;, ops);
+
+    ops = 0;
+    for (int i = 0; i &lt; n; i++)        /* a pass per element */
+        for (int j = 0; j &lt; n; j++)
+            ops++;
+    printf(&quot;O(n^2)   : %ld ops\n&quot;, ops);
+
+    ops = 0;
+    for (int k = n; k &gt; 1; k /= 2)     /* halve until done   */
+        ops++;
+    printf(&quot;O(log n) : %ld ops\n&quot;, ops);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc count_ops.c -o count_ops &amp;&amp; ./count_ops
+O(n)     : 1000 ops
+O(n^2)   : 1000000 ops
+O(log n) : 9 ops</pre></figure>
+
+<p>Same n = 1000, three loops: one did a thousand operations, one did a <em>million</em>, one did <b>nine</b>. That gap is what this whole part of the course is about.</p>
+
+<h2>The growth classes</h2>
+<p>Almost every algorithm you'll ever meet falls into one of a handful of growth families. Play with the graph — drag n larger, toggle curves, and turn on O(n³) and O(2ⁿ) to watch them obliterate everything else:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/big-o">This spot has an interactive bigo widget — open the interactive lesson to play with it.</a></p>
+
+<table>
+<tr><th>class</th><th>everyday example</th><th>n = 1,000,000 costs…</th></tr>
+<tr><td>O(1)</td><td>array index <code>a[i]</code>, push/pop a stack</td><td>1 op</td></tr>
+<tr><td>O(log n)</td><td>binary search a sorted array</td><td>~20 ops</td></tr>
+<tr><td>O(n)</td><td>linear scan, <code>strlen</code>, summing an array</td><td>1,000,000 ops</td></tr>
+<tr><td>O(n log n)</td><td>good sorts: mergesort, quicksort (average)</td><td>~20,000,000 ops</td></tr>
+<tr><td>O(n²)</td><td>nested loops: bubble sort, comparing all pairs</td><td>10¹² ops — minutes</td></tr>
+<tr><td>O(2ⁿ)</td><td>trying every subset, naive fibonacci</td><td>heat death of the universe</td></tr>
+</table>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> An algorithm makes exactly 3 passes over its n-element input — 3n operations total. Its complexity is…</p><ul><li>O(3n)</li><li>O(n)</li><li>O(n³)</li><li>O(log n)</li></ul><details><summary>Show answer</summary><p><b>O(n)</b> — O(3n) and O(n) are the same class — constant factors are dropped, so we write the canonical form O(n). (Writing O(3n) isn’t <em>wrong</em>, just redundant, like writing 6/8 instead of 3/4.)</p></details></div>
+
+<h2>O, Θ, Ω — what the letters honestly mean</h2>
+<p>People say "Big-O" for everything, but the notation family has three members with precise meanings:</p>
+<ul>
+<li><b>O(g)</b> — <em>upper bound</em>: the algorithm grows <b>no faster</b> than g. Think "≤".</li>
+<li><b>Ω(g)</b> — <em>lower bound</em>: it grows <b>at least</b> as fast as g. Think "≥".</li>
+<li><b>Θ(g)</b> — <em>tight bound</em>: both at once. Think "=". This is usually what people <em>mean</em>.</li>
+</ul>
+
+<div class="callout fun"><div class="co-ic">🤔</div><div class="co-body"><p><b>The pedant's loophole:</b> because O is only an upper bound, saying "bubble sort is O(n³)" is <em>technically true</em> — it certainly doesn't grow faster than n³! Also true: O(2ⁿ). Also useless. The honest, informative statement is that bubble sort's worst case is <b>Θ(n²)</b>: it grows exactly like n², no faster and no slower. In casual use "O(n²)" almost always means Θ(n²) — just know the difference exists, because interviewers love this trap.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Bubble sort’s worst case is Θ(n²). Which of these is ALSO technically true?</p><ul><li>It is Ω(n³)</li><li>It is O(n³) — and even O(2ⁿ)</li><li>It is Θ(n³)</li><li>None — only O(n²) is true</li></ul><details><summary>Show answer</summary><p><b>It is O(n³) — and even O(2ⁿ)</b> — O is only an upper bound, so any bigger function works: n² grows no faster than n³ or 2ⁿ. True — but as informative as saying "a coffee costs at most a million dollars". Θ(n²) is the tight, useful claim.</p></details></div>
+
+<h2>Dropping constants and small fry</h2>
+<p>Suppose your function does exactly <code>3n² + 5n + 2</code> operations. Big-O says: that's just <b>Θ(n²)</b>. Why are we allowed to throw away the 3, the 5n, and the 2? Because as n grows, the n² term eats everything:</p>
+
+<table>
+<tr><th>n</th><th>n²</th><th>3n² + 5n + 2</th><th>ratio</th></tr>
+<tr><td>10</td><td>100</td><td>352</td><td>3.52</td></tr>
+<tr><td>100</td><td>10,000</td><td>30,502</td><td>3.05</td></tr>
+<tr><td>1,000</td><td>1,000,000</td><td>3,005,002</td><td>3.005</td></tr>
+<tr><td>1,000,000</td><td>10¹²</td><td>3.000005 × 10¹²</td><td>3.000005</td></tr>
+</table>
+
+<p>The ratio converges to a plain constant (3). Constant factors depend on the compiler, the CPU, the phase of the moon — the <em>shape</em> of the curve doesn't. Big-O keeps the shape and discards the noise.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/big-o">This spot has an interactive bigo widget — open the interactive lesson to play with it.</a></p>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>But constants aren't nothing!</b> For <em>small</em> n, a "slow" O(n²) algorithm with a tiny constant can beat a "fast" O(n log n) one with heavy machinery — that's exactly why real qsort implementations switch to insertion sort for small slices (you'll see this in the sorting lesson). Big-O tells you who wins <em>eventually</em>, not who wins at n = 20.</p></div></div>
+
+<h2>Reading complexity off C code</h2>
+<p>Analyzing a loop is mostly pattern-matching. The three patterns below cover 90% of real code:</p>
+
+<figure class="code"><figcaption>patterns.c (fragments)</figcaption><pre><code>/* Pattern 1 — O(n): touch each element once */
+for (int i = 0; i &lt; n; i++)
+    sum += a[i];
+
+/* Pattern 2 — O(n²): a full pass PER element */
+for (int i = 0; i &lt; n; i++)
+    for (int j = 0; j &lt; n; j++)
+        if (i != j &amp;&amp; a[i] == a[j])
+            dupes++;
+
+/* Pattern 3 — O(log n): the problem HALVES each step */
+while (n &gt; 1)
+    n /= 2;
+
+/* Sequential loops ADD (n + n = O(n));
+   nested loops MULTIPLY (n * n = O(n²)). */</code></pre></figure>
+
+<div class="sq"><p class="sq-q">🤔 What is the complexity of the "triangle" loop — <code>for (i = 0; i &lt; n; i++) for (j = 0; j &lt; i; j++) …</code> — where the inner loop only runs up to i?</p><details><summary>Think first</summary><p>Still <b>Θ(n²)</b>. The inner loop runs 0 + 1 + 2 + … + (n−1) = n(n−1)/2 times total. That is ½n² − ½n, and after dropping the constant ½ and the lower-order n, the shape is n². Half a parabola is still a parabola.</p></details></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Two loops in sequence: one runs n times, then another runs n times. Overall complexity?</p><ul><li>O(n²) — loops multiply</li><li>O(2n) which is its own class</li><li>O(n) — sequential work adds</li><li>O(n log n)</li></ul><details><summary>Show answer</summary><p><b>O(n) — sequential work adds</b> — Nested loops multiply; sequential loops add. n + n = 2n = O(n). Only when one loop runs <em>inside</em> the other do you get n × n.</p></details></div>
+
+<h2>Amortized: expensive sometimes, cheap on average</h2>
+<p>One more idea you'll meet constantly: a dynamic array (like the one behind every "vector" or "list" type) grows by <strong>doubling</strong> its capacity when full:</p>
+
+<figure class="code"><figcaption>vec_push.c (fragment)</figcaption><pre><code>typedef struct { int *data; int len, cap; } Vec;
+
+void vec_push(Vec *v, int x) {
+    if (v-&gt;len == v-&gt;cap) {                 /* full — grow!  */
+        v-&gt;cap = v-&gt;cap ? v-&gt;cap * 2 : 4;   /* DOUBLE it     */
+        v-&gt;data = realloc(v-&gt;data,
+                          v-&gt;cap * sizeof *v-&gt;data);
+        /* (real code must check for NULL here!) */
+    }
+    v-&gt;data[v-&gt;len++] = x;                  /* the usual case: O(1) */
+}</code></pre></figure>
+
+<p>Most pushes cost O(1). Occasionally one push triggers a realloc that copies all n elements — O(n)! But doubling means those copies happen so rarely (at n = 4, 8, 16, 32…) that the total cost of n pushes is still about 2n operations. We say push is <strong>O(1) amortized</strong>: any single call might be slow, but the average over a sequence is constant.</p>
+
+<p>Armed with a vocabulary for "fast", let's use it on the most fundamental task in computing: finding a thing in a pile of things.</p>
+
+<a class="cta" href="../../index.html#/lesson/big-o">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../variadic-functions/">← Variadic functions: how printf really works</a>
+<a href="../searching/">Searching: linear vs binary →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

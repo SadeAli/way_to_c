@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>while &amp; do-while: repeat until told otherwise — The C Path</title>
+<meta name="description" content="Behind nearly every frozen app — the spinner that never stops spinning — is a loop that lost its way out. Loops are how a program does something a million…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="while &amp; do-while: repeat until told otherwise — The C Path">
+<meta property="og:description" content="Behind nearly every frozen app — the spinner that never stops spinning — is a loop that lost its way out. Loops are how a program does something a million…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"while & do-while: repeat until told otherwise","description":"Behind nearly every frozen app — the spinner that never stops spinning — is a loop that lost its way out. Loops are how a program does something a million…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>while &amp; do-while: repeat until told otherwise</h1>
+<p class="meta">⏱ 13 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/loops-while">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Behind nearly every frozen app — the spinner that never stops spinning — is a loop that lost its way out. Loops are how a program does something a million times without complaining, and this lesson teaches you to build ones that always know when to quit, plus the variant every "enter a valid number" prompt is secretly built on.</p></div>
+
+<p>Computers don't get bored — and loops are how you exploit that. The <code>while</code> loop is the simplest: <strong>check a condition; if true, run the body; go back and check again</strong>. Repeat until the condition turns false.</p>
+
+<figure class="code"><figcaption>countdown.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int n = 3;
+    while (n &gt; 0) {
+        printf(&quot;%d\n&quot;, n);
+        n--;
+    }
+    printf(&quot;Liftoff!\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc countdown.c -o countdown &amp;&amp; ./countdown
+3
+2
+1
+Liftoff!</pre></figure>
+
+<p>The shape of every while loop, as a diagram — note the edge that makes it a <em>loop</em>:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/loops-while">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<p>Three ingredients make a healthy loop: <b>initialize</b> something before it (<code>n = 3</code>), <b>test</b> it in the condition (<code>n &gt; 0</code>), and <b>update</b> it in the body (<code>n--</code>). Forget the update and you've built an <em>infinite loop</em> — the condition never changes, and your program spins forever (Ctrl+C to rescue your terminal).</p>
+
+<p>Step through the countdown and watch the check-run-update rhythm:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/loops-while">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>int n = 0; while (n > 0) { printf("hi"); n--; }</code> print?</p><ul><li>"hi" once</li><li>Nothing — the body never runs</li><li>"hi" forever</li><li>Compile error</li></ul><details><summary>Show answer</summary><p><b>Nothing — the body never runs</b> — while tests first: 0 > 0 is false on the very first check, so the body runs zero times. (A do-while version WOULD print "hi" once — and then run forever as n goes negative… twice the trap!)</p></details></div>
+
+<h2>Zero iterations is a feature</h2>
+<p><code>while</code> tests <em>before</em> every run of the body — including the first. If the condition starts false, the body runs <strong>zero times</strong>. That's usually exactly right: "process items while any remain" should do nothing when there are none.</p>
+
+<h2>do-while: test at the bottom</h2>
+<p>Sometimes the body must run at least once <em>before</em> you can sensibly test — like asking a user for input and validating it. That's <code>do … while</code>, C's only loop that checks at the end (mind the required semicolon after the condition!):</p>
+<figure class="code"><figcaption>dowhile.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int tries = 0;
+    int guess;
+
+    do {
+        guess = 30 + tries * 6;      /* stand-in for user input */
+        tries++;
+        printf(&quot;try %d: guessing %d\n&quot;, tries, guess);
+    } while (guess != 42);
+
+    printf(&quot;got it in %d tries\n&quot;, tries);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc dowhile.c -o dowhile &amp;&amp; ./dowhile
+try 1: guessing 30
+try 2: guessing 36
+try 3: guessing 42
+got it in 3 tries</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> The key difference between <code>while</code> and <code>do-while</code> is…</p><ul><li>do-while is faster</li><li>do-while runs the body at least once — it tests at the bottom</li><li>while can’t contain if statements</li><li>do-while can’t be infinite</li></ul><details><summary>Show answer</summary><p><b>do-while runs the body at least once — it tests at the bottom</b> — Same loop, different first move: while checks before the first iteration (0+ runs); do-while checks after (1+ runs). Use do-while when the body itself produces the thing you test — like reading input.</p></details></div>
+
+<h2>Sentinel loops: "read until a special value"</h2>
+<p>A classic while pattern: keep consuming input until a <em>sentinel</em> value says stop. Here the sentinel is 0 (real programs use scanf's own return value; return values are next lesson's territory):</p>
+<figure class="code"><figcaption>sentinel.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int scores[] = { 8, 12, 30, 0, 99 };  /* 0 = sentinel: stop */
+    int i = 0, total = 0;
+
+    while (scores[i] != 0) {
+        total += scores[i];
+        i++;
+    }
+    printf(&quot;total before sentinel: %d\n&quot;, total);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc sentinel.c -o sentinel &amp;&amp; ./sentinel
+total before sentinel: 50
+# the 99 after the sentinel is never touched</pre></figure>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Deliberate infinite loops are respectable C:</b> <code>while (1) { … }</code> is the standard skeleton for servers, embedded firmware, and game loops — anything that should run "forever" and exits via <code>break</code> or never. It's not a bug when it's on purpose.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/loops-while">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which loop is guaranteed infinite?</p><ul><li><code>while (n != 0) n -= 2;</code> starting at n = 7</li><li><code>while (0) { }</code></li><li><code>while (n > 0) n--;</code> starting at n = 1000000</li><li><code>do { } while (0);</code></li></ul><details><summary>Show answer</summary><p><b><code>while (n != 0) n -= 2;</code> starting at n = 7</b> — From 7, subtracting 2 gives 5, 3, 1, −1, −3… it steps right over 0 and never equals it (until signed overflow, which is UB). Prefer <code>n > 0</code> over <code>n != 0</code> — robust conditions survive imperfect inputs. Option B never runs; D runs exactly once.</p></details></div>
+
+<p>Most loops share that init-test-update trio so often that C packs all three into one line — say hello to <b>for</b>.</p>
+
+<a class="cta" href="../../index.html#/lesson/loops-while">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../switch-case/">← switch, case, default: the multi-way jump</a>
+<a href="../loops-for/">for loops: init, test, step — all in one line →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

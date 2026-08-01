@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>inline: a hint, a header trick, and a weird rule — The C Path</title>
+<meta name="description" content="A game redraws the screen 60 times a second, calling tiny helpers like max() millions of times — and merely calling them can cost more than the work they…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="inline: a hint, a header trick, and a weird rule — The C Path">
+<meta property="og:description" content="A game redraws the screen 60 times a second, calling tiny helpers like max() millions of times — and merely calling them can cost more than the work they…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"inline: a hint, a header trick, and a weird rule","description":"A game redraws the screen 60 times a second, calling tiny helpers like max() millions of times — and merely calling them can cost more than the work they…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🧬 Types &amp; Qualifiers, In Depth</p>
+<h1>inline: a hint, a header trick, and a weird rule</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/inline">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>A game redraws the screen 60 times a second, calling tiny helpers like <code>max()</code> millions of times — and merely <em>calling</em> them can cost more than the work they do. <code>inline</code> is C's tool for making tiny functions effectively free. Along the way it explains a baffling "undefined reference" error that you are otherwise destined to meet someday.</p></div>
+
+<p>Calling a function costs a little: arguments get arranged, a jump happens, a stack frame — the function's private patch of stack memory — is set up. For a three-instruction function called a billion times, the overhead can dwarf the work. <strong>Inlining</strong> — pasting the body directly where the call was written — removes the overhead and, more importantly, lets the optimizer melt caller and callee together.</p>
+
+<h2>What the keyword actually does (little!)</h2>
+<p>Here's the modern reality: <code>inline</code> is only a <em>suggestion</em>, and at <code>-O2</code> compilers inline aggressively <strong>with or without it</strong> — and refuse when it's a bad idea, with or without it. The keyword's real, practical value is different: it changes the rules so a function <strong>definition can legally live in a header</strong> included by many <code>.c</code> files, without "multiple definition" linker errors.</p>
+
+<figure class="code"><figcaption>imath.h — the pattern to memorize</figcaption><pre><code>#ifndef IMATH_H
+#define IMATH_H
+
+/* safe to #include from any number of .c files */
+static inline int imax(int a, int b) {
+    return a &gt; b ? a : b;
+}
+
+static inline int iclamp(int x, int lo, int hi) {
+    return imax(lo, x &lt; hi ? x : hi);
+}
+
+#endif</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -O2 -c a.c b.c c.c   # all three include imath.h
+$ gcc a.o b.o c.o -o app   # no &quot;multiple definition&quot; errors
+# and at -O2, calls to imax compiled to a single cmov — no call at all</pre></figure>
+
+<p>Why <code>static inline</code>? Each translation unit gets its own private copy of the function; the copies never meet at link time, so there's no conflict. The optimizer inlines the calls and usually no copy even exists in the final binary.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why does <code>static inline</code> in a header not cause "multiple definition" linker errors?</p><ul><li>inline deletes the function entirely</li><li>static gives each translation unit its own internal copy — the linker never sees a clash</li><li>The preprocessor removes duplicate definitions</li><li>Headers are only compiled once</li></ul><details><summary>Show answer</summary><p><b>static gives each translation unit its own internal copy — the linker never sees a clash</b> — static = internal linkage: each .c that includes the header owns a private version. Private symbols are not matched across TUs, so no conflict — and unused copies are simply discarded.</p></details></div>
+
+<h2>The weird C99 rule (told honestly)</h2>
+<p>Plain <code>inline</code> — without <code>static</code> — has famously confusing semantics. Watch what happens:</p>
+<figure class="code"><figcaption>lonely.c — plain inline, no extern anywhere</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+inline int twice(int x) { return 2 * x; }
+
+int main(void) {
+    printf(&quot;%d\n&quot;, twice(21));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -O0 lonely.c
+/usr/bin/ld: /tmp/ccXig1zw.o: in function 'main':
+lonely.c:(.text+0xe): undefined reference to 'twice'
+collect2: error: ld returned 1 exit status
+# at -O2 it &quot;works&quot; — the call was inlined so no symbol was needed. Fragile!</pre></figure>
+<p>What?! Here's the rule, as simply as it can be put: a function defined with <em>only</em> <code>inline</code> provides an <strong>inline definition</strong> — a body the compiler <em>may</em> use for inlining, but which does <strong>not</strong> emit an actual, linkable function. If the compiler chooses to make a real call (it always does at <code>-O0</code>), the linker needs a real function… which nobody emitted. To emit one, exactly one translation unit must add an <code>extern</code> declaration:</p>
+<figure class="code"><figcaption>the C99-correct fix (one TU only)</figcaption><pre><code>/* twice.h — inline definition, included everywhere */
+inline int twice(int x) { return 2 * x; }
+
+/* twice.c — exactly ONE file forces a real, linkable copy */
+#include &quot;twice.h&quot;
+extern int twice(int x);   /* &quot;emit the external definition here&quot; */</code></pre></figure>
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Extra confusion, historical edition:</b> pre-C99 GNU C ("gnu89 inline") used the <em>same keywords with the meanings flipped</em>. If you read old code or blog posts, check which dialect they mean. This mess is why the ecosystem settled on the pattern below.</p></div></div>
+
+<h2>The practical decision</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/inline">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+<p><strong>Rule of thumb that ends all confusion:</strong> for small functions in headers, write <code>static inline</code> and move on with your life. Reserve C99's <code>extern inline</code> dance for libraries that need one canonical out-of-line copy (glibc does this; you almost never need to).</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> A function defined with plain <code>inline</code> (no static, no extern declaration anywhere) links fine at -O2 but fails at -O0. Why?</p><ul><li>-O0 disables the inline keyword</li><li>An inline definition emits no linkable symbol; -O2 inlined every call (no symbol needed), -O0 emitted real calls to a function that does not exist</li><li>The linker requires optimization for inline</li><li>It is a compiler bug</li></ul><details><summary>Show answer</summary><p><b>An inline definition emits no linkable symbol; -O2 inlined every call (no symbol needed), -O0 emitted real calls to a function that does not exist</b> — That is the C99 rule in action: inline-only = "body available for inlining, but I am not the external definition". Whether you need the symbol depends on whether calls were actually inlined — hence the optimization-level-dependent link error.</p></details></div>
+
+<h2>When inlining hurts</h2>
+<p>Inlining duplicates code. Inline a 200-line function into 50 call sites and your binary balloons — and a bigger binary means more <strong>instruction-cache misses</strong>, which can make the program <em>slower</em> than honest calls. Compilers weigh this with size heuristics; trust them. Profile first, and if a hot call really must vanish, check the compiler agreed (look at the assembly, or use <code>-Winline</code>) rather than sprinkling <code>inline</code> as a magic performance spice.</p>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p>Since inlining requires the body to be <em>visible</em> in the calling translation unit, functions hidden in other .c files can't be inlined — unless you enable link-time optimization (<code>-flto</code>), which lets the "linker" re-optimize across files. More in Part 8.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Inlining a large function into many call sites can make a program slower because…</p><ul><li>inline functions cannot use registers</li><li>the duplicated code enlarges the binary and thrashes the instruction cache</li><li>inlined code cannot be optimized</li><li>each copy re-checks its arguments</li></ul><details><summary>Show answer</summary><p><b>the duplicated code enlarges the binary and thrashes the instruction cache</b> — Code bloat is the classic inlining downside: more bytes of machine code competing for the same small i-cache. This is why compilers apply size heuristics and why "inline everything" is an anti-pattern.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/inline">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>inline asks the compiler to optimize harder; the next keyword, <code>restrict</code>, gives it <em>permission</em> to — by promising your pointers don't overlap.</p>
+
+<a class="cta" href="../../index.html#/lesson/inline">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../storage-classes/">← auto, register, static, extern: who lives where, seen by whom</a>
+<a href="../restrict/">restrict: the no-aliasing promise →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

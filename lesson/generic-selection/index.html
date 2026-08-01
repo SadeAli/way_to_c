@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>_Generic: compile-time dispatch on type — The C Path</title>
+<meta name="description" content="Call abs(-2.5) and C quietly answers 2 — wrong — because C keeps a separate absolute-value function for every kind of number, and abs is the whole-number…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="_Generic: compile-time dispatch on type — The C Path">
+<meta property="og:description" content="Call abs(-2.5) and C quietly answers 2 — wrong — because C keeps a separate absolute-value function for every kind of number, and abs is the whole-number…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"_Generic: compile-time dispatch on type","description":"Call abs(-2.5) and C quietly answers 2 — wrong — because C keeps a separate absolute-value function for every kind of number, and abs is the whole-number…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🚀 Modern C (C11 → C23)</p>
+<h1>_Generic: compile-time dispatch on type</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/generic-selection">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Call <code>abs(-2.5)</code> and C quietly answers <code>2</code> — wrong — because C keeps a separate absolute-value function for every kind of number, and <code>abs</code> is the whole-number one. Here you learn the switch-on-type trick that lets a single name pick the right function automatically at compile time. It's the exact machinery the standard library uses so that <code>sqrt</code> just works on whatever number you hand it.</p></div>
+
+<p>In C, <code>abs</code>, <code>labs</code>, <code>fabs</code>, and <code>fabsf</code> are four different functions for one idea, because C has no <em>function overloading</em> (the trick other languages use to let one name cover several types) — in C, every function name means exactly one thing. C11 didn't add overloading, but it added something sneakier: <strong><code>_Generic</code></strong>, an expression that <em>selects other expressions based on the type of its argument, at compile time</em>.</p>
+
+<h2>The syntax</h2>
+<figure class="code"><figcaption>typename.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+#define type_name(x) _Generic((x),        \
+    int:          &quot;int&quot;,                  \
+    unsigned int: &quot;unsigned int&quot;,         \
+    double:       &quot;double&quot;,               \
+    float:        &quot;float&quot;,                \
+    char:         &quot;char&quot;,                 \
+    char *:       &quot;char *&quot;,               \
+    default:      &quot;something else&quot;)
+
+int main(void) {
+    printf(&quot;42    -&gt; %s\n&quot;, type_name(42));
+    printf(&quot;42u   -&gt; %s\n&quot;, type_name(42u));
+    printf(&quot;3.14  -&gt; %s\n&quot;, type_name(3.14));
+    printf(&quot;3.14f -&gt; %s\n&quot;, type_name(3.14f));
+    printf(&quot;\&quot;hi\&quot;  -&gt; %s\n&quot;, type_name(&quot;hi&quot;));
+    printf(&quot;'a'   -&gt; %s\n&quot;, type_name('a'));   /* surprise! */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c17 typename.c -o typename &amp;&amp; ./typename
+42    -&gt; int
+42u   -&gt; unsigned int
+3.14  -&gt; double
+3.14f -&gt; float
+&quot;hi&quot;  -&gt; char *
+'a'   -&gt; int
+# 'a' is an int in C (not char!), and &quot;hi&quot; decayed from char[3] to char *</pre></figure>
+
+<p>Read it as a <code>switch</code> on types: the <em>controlling expression</em> <code>(x)</code> is examined (but <strong>never evaluated</strong> — only its type matters), the association list maps types to result expressions, and the whole <code>_Generic(...)</code> collapses to the one that matches. <code>default</code> catches everything else; with no match and no <code>default</code>, it's a compile error.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/generic-selection">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In <code>_Generic(f(), int: a, default: b)</code>, is <code>f()</code> called at runtime?</p><ul><li>Yes, once</li><li>Yes, once per matching branch</li><li>No — only its type is used</li><li>Only if the int branch is selected</li></ul><details><summary>Show answer</summary><p><b>No — only its type is used</b> — The controlling expression is NEVER evaluated — the compiler only inspects its type. This means _Generic(x++, ...) does not increment x, another classic gotcha.</p></details></div>
+
+<h2>Building a real type-generic macro</h2>
+<p><code>_Generic</code> is almost always wrapped in a macro — that's the whole design. Here's the classic: one <code>my_abs</code> that works for every arithmetic type:</p>
+
+<figure class="code"><figcaption>myabs.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;   /* abs, labs, llabs   */
+#include &lt;math.h&gt;     /* fabs, fabsf, fabsl */
+
+#define my_abs(x) _Generic((x),  \
+    int:         abs,            \
+    long:        labs,           \
+    long long:   llabs,          \
+    float:       fabsf,          \
+    double:      fabs,           \
+    long double: fabsl           \
+)(x)   /* &lt;- select the FUNCTION, then call it */
+
+int main(void) {
+    printf(&quot;my_abs(-5)      = %d\n&quot;,  my_abs(-5));
+    printf(&quot;my_abs(-5L)     = %ld\n&quot;, my_abs(-5L));
+    printf(&quot;my_abs(-2.5f)   = %f\n&quot;,  my_abs(-2.5f));
+    printf(&quot;my_abs(-2.5)    = %f\n&quot;,  my_abs(-2.5));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c17 myabs.c -o myabs -lm &amp;&amp; ./myabs
+my_abs(-5)      = 5
+my_abs(-5L)     = 5
+my_abs(-2.5f)   = 2.500000
+my_abs(-2.5)    = 2.500000
+# one macro, four different functions actually called — picked per call site</pre></figure>
+
+<p>Note the trick on the last line: <code>_Generic</code> selects the <em>function itself</em> (<code>abs</code>, <code>fabs</code>, …), and only then do we call it with <code>(x)</code>. This is exactly how <code>&lt;tgmath.h&gt;</code> works — since C11 it's implementable as ordinary macros: <code>sqrt(2.0f)</code> quietly calls <code>sqrtf</code>, <code>sqrt(2.0)</code> calls the double version, <code>sqrt(z)</code> the complex one. Type-generic math, zero runtime cost.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> How does <code>&lt;tgmath.h&gt;</code> make <code>sqrt</code> work on float, double, and complex?</p><ul><li>Runtime type tags on every number</li><li>The linker picks a version</li><li>Type-generic macros — since C11, buildable with <code>_Generic</code></li><li>sqrt secretly takes void *</li></ul><details><summary>Show answer</summary><p><b>Type-generic macros — since C11, buildable with <code>_Generic</code></b> — tgmath.h existed since C99 using compiler magic; C11’s _Generic made the magic expressible in the language itself. Each call site expands to a direct call of sqrtf/sqrt/sqrtl/csqrt — no runtime dispatch at all.</p></details></div>
+
+<h2>The fine print (a.k.a. the traps)</h2>
+<ul>
+<li><b>Lvalue conversion first.</b> The controlling expression's type is taken <em>after</em> dropping qualifiers and decaying arrays: a <code>const int</code> matches <code>int</code>, and a <code>char[10]</code> matches <code>char *</code>. (C11 was fuzzy here; C17 nailed it down.)</li>
+<li><b>No partial matching.</b> You can't write "any pointer type" or "any integer" — every type is spelled out exactly. Want 6 integer types? Write 6 associations.</li>
+<li><b>Character literals are <code>int</code>.</b> <code>_Generic('a', char: 1, int: 2)</code> gives <b>2</b> in C — a perennial interview gotcha.</li>
+<li><b>Every branch must be valid code.</b> Unselected branches aren't evaluated, but they are still parsed and type-checked — which is why the "select the function, then call" pattern beats putting full calls in each branch.</li>
+</ul>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Two types that look the same can collide:</b> listing both <code>int</code> and <code>signed int</code> is an error (same type twice), yet <code>char</code>, <code>signed char</code>, and <code>unsigned char</code> are <em>three distinct types</em> and may all appear. When a generic association list misbehaves, suspect the type system's fine print.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>_Generic((const int){0}, int: "plain", default: "other")</code> select?</p><ul><li>"other" — const int is distinct</li><li>"plain" — qualifiers are dropped first</li><li>Compile error — duplicate types</li><li>Undefined behavior</li></ul><details><summary>Show answer</summary><p><b>"plain" — qualifiers are dropped first</b> — The controlling expression undergoes lvalue conversion, which strips top-level qualifiers (and decays arrays to pointers). const int therefore matches the int association. C17 spelled this out explicitly.</p></details></div>
+
+<h2>Where it shines</h2>
+<p>Beyond math wrappers: type-safe <code>print</code> helpers (pick the right <code>printf</code> format automatically), debug macros that show a value <em>and</em> its type, and library APIs that accept several types without <code>void *</code>'s type-erasure. Try one yourself:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/generic-selection">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>So far, everything in this part happened at compile time — next, the hardest <em>runtime</em> problem in modern C: multiple threads touching the same memory.</p>
+
+<a class="cta" href="../../index.html#/lesson/generic-selection">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../alignment/">← Alignment: why your struct is bigger than its parts</a>
+<a href="../atomics-threads/">Atomics &amp; threads: sharing memory without lying to yourself →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

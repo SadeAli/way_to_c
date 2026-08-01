@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scope &amp; lifetime: who sees what, and for how long — The C Path</title>
+<meta name="description" content="Two mysteries ambush every beginner: &quot;why isn't my variable changing?!&quot; (a hidden twin with the same name is soaking up your assignments) and &quot;how can a…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Scope &amp; lifetime: who sees what, and for how long — The C Path">
+<meta property="og:description" content="Two mysteries ambush every beginner: &quot;why isn't my variable changing?!&quot; (a hidden twin with the same name is soaking up your assignments) and &quot;how can a…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Scope & lifetime: who sees what, and for how long","description":"Two mysteries ambush every beginner: \"why isn't my variable changing?!\" (a hidden twin with the same name is soaking up your assignments) and \"how can a…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>Scope &amp; lifetime: who sees what, and for how long</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/scope-lifetime">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Two mysteries ambush every beginner: "why isn't my variable changing?!" (a hidden twin with the same name is soaking up your assignments) and "how can a function remember something between calls?" (a variable that quietly refuses to die). Both answers live in this lesson — the rules of who can see a variable and how long it stays alive.</p></div>
+
+<p>Every variable in C answers two independent questions. <strong>Scope</strong>: from <em>where</em> in the code can I refer to it? <strong>Lifetime</strong>: for <em>how long</em> does its memory exist? Most of the time the two travel together — but the interesting corners of C are exactly where they split apart. First up: what a pair of braces — a <em>block</em> — does to a variable's visibility, including the sneaky case where one variable hides another behind the same name.</p>
+
+<h2>Block scope & shadowing</h2>
+<p>A variable declared inside <code>{ … }</code> exists from its declaration to the closing brace — that region is its scope. Blocks nest, and an inner declaration with the same name <strong>shadows</strong> the outer one: the outer variable still exists, but its name is temporarily eclipsed.</p>
+<figure class="code"><figcaption>shadow.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int x = 1;
+    printf(&quot;outer x: %d\n&quot;, x);
+    {
+        int x = 2;               /* shadows the outer x      */
+        printf(&quot;inner x: %d\n&quot;, x);
+        x = 99;                  /* changes ONLY the inner x */
+    }                            /* inner x dies here        */
+    printf(&quot;outer x: %d  (untouched)\n&quot;, x);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc shadow.c -o shadow &amp;&amp; ./shadow
+outer x: 1
+inner x: 2
+outer x: 1  (untouched)</pre></figure>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p>Shadowing is legal and occasionally handy, but it's a classic source of "why isn't my variable changing?!" confusion. GCC's <code>-Wshadow</code> flags every case — worth turning on.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Inside the inner block of <code>shadow.c</code>, what happened to the outer <code>x</code>?</p><ul><li>It was destroyed and recreated later</li><li>It still existed — only its NAME was hidden by the inner x</li><li>It was renamed by the compiler</li><li>It became read-only</li></ul><details><summary>Show answer</summary><p><b>It still existed — only its NAME was hidden by the inner x</b> — Shadowing hides names, not memory. The outer x sat in its stack slot the whole time, value intact — there was just no way to spell it while the inner x owned the name.</p></details></div>
+
+<h2>Two historic keywords: <code>auto</code> and <code>register</code></h2>
+<p>Ordinary locals are <em>automatic</em> — created on block entry, destroyed on exit, stack-dwelling. The keyword <code>auto</code> says exactly that… and since locals are automatic <em>by default</em>, nobody has typed it in fifty years. (Plot twist: C23 recycled <code>auto</code> for type inference, like C++.) Its sibling <code>register</code> once begged the compiler to keep a variable in a CPU register; modern optimizers ignore the hint entirely. Its one surviving effect: you may not take a <code>register</code> variable's address. Both keywords are museum pieces you must recognize, not use.</p>
+
+<h2><code>static</code> locals: scope of an ant, lifetime of an elephant</h2>
+<p>Mark a local variable <code>static</code> and its <em>scope</em> stays tiny — just that block — but its <em>lifetime</em> becomes the whole program. It lives in the data segment (Part 0!), not the stack, is initialized exactly once before <code>main</code> even starts, and <strong>remembers its value between calls</strong>:</p>
+<figure class="code"><figcaption>counter.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int next_id(void) {
+    static int id = 100;   /* initialized ONCE, lives forever */
+    id++;
+    return id;
+}
+
+int main(void) {
+    printf(&quot;%d\n&quot;, next_id());
+    printf(&quot;%d\n&quot;, next_id());
+    printf(&quot;%d\n&quot;, next_id());
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc counter.c -o counter &amp;&amp; ./counter
+101
+102
+103
+# a plain 'int id = 100;' would print 101 three times</pre></figure>
+<p>Watch the initialization happen only once — the trace makes it obvious:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/scope-lifetime">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> How many times does <code>static int id = 100;</code> execute its initialization across 5 calls to next_id()?</p><ul><li>5 times</li><li>Twice</li><li>Exactly once, before the program starts</li><li>Never — statics start as garbage</li></ul><details><summary>Show answer</summary><p><b>Exactly once, before the program starts</b> — Static storage is initialized once, at program startup (and to zero if you give no initializer — never garbage, unlike stack locals!). On later calls the declaration line is just scenery.</p></details></div>
+
+<h2><code>extern</code>: one variable, many files</h2>
+<p>A variable declared <em>outside</em> every function is <strong>global</strong>: file-wide scope, program-long lifetime. To use one global across several .c files, exactly one file <em>defines</em> it, and the others <em>declare</em> it with the keyword <code>extern</code> — "it exists, but elsewhere; linker, please connect us":</p>
+<figure class="code"><figcaption>two files, one global</figcaption><pre><code>/* ---- config.c ---- */
+int max_users = 64;          /* THE definition: memory lives here */
+
+/* ---- server.c ---- */
+#include &lt;stdio.h&gt;
+extern int max_users;        /* declaration: defined elsewhere    */
+
+void report(void) {
+    printf(&quot;limit: %d users\n&quot;, max_users);   /* same variable  */
+}</code></pre></figure>
+<p>This is the declaration-vs-definition split from the functions lesson, replayed for variables. And that's <strong>linkage</strong> in a nutshell — the linker matching names across files. One more twist: <code>static</code> on a <em>global</em> (or a function) means the opposite of extern — "private to this file, invisible to the linker". Same keyword, second job; Part 3's storage-classes lesson dissects it fully.</p>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Style compass:</b> prefer the smallest scope that works. Locals over globals, loop-scoped counters over function-wide ones. Globals aren't evil, but every one of them is a variable ANY code might change — the more you have, the harder your program is to reason about.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> <code>extern int max_users;</code> means…</p><ul><li>create a new variable named max_users</li><li>this variable exists, but its definition (memory) is in another file — linker, connect us</li><li>max_users cannot be modified</li><li>max_users is stored on the heap</li></ul><details><summary>Show answer</summary><p><b>this variable exists, but its definition (memory) is in another file — linker, connect us</b> — extern makes a declaration without a definition: no storage is allocated. Exactly one translation unit must define the variable, or the linker reports undefined reference — the same promise/delivery dance as function prototypes.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/scope-lifetime">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>🎉 That wraps Part 1 — you can now write real, structured C programs. Ahead lies the part that gives C its reputation and its power: <b>pointers and memory</b>. Deep breath; it's more logical than the legends claim.</p>
+
+<a class="cta" href="../../index.html#/lesson/scope-lifetime">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../functions/">← Functions: name it once, use it forever</a>
+<a href="../pointers-intro/">Pointers: variables that hold addresses →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

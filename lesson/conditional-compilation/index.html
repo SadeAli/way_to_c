@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conditional compilation: code that decides to exist — The C Path</title>
+<meta name="description" content="One game's source code can build on both Windows and Linux, even though each system needs code the other can't even compile — and the chatty &quot;debug mode&quot;…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Conditional compilation: code that decides to exist — The C Path">
+<meta property="og:description" content="One game's source code can build on both Windows and Linux, even though each system needs code the other can't even compile — and the chatty &quot;debug mode&quot;…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Conditional compilation: code that decides to exist","description":"One game's source code can build on both Windows and Linux, even though each system needs code the other can't even compile — and the chatty \"debug mode\"…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎩 The Preprocessor</p>
+<h1>Conditional compilation: code that decides to exist</h1>
+<p class="meta">⏱ 11 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/conditional-compilation">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>One game's source code can build on both Windows and Linux, even though each system needs code the other can't even compile — and the chatty "debug mode" messages developers rely on vanish completely from the version players download, at zero cost in speed. Both feats are the same trick: code that gets erased before the compiler ever looks at it. Soon you'll be flipping whole features on and off with a single compiler flag.</p></div>
+
+<p>An <code>if</code> statement chooses at <em>runtime</em>. The preprocessor's <code>#if</code> chooses at <em>build time</em> — while your program is being compiled — and the losing side isn't skipped, it's <strong>deleted before the compiler ever sees it</strong>. That deleted code can call functions that only exist on another operating system, sit half-written, or make no sense at all: deleted text can't cause errors.</p>
+
+<h2>The directive family</h2>
+<table>
+<tr><th>directive</th><th>meaning</th></tr>
+<tr><td><code>#if expr</code></td><td>keep block if the constant expression is non-zero</td></tr>
+<tr><td><code>#ifdef NAME</code></td><td>shorthand for <code>#if defined(NAME)</code></td></tr>
+<tr><td><code>#ifndef NAME</code></td><td>shorthand for <code>#if !defined(NAME)</code> (hello, include guards)</td></tr>
+<tr><td><code>#elif expr</code></td><td>else-if chain</td></tr>
+<tr><td><code>#else</code> / <code>#endif</code></td><td>fallback / mandatory closer</td></tr>
+<tr><td><code>#elifdef</code> / <code>#elifndef</code></td><td>C23 shorthands for <code>#elif defined</code> / <code>#elif !defined</code></td></tr>
+</table>
+<p>The expression after <code>#if</code> is an integer constant expression evaluated by the preprocessor: arithmetic, comparisons, <code>&amp;&amp;</code>/<code>||</code>, and the special operator <code>defined(NAME)</code>, which is 1 if the macro exists (regardless of its value). No <code>sizeof</code>, no casts, no floats, no enum constants — the preprocessor knows only macros and integers.</p>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Sneaky rule:</b> in a <code>#if</code> expression, any identifier that is <em>not</em> a defined macro silently becomes <code>0</code>. So <code>#if VERSOIN &gt;= 2</code> (typo!) is always false — no error, no warning by default. GCC's <code>-Wundef</code> catches this; turn it on.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In <code>#if MY_FLAG == 1</code>, what happens if <code>MY_FLAG</code> was never defined?</p><ul><li>Preprocessor error: unknown identifier</li><li>The identifier is treated as 0, so the block is skipped</li><li>The block is kept as a safe default</li><li>The compiler asks the linker</li></ul><details><summary>Show answer</summary><p><b>The identifier is treated as 0, so the block is skipped</b> — Undefined identifiers in #if expressions quietly evaluate to 0 — a rich source of typo bugs. Compile with -Wundef to get warned.</p></details></div>
+
+<h2>Platform detection</h2>
+<p>Compilers predefine macros that identify the target OS — the standard way to write portable code with unportable pieces:</p>
+<figure class="code"><figcaption>platform.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+#if defined(_WIN32)
+    #define PLATFORM &quot;Windows&quot;
+#elif defined(__APPLE__)
+    #define PLATFORM &quot;macOS&quot;
+#elif defined(__linux__)
+    #define PLATFORM &quot;Linux&quot;
+#else
+    #define PLATFORM &quot;something exotic&quot;
+#endif
+
+int main(void) {
+    printf(&quot;compiled for: %s\n&quot;, PLATFORM);
+    return 0;
+}</code></pre></figure>
+<p class="iw">▶ <a href="../../index.html#/lesson/conditional-compilation">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+<p>Only ONE of those branches survives preprocessing — on Linux, the compiler literally never sees the string <code>"Windows"</code>. That's why the Windows branch could call <code>&lt;windows.h&gt;</code> functions that don't exist on Linux, and still build fine there.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> On Linux, what does the compiler (not the preprocessor) see of the <code>_WIN32</code> branch?</p><ul><li>It sees it but skips code generation</li><li>It sees it as a comment</li><li>Nothing — the text was deleted before parsing</li><li>It compiles it into a disabled section</li></ul><details><summary>Show answer</summary><p><b>Nothing — the text was deleted before parsing</b> — That is the superpower of conditional compilation: the dead branch can reference Windows-only headers and functions, because on Linux that text simply no longer exists after preprocessing.</p></details></div>
+
+<h2>Debug builds: <code>-D</code> defines macros from the command line</h2>
+<p>The most-used pattern in all of C: log verbosely in development, compile the logging away entirely in release. The switch is <code>gcc -DDEBUG</code>, which acts exactly like a <code>#define DEBUG 1</code> at the top of every file:</p>
+<figure class="code"><figcaption>app.c — the DEBUG pattern</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+#ifdef DEBUG
+    #define DBG(...) fprintf(stderr, &quot;[debug] &quot; __VA_ARGS__)
+#else
+    #define DBG(...) ((void)0)   /* expands to nothing useful */
+#endif
+
+int main(void) {
+    int items = 3;
+    DBG(&quot;starting up, items=%d\n&quot;, items);
+    printf(&quot;processed %d items\n&quot;, items);
+    DBG(&quot;done\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc app.c -o app &amp;&amp; ./app
+processed 3 items
+# release build: DBG lines cost literally zero instructions
+$ gcc -DDEBUG app.c -o app &amp;&amp; ./app
+[debug] starting up, items=3
+processed 3 items
+[debug] done</pre></figure>
+<p>In the release build the <code>DBG</code> calls expand to <code>((void)0)</code> — a statement that does nothing and costs nothing. Zero runtime overhead, not even a branch. You can also pass values (<code>-DLEVEL=3</code>) and un-define with <code>-U</code>.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does the <code>-DDEBUG</code> compiler flag do?</p><ul><li>Enables the debugger</li><li>Acts like <code>#define DEBUG 1</code> before the first line of each file</li><li>Disables optimizations</li><li>Defines DEBUG only inside main()</li></ul><details><summary>Show answer</summary><p><b>Acts like <code>#define DEBUG 1</code> before the first line of each file</b> — -DNAME defines NAME as 1 (or -DNAME=value for a specific value) for the whole translation unit — the command-line twin of #define. -UNAME un-defines. The debugger flag is -g; optimizations are -O.</p></details></div>
+
+<h2><code>#if 0</code>: the nuclear comment</h2>
+<figure class="code"><figcaption>if0.c — disabling a block that contains comments</figcaption><pre><code>#if 0
+    /* old algorithm — kept for reference */
+    total = slow_sum(data, n);   /* O(n^2), ouch */
+#endif
+    total = fast_sum(data, n);
+
+/* trying the same with a comment would die here ^ at
+   the FIRST */ ... because block comments do not nest */</code></pre></figure>
+<p>C's <code>/* */</code> comments <b>don't nest</b> — commenting out code that contains comments breaks at the first <code>*/</code>. <code>#if 0 ... #endif</code> blocks nest with other conditionals and swallow (almost) anything, making them the standard way to disable a chunk of code temporarily. Just don't ship code full of them.</p>
+
+<h2>Feature-test macros: the reverse direction</h2>
+<p>Conditionals also flow the other way: <em>you</em> define macros to ask system headers for more. POSIX functions like <code>getline</code> or <code>clock_gettime</code> are hidden behind guards inside glibc's headers; defining <code>_POSIX_C_SOURCE 200809L</code> (or <code>_GNU_SOURCE</code> for everything) <em>before any #include</em> unlocks them. If a man page mentions a feature-test macro requirement, this is what it means.</p>
+
+<h2>Try it</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/conditional-compilation">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Conditionals decide what compiles — the next lesson covers the directives that talk back: errors, warnings, and pragmas.</p>
+
+<a class="cta" href="../../index.html#/lesson/conditional-compilation">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../function-macros/">← Function-like macros: power tools with no guard</a>
+<a href="../pragma-error-line/">#error, #warning, #pragma, #line — and a taste of #embed →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

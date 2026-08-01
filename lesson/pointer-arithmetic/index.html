@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointer arithmetic: +1 is not one byte — The C Path</title>
+<meta name="description" content="Any program that walks through a thousand scores or a million pixels needs &quot;go to the next one&quot;, which in C is spelled p + 1 — and it secretly moves 4 or 8…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Pointer arithmetic: +1 is not one byte — The C Path">
+<meta property="og:description" content="Any program that walks through a thousand scores or a million pixels needs &quot;go to the next one&quot;, which in C is spelled p + 1 — and it secretly moves 4 or 8…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Pointer arithmetic: +1 is not one byte","description":"Any program that walks through a thousand scores or a million pixels needs \"go to the next one\", which in C is spelled p + 1 — and it secretly moves 4 or 8…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎯 Pointers &amp; Memory</p>
+<h1>Pointer arithmetic: +1 is not one byte</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/pointer-arithmetic">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Any program that walks through a thousand scores or a million pixels needs "go to the next one", which in C is spelled <code>p + 1</code> — and it secretly moves 4 or 8 bytes, not 1. Grasp that one rule and every walk-through-the-data loop you'll ever write makes sense. Miss it, and your code quietly reads memory that belongs to someone else.</p></div>
+
+<p>Here's a question that separates people who <em>know</em> C from people who've merely seen it: if <code>int *p</code> holds the address <code>0x1000</code>, what is <code>p + 1</code>? If you said <code>0x1001</code> — this lesson is for you.</p>
+
+<h2>The golden rule: <code>p + 1</code> moves by <code>sizeof(*p)</code></h2>
+<p>Pointer arithmetic counts in <strong>elements, not bytes</strong>. Adding 1 to an <code>int *</code> advances the address by <code>sizeof(int)</code> (4 bytes); adding 1 to a <code>double *</code> jumps 8; a <code>char *</code> moves 1. This is exactly why pointers carry a type: the type sets the <em>stride</em> — how far each step of arithmetic moves.</p>
+<figure class="code"><figcaption>stride.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int  arr[4] = {10, 20, 30, 40};
+    int  *p = arr;
+    char *c = (char *)arr;         /* same address, char view */
+
+    printf(&quot;p      = %p\n&quot;, (void *)p);
+    printf(&quot;p + 1  = %p   (+%zu bytes)\n&quot;, (void *)(p + 1), sizeof *p);
+    printf(&quot;c      = %p\n&quot;, (void *)c);
+    printf(&quot;c + 1  = %p   (+1 byte)\n&quot;, (void *)(c + 1));
+    printf(&quot;*(p+2) = %d\n&quot;, *(p + 2));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc stride.c -o stride &amp;&amp; ./stride
+p      = 0x7ffdc0d1e2a0
+p + 1  = 0x7ffdc0d1e2a4   (+4 bytes)
+c      = 0x7ffdc0d1e2a0
+c + 1  = 0x7ffdc0d1e2a1   (+1 byte)
+*(p+2) = 30
+# same +1, different jump — the pointer TYPE sets the stride</pre></figure>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/pointer-arithmetic">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> An <code>int *p</code> holds 0x1000 (4-byte ints). What is <code>p + 3</code>?</p><ul><li>0x1003</li><li>0x100C</li><li>0x1004</li><li>0x1030</li></ul><details><summary>Show answer</summary><p><b>0x100C</b> — Three elements of 4 bytes = 12 bytes = 0xC. Pointer arithmetic always scales by the pointed-to type’s size.</p></details></div>
+
+<h2>Subtracting pointers</h2>
+<p>The reverse also works: subtracting two pointers into the <em>same array</em> gives the number of <strong>elements</strong> between them (not bytes!). The result has the signed type <code>ptrdiff_t</code> from <code>&lt;stddef.h&gt;</code>, printed with <code>%td</code>:</p>
+<figure class="code"><figcaption>ptrdiff.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stddef.h&gt;
+
+int main(void) {
+    int a[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    int *first = &amp;a[1];
+    int *last  = &amp;a[6];
+
+    ptrdiff_t n = last - first;    /* ELEMENTS, not bytes */
+    printf(&quot;last - first = %td\n&quot;, n);
+    printf(&quot;first &lt; last : %s\n&quot;, first &lt; last ? &quot;yes&quot; : &quot;no&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc ptrdiff.c -o ptrdiff &amp;&amp; ./ptrdiff
+last - first = 5
+first &lt; last : yes
+# 20 bytes apart, but the answer is 5 — arithmetic is element-wise</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> With <code>int a[10]</code>, what is <code>&amp;a[7] - &amp;a[2]</code>?</p><ul><li>20</li><li>5</li><li>0x14</li><li>Undefined behavior</li></ul><details><summary>Show answer</summary><p><b>5</b> — Pointer subtraction within one array yields the element count between them: 7 − 2 = 5. The byte distance (20) is divided by sizeof(int) for you.</p></details></div>
+
+<h2>Comparing pointers &amp; the one-past-the-end rule</h2>
+<p>Pointers into the same array can be compared with <code>&lt;</code>, <code>&gt;</code>, <code>==</code> — which enables the most idiomatic loop in C:</p>
+<figure class="code"><figcaption>ptrloop.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a[5] = {2, 4, 6, 8, 10};
+    int sum = 0;
+
+    for (int *p = a; p &lt; a + 5; p++)  /* a+5: one PAST the end */
+        sum += *p;
+
+    printf(&quot;sum = %d\n&quot;, sum);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc ptrloop.c -o ptrloop &amp;&amp; ./ptrloop
+sum = 30</pre></figure>
+<p>Look at that loop condition: <code>p &lt; a + 5</code>. The pointer <code>a + 5</code> points <em>one past the last element</em>. The standard explicitly blesses this one special address: you may <strong>form</strong> it and <strong>compare</strong> against it — you just may not <strong>dereference</strong> it. It exists precisely so loops like this have a clean stopping line.</p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>One past the end is the cliff edge.</b> Computing <code>a + 6</code> (two past) or <code>a - 1</code> is undefined behavior <em>even if you never dereference it</em> — the mere arithmetic is illegal. Real compilers really do exploit this to optimize, so "it worked on my machine" proves nothing.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> For <code>int a[5]</code>, which of these is fully legal?</p><ul><li>Dereferencing <code>a + 5</code></li><li>Forming and comparing the pointer <code>a + 5</code></li><li>Computing <code>a + 6</code> as long as you never dereference it</li><li>Computing <code>a - 1</code></li></ul><details><summary>Show answer</summary><p><b>Forming and comparing the pointer <code>a + 5</code></b> — The one-past-the-end pointer is the single blessed exception: form it, compare it, never read through it. Anything beyond that — even just computing the address — is undefined behavior.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/pointer-arithmetic">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Pointer arithmetic on element after element probably smells like something familiar — time to meet arrays properly.</p>
+
+<a class="cta" href="../../index.html#/lesson/pointer-arithmetic">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../pointers-intro/">← Pointers: variables that hold addresses</a>
+<a href="../arrays/">Arrays: many values, one name →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

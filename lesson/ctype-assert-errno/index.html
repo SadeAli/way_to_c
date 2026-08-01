@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ctype.h, assert.h &amp; errno.h: small headers, big habits — The C Path</title>
+<meta name="description" content="How does a password checker know you typed a digit? And how does &quot;No such file or directory&quot; actually reach your screen? Three tiny headers answer both —…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="ctype.h, assert.h &amp; errno.h: small headers, big habits — The C Path">
+<meta property="og:description" content="How does a password checker know you typed a digit? And how does &quot;No such file or directory&quot; actually reach your screen? Three tiny headers answer both —…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ctype.h, assert.h & errno.h: small headers, big habits","description":"How does a password checker know you typed a digit? And how does \"No such file or directory\" actually reach your screen? Three tiny headers answer both —…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">📚 The Standard Library</p>
+<h1>ctype.h, assert.h &amp; errno.h: small headers, big habits</h1>
+<p class="meta">⏱ 13 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/ctype-assert-errno">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>How does a password checker know you typed a digit? And how does "No such file or directory" actually reach your screen? Three tiny headers answer both — and teach you the professional habit of making bugs crash loudly while you develop, at zero cost in the version you ship.</p></div>
+
+<p>Three tiny headers that shape how good C code <em>feels</em>: <code>ctype.h</code> classifies characters, <code>assert.h</code> catches impossible states, and <code>errno.h</code> is the standard library's error-reporting channel. Each has one famous trap.</p>
+
+<h2>ctype.h: what kind of character is this?</h2>
+<table>
+<tr><th>test</th><th>true for</th><th>test</th><th>true for</th></tr>
+<tr><td><code>isalpha</code></td><td>letters a–z A–Z</td><td><code>isupper</code></td><td>A–Z</td></tr>
+<tr><td><code>isdigit</code></td><td>0–9</td><td><code>islower</code></td><td>a–z</td></tr>
+<tr><td><code>isalnum</code></td><td>letters or digits</td><td><code>isxdigit</code></td><td>hex digits 0–9 a–f A–F</td></tr>
+<tr><td><code>isspace</code></td><td>space \t \n \r \v \f</td><td><code>ispunct</code></td><td>printable, not alnum/space</td></tr>
+<tr><td><code>isprint</code></td><td>anything visible + space</td><td><code>iscntrl</code></td><td>control codes</td></tr>
+</table>
+<p>Plus two converters: <code>toupper(c)</code> and <code>tolower(c)</code> (non-letters pass through unchanged). Here's a mini text analyzer:</p>
+<figure class="code"><figcaption>classify.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;ctype.h&gt;
+
+int main(void) {
+    const char *text = &quot;Route 66, exit B-4!&quot;;
+    int letters = 0, digits = 0, spaces = 0, punct = 0;
+
+    for (const char *p = text; *p; p++) {
+        unsigned char c = (unsigned char)*p;   /* the safe cast */
+        if      (isalpha(c)) letters++;
+        else if (isdigit(c)) digits++;
+        else if (isspace(c)) spaces++;
+        else if (ispunct(c)) punct++;
+    }
+    printf(&quot;\&quot;%s\&quot;\n&quot;, text);
+    printf(&quot;letters=%d digits=%d spaces=%d punct=%d\n&quot;,
+           letters, digits, spaces, punct);
+
+    for (const char *p = text; *p; p++)
+        putchar(toupper((unsigned char)*p));
+    putchar('\n');
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc classify.c -o classify &amp;&amp; ./classify
+&quot;Route 66, exit B-4!&quot;
+letters=9 digits=3 spaces=3 punct=4
+ROUTE 66, EXIT B-4!</pre></figure>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>The unsigned char trap:</b> the ctype functions accept an <code>int</code> that must be either <code>EOF</code> or a value representable as <b><code>unsigned char</code></b> (0–255). But plain <code>char</code> is often <em>signed</em> — so a byte like é (0xE9 in Latin-1) stored in a <code>char</code> is <b>−23</b>, and <code>isalpha(-23)</code> is undefined behavior (real implementations index a table at [-23]…). When the char comes from arbitrary text, cast first: <code>isalpha((unsigned char)c)</code>.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why is <code>isupper(c)</code> risky when <code>char c</code> holds a byte read from a file?</p><ul><li>isupper only works on ASCII files</li><li>If char is signed, bytes ≥ 128 become negative — passing a negative (non-EOF) value is UB</li><li>isupper modifies c</li><li>Files can’t contain uppercase bytes</li></ul><details><summary>Show answer</summary><p><b>If char is signed, bytes ≥ 128 become negative — passing a negative (non-EOF) value is UB</b> — ctype functions are defined only for EOF and 0–255. On signed-char platforms (x86 Linux!), byte 0xE9 arrives as −23, and isupper(−23) is undefined behavior — often an out-of-bounds table read. Cast: isupper((unsigned char)c).</p></details></div>
+
+<h2>assert.h: crash early, crash loudly</h2>
+<p><code>assert(expr)</code> checks an invariant: if <code>expr</code> is false, it prints the expression, file and line, then calls <code>abort()</code>. It documents and enforces what <em>must</em> be true if your code is correct:</p>
+<figure class="code"><figcaption>assert.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;assert.h&gt;
+
+/* average of n values — n == 0 would be a caller BUG */
+double average(const double *v, int n) {
+    assert(v != NULL);
+    assert(n &gt; 0);
+
+    double sum = 0;
+    for (int i = 0; i &lt; n; i++) sum += v[i];
+    return sum / n;
+}
+
+int main(void) {
+    double data[] = { 1.0, 2.0, 6.0 };
+    printf(&quot;avg = %.2f\n&quot;, average(data, 3));
+    printf(&quot;avg = %.2f\n&quot;, average(data, 0));   /* boom */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc assert.c -o assert &amp;&amp; ./assert
+avg = 3.00
+assert: assert.c:7: average: Assertion `n &gt; 0' failed.
+Aborted (core dumped)
+$ gcc -DNDEBUG assert.c -o assert   # release build:
+$ ./assert                          # asserts compiled out —
+avg = 3.00                          # now it's a silent
+avg = inf                           # divide-by-zero instead!</pre></figure>
+<p>Compile with <code>-DNDEBUG</code> and every assert vanishes completely — zero runtime cost in release builds. Two consequences: never put <em>side effects</em> inside an assert (<code>assert(read_config())</code> silently disappears!), and never use assert for conditions that can legitimately happen in production.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/ctype-assert-errno">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p>The philosophy: <b>assert guards against bugs, error handling guards against the world.</b> A NULL argument that your own code should never pass → assert. A file that might not exist, input a user typed, memory that might run out → real error handling: check, report, recover. And for conditions checkable at <em>compile time</em>, use <code>static_assert</code> from Part 5 — it costs nothing even in debug builds.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why is <code>assert(fclose(f) == 0);</code> a bug waiting to happen?</p><ul><li>fclose never returns 0</li><li>assert can’t contain function calls</li><li>With -DNDEBUG the whole expression vanishes — the file is never closed in release builds</li><li>It leaks errno</li></ul><details><summary>Show answer</summary><p><b>With -DNDEBUG the whole expression vanishes — the file is never closed in release builds</b> — NDEBUG makes assert(...) expand to nothing — including its side effects. The debug build closes the file; the release build doesn’t. Keep the action outside: int rc = fclose(f); assert(rc == 0);</p></details></div>
+
+<h2>errno.h: how the library reports failure</h2>
+<p>Many library functions signal <em>that</em> they failed via their return value (NULL, −1, EOF) and <em>why</em> via the global-ish variable <code>errno</code> (it's thread-local in practice, and since C11 officially a macro). The conventions matter:</p>
+<ul>
+<li>Functions set errno on failure but <b>never clear it on success</b> — check errno only <em>after</em> seeing a failing return value.</li>
+<li>Exception: functions like <code>strtol</code> where the failure value (LONG_MAX) is also a legal result — there you set <code>errno = 0</code> before the call and inspect it after.</li>
+<li><code>perror("prefix")</code> prints your prefix plus the errno message to stderr; <code>strerror(errno)</code> hands you the message string to format yourself.</li>
+</ul>
+<figure class="code"><figcaption>errno.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;limits.h&gt;
+
+int main(void) {
+    /* case 1: fopen — return value says IF, errno says WHY */
+    FILE *f = fopen(&quot;/no/such/file&quot;, &quot;r&quot;);
+    if (!f) {
+        perror(&quot;fopen&quot;);                       /* to stderr    */
+        printf(&quot;errno=%d meaning \&quot;%s\&quot;\n&quot;,
+               errno, strerror(errno));
+    }
+
+    /* case 2: strtol — must clear errno FIRST               */
+    errno = 0;
+    long v = strtol(&quot;99999999999999999999&quot;, NULL, 10);
+    if (errno == ERANGE)
+        printf(&quot;overflow: clamped to %ld (%s)\n&quot;,
+               v, strerror(errno));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc errno.c -o errno &amp;&amp; ./errno
+fopen: No such file or directory
+errno=2 meaning &quot;No such file or directory&quot;
+overflow: clamped to 9223372036854775807 (Numerical result out of range)</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why set <code>errno = 0</code> before calling <code>strtol</code> but not before <code>fopen</code>?</p><ul><li>strtol is older than errno</li><li>fopen’s failure (NULL) is unambiguous, but strtol’s overflow value LONG_MAX is also a legal parse result — only a fresh ERANGE distinguishes them</li><li>fopen clears errno itself</li><li>You should clear it before every call</li></ul><details><summary>Show answer</summary><p><b>fopen’s failure (NULL) is unambiguous, but strtol’s overflow value LONG_MAX is also a legal parse result — only a fresh ERANGE distinguishes them</b> — Functions set errno on failure but never clear it. fopen returning NULL already proves failure, so errno’s value is meaningful. strtol returning LONG_MAX could be a genuine parse of that number — you need to know ERANGE was set by THIS call, hence the pre-clear.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/ctype-assert-errno">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>You now know how the library talks about characters and errors — next we pin down how big C's types actually are, and how to stop guessing: <code>limits.h</code>, <code>float.h</code> and the fixed-width types of <code>stdint.h</code>.</p>
+
+<a class="cta" href="../../index.html#/lesson/ctype-assert-errno">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../math-time/">← math.h &amp; time.h: numbers and clocks</a>
+<a href="../limits-stdint/">limits.h, float.h &amp; stdint.h: know your sizes →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

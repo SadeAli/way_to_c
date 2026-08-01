@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#include: copy-paste as a language feature — The C Path</title>
+<meta name="description" content="You've pasted #include &amp;lt;stdio.h&amp;gt; at the top of every program since Hello World — today you find out what that line actually does. Spoiler: it quietly…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="#include: copy-paste as a language feature — The C Path">
+<meta property="og:description" content="You've pasted #include &amp;lt;stdio.h&amp;gt; at the top of every program since Hello World — today you find out what that line actually does. Spoiler: it quietly…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"#include: copy-paste as a language feature","description":"You've pasted #include &lt;stdio.h&gt; at the top of every program since Hello World — today you find out what that line actually does. Spoiler: it quietly…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎩 The Preprocessor</p>
+<h1>#include: copy-paste as a language feature</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/include">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>You've pasted <code>#include &lt;stdio.h&gt;</code> at the top of every program since Hello World — today you find out what that line actually does. Spoiler: it quietly drops thousands of lines of other people's code into your file, which is why one tiny mistake can unleash pages of errors pointing at files you never wrote. It's also step one toward splitting your own programs across many files, the way every real app is built.</p></div>
+
+<p>You've typed <code>#include &lt;stdio.h&gt;</code> a hundred times by now. Time to learn what it <em>actually does</em> — because the answer is gloriously dumb: it <strong>deletes the line and pastes in the entire file</strong>. No imports, no modules, no magic. The preprocessor is a text editor that works very, very fast.</p>
+
+<p>Every line starting with <code>#</code> is a <strong>preprocessor directive</strong> — an instruction to that fast text editor, not to the compiler — handled in a separate pass <em>before</em> the compiler ever reads a single line of your C code. This part of the course covers every last one of them.</p>
+
+<h2>Textual inclusion, live</h2>
+<p>Proof beats belief. Here's a two-file micro-project:</p>
+<figure class="code"><figcaption>square.h</figcaption><pre><code>int square(int n);    /* a declaration — a promise */</code></pre></figure>
+<figure class="code"><figcaption>main.c</figcaption><pre><code>#include &quot;square.h&quot;
+
+int main(void) {
+    return square(6);
+}</code></pre></figure>
+<p>Now ask GCC to stop after preprocessing with <code>-E</code> and show us the text it hands to the compiler:</p>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -E main.c
+# 1 &quot;main.c&quot;
+# 1 &quot;&lt;built-in&gt;&quot;
+# 1 &quot;&lt;command-line&gt;&quot;
+# 1 &quot;main.c&quot;
+# 1 &quot;square.h&quot; 1
+int square(int n);
+# 2 &quot;main.c&quot; 2
+
+int main(void) {
+    return square(6);
+}</pre></figure>
+<p>The <code>#include "square.h"</code> line is gone — replaced by the header's contents. The <code># 1 "square.h"</code> lines are <em>linemarkers</em>: notes the preprocessor leaves so error messages can still point at the right file and line. (They'll matter again when we meet <code>#line</code>.)</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>#include "square.h"</code> literally do?</p><ul><li>Tells the linker to find square.h</li><li>Replaces the line with the full text of square.h</li><li>Loads square.h at runtime</li><li>Compiles square.h into a separate module</li></ul><details><summary>Show answer</summary><p><b>Replaces the line with the full text of square.h</b> — Pure textual substitution, performed by the preprocessor before compilation. The compiler never even sees the #include line — only the pasted result.</p></details></div>
+
+<h2><code>&lt;angle brackets&gt;</code> vs <code>"quotes"</code></h2>
+<p>Both forms include a file; they differ in <strong>where the preprocessor looks first</strong>:</p>
+<table>
+<tr><th>form</th><th>search order</th><th>use for</th></tr>
+<tr><td><code>#include &lt;stdio.h&gt;</code></td><td>system directories only (<code>/usr/include</code>, compiler dirs, paths added with <code>-I</code>)</td><td>standard library &amp; installed libraries</td></tr>
+<tr><td><code>#include "square.h"</code></td><td>the including file's own directory <em>first</em>, then the same places as <code>&lt;&gt;</code></td><td>your project's headers</td></tr>
+</table>
+<p>The exact search paths are implementation-defined, but every compiler follows this spirit. See yours with <code>gcc -E -v main.c</code>, and add your own directory with <code>gcc -Iinclude/ main.c</code>.</p>
+
+<h2>The double-inclusion problem</h2>
+<p>Copy-paste has a failure mode. Say <code>point.h</code> defines a struct, and both <code>main.c</code> and another header include it:</p>
+<figure class="code"><figcaption>the double-inclusion setup — BROKEN</figcaption><pre><code>/* point.h */
+struct point { int x, y; };
+
+/* shapes.h */
+#include &quot;point.h&quot;
+struct circle { struct point center; int r; };
+
+/* main.c */
+#include &quot;point.h&quot;
+#include &quot;shapes.h&quot;     /* pastes point.h AGAIN */
+
+int main(void) { struct point p = {1, 2}; return p.x; }</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc main.c
+In file included from shapes.h:1,
+                 from main.c:2:
+point.h:1:8: error: redefinition of 'struct point'
+    1 | struct point { int x, y; };
+      |        ^~~~~
+point.h:1:8: note: originally defined here</pre></figure>
+<p><code>struct point</code> got pasted into <code>main.c</code> <strong>twice</strong> — once directly, once via <code>shapes.h</code> — and defining the same struct twice is an error. Function <em>declarations</em> can legally repeat, but struct definitions, typedefs (before C11), and initialized variables cannot. In any real project, headers including headers is unavoidable, so every header must defend itself.</p>
+
+<h2>Include guards: the standard armor</h2>
+<figure class="code"><figcaption>point.h — with include guard</figcaption><pre><code>#ifndef POINT_H          /* &quot;if POINT_H is NOT defined...&quot;   */
+#define POINT_H          /* ...define it, so next time it IS */
+
+struct point { int x, y; };
+
+#endif /* POINT_H */</code></pre></figure>
+<p>Walk it through: the first time <code>point.h</code> is pasted, <code>POINT_H</code> isn't defined, so the <code>#ifndef</code> block is kept and <code>POINT_H</code> gets defined. The second paste sees <code>POINT_H</code> already defined and the preprocessor <strong>deletes everything down to <code>#endif</code></strong>:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/include">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Two different headers both use <code>#ifndef UTILS_H</code> as their guard. What happens when a file includes both?</p><ul><li>A compile error names the clash</li><li>Both work fine — guards are per-file</li><li>The second header silently expands to nothing</li><li>The preprocessor renames one guard</li></ul><details><summary>Show answer</summary><p><b>The second header silently expands to nothing</b> — The first header defines UTILS_H; the second header sees it already defined and its whole body is skipped. No error, just mysteriously missing declarations — which is why guard names must be unique per header.</p></details></div>
+
+<p>The alternative you'll see everywhere: <code>#pragma once</code> as the first line does the same job — shorter, immune to name-collision typos, and supported by every compiler you're likely to meet. But it's <em>not</em> in the C standard, while guards are bulletproof portable. Many codebases use both. Pick one style per project and be consistent.</p>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Guard-name trap:</b> two headers accidentally using the same guard macro (say, both picked <code>UTILS_H</code>) silently make the second one vanish. Use a unique name derived from the path, like <code>MYPROJ_NET_UTILS_H</code>. Names starting with underscores (<code>_POINT_H</code>, <code>__POINT_H</code>) are reserved for the implementation — don't.</p></div></div>
+
+<h2>What belongs in a header?</h2>
+<p>Rule of thumb: headers hold <strong>promises</strong> (declarations), <code>.c</code> files hold <strong>fulfillments</strong> (definitions). Function prototypes, struct/enum/typedef definitions, macros, and <code>extern</code> variable declarations go in <code>.h</code>. Function bodies and actual variable definitions go in <code>.c</code> — otherwise every file that includes your header gets its own copy, and the linker screams about duplicates. We'll build a full multi-file project in the last lesson of this part.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which of these does NOT belong in a header file?</p><ul><li>A function prototype</li><li>A struct definition</li><li>A non-inline function body</li><li>A typedef</li></ul><details><summary>Show answer</summary><p><b>A non-inline function body</b> — A function body pasted into five .c files becomes five definitions of the same function — a linker error. Headers declare; .c files define. (Exceptions like <code>inline</code> and <code>static inline</code> come later.)</p></details></div>
+
+<h2>Try it</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/include">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Next: the directive that turns the preprocessor from a paste machine into a find-and-replace machine — <code>#define</code>.</p>
+
+<a class="cta" href="../../index.html#/lesson/include">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../undefined-behavior/">← Undefined behavior: here be nasal demons</a>
+<a href="../define-macros/">#define: object-like macros &amp; text substitution →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

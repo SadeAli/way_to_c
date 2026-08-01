@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Header organization: designing multi-file programs — The C Path</title>
+<meta name="description" content="A modern app is thousands of files written by people who never read each other's code — this lesson shows how that's even possible. You'll split your own…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Header organization: designing multi-file programs — The C Path">
+<meta property="og:description" content="A modern app is thousands of files written by people who never read each other's code — this lesson shows how that's even possible. You'll split your own…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Header organization: designing multi-file programs","description":"A modern app is thousands of files written by people who never read each other's code — this lesson shows how that's even possible. You'll split your own…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎩 The Preprocessor</p>
+<h1>Header organization: designing multi-file programs</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/header-organization">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>A modern app is thousands of files written by people who never read each other's code — this lesson shows how that's even possible. You'll split your own programs into small files that cooperate through clean "contracts", and discover that <code>FILE *</code>, which you've used since your very first <code>printf</code>, is exactly the hide-the-insides trick you're about to pull off yourself.</p></div>
+
+<p>Real programs aren't one file. They're dozens of <code>.c</code> files compiled separately and then <em>linked</em> — stitched together into one program — and headers are the <strong>contracts</strong> that let them cooperate without seeing each other's internals. This lesson turns everything from this part into a real plan for organizing whole programs.</p>
+
+<h2>Declaration vs definition, one more time</h2>
+<p>The whole system rests on one distinction:</p>
+<ul>
+<li>A <b>declaration</b> announces that something exists: <code>double mean(const double *xs, size_t n);</code> or <code>extern int mu_calls;</code>. Repeat it in ten files — no problem.</li>
+<li>A <b>definition</b> actually creates it: a function body, or <code>int mu_calls = 0;</code>. There must be <b>exactly one</b> across the whole program, or the linker rejects the build.</li>
+</ul>
+<p>Since a header gets pasted into every file that includes it, the rule writes itself: <strong>headers may contain only things that are safe to duplicate</strong>.</p>
+<table>
+<tr><th>goes in the .h (interface)</th><th>goes in the .c (implementation)</th></tr>
+<tr><td>function prototypes</td><td>function bodies</td></tr>
+<tr><td><code>struct</code>/<code>enum</code>/<code>union</code> definitions, <code>typedef</code>s</td><td>variable definitions (<code>int mu_calls = 0;</code>)</td></tr>
+<tr><td><code>extern</code> variable declarations</td><td><code>static</code> helpers private to the file</td></tr>
+<tr><td>macros, <code>inline</code> function definitions</td><td>the header's own <code>#include "self.h"</code> (see below)</td></tr>
+</table>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which line, placed in a header included by 5 files, causes a LINKER error?</p><ul><li><code>extern int count;</code></li><li><code>int count = 0;</code></li><li><code>struct cfg { int n; };</code> (with include guard)</li><li><code>void reset(void);</code></li></ul><details><summary>Show answer</summary><p><b><code>int count = 0;</code></b> — That is a definition — pasted into 5 translation units it creates 5 objects named count, and the linker reports multiple definition. Declarations (extern, prototypes) and guarded type definitions are safe to repeat.</p></details></div>
+
+<h2>A complete mini-project</h2>
+<p>Three files: an interface, its implementation, and a client.</p>
+<figure class="code"><figcaption>mathutil.h — the interface</figcaption><pre><code>#ifndef MATHUTIL_H
+#define MATHUTIL_H
+
+#include &lt;stddef.h&gt;     /* the header uses size_t, so IT includes this */
+
+/* prototypes: promises kept by mathutil.c */
+double mean(const double *xs, size_t n);
+double clamp(double x, double lo, double hi);
+
+/* declared here, defined exactly once in mathutil.c */
+extern int mu_calls;
+
+#endif /* MATHUTIL_H */</code></pre></figure>
+<figure class="code"><figcaption>mathutil.c — the implementation</figcaption><pre><code>#include &quot;mathutil.h&quot;   /* self-include: compiler checks our promises */
+
+int mu_calls = 0;               /* THE definition of mu_calls */
+
+/* static = private to this file; no other .c can call it */
+static double clamp2(double x, double lo, double hi) {
+    return x &lt; lo ? lo : (x &gt; hi ? hi : x);
+}
+
+double mean(const double *xs, size_t n) {
+    mu_calls++;
+    double sum = 0.0;
+    for (size_t i = 0; i &lt; n; i++)
+        sum += xs[i];
+    return n ? sum / (double)n : 0.0;
+}
+
+double clamp(double x, double lo, double hi) {
+    mu_calls++;
+    return clamp2(x, lo, hi);
+}</code></pre></figure>
+<figure class="code"><figcaption>main.c — the client</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &quot;mathutil.h&quot;    /* only the contract, never the internals */
+
+int main(void) {
+    double temps[] = {21.5, 40.2, 19.8, 22.1};
+    double avg = mean(temps, 4);
+
+    printf(&quot;mean:    %.2f\n&quot;, avg);
+    printf(&quot;clamped: %.2f\n&quot;, clamp(avg, 0.0, 25.0));
+    printf(&quot;calls:   %d\n&quot;, mu_calls);
+    return 0;
+}</code></pre></figure>
+<p>Notes on the details that separate pros from beginners:</p>
+<ul>
+<li><code>mathutil.c</code> includes <em>its own header</em> first — so the compiler cross-checks the prototypes against the definitions. Mismatch the signature and you get a compile error <em>now</em> instead of linker weirdness or UB later.</li>
+<li>The header includes <code>&lt;stddef.h&gt;</code> because its prototypes use <code>size_t</code>. <b>Headers must include what they use</b> — never rely on the includer having pulled in the right things first.</li>
+<li><code>mu_calls</code> is <em>declared</em> <code>extern</code> in the header (a promise), <em>defined</em> once in <code>mathutil.c</code>. Drop the <code>extern</code> and every includer would define its own copy — a linker error.</li>
+<li><code>clamp2</code>'s helper status: marked <code>static</code>, it's invisible outside <code>mathutil.c</code> — the C way of saying "private".</li>
+</ul>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -c mathutil.c        # → mathutil.o
+$ gcc -c main.c            # → main.o (mathutil.c not needed!)
+$ gcc main.o mathutil.o -o app
+$ ./app
+mean:    25.90
+clamped: 25.00
+calls:   2</pre></figure>
+<p>Each <code>.c</code> file compiles independently — that's what makes big projects buildable in parallel and rebuildable incrementally (only recompile what changed — the job of <code>make</code>, coming in Part 8):</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/header-organization">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why does <code>mathutil.c</code> include its own header?</p><ul><li>Otherwise the linker cannot find it</li><li>So the compiler verifies the definitions match the published prototypes</li><li>To make mu_calls global</li><li>Headers must be included somewhere or gcc warns</li></ul><details><summary>Show answer</summary><p><b>So the compiler verifies the definitions match the published prototypes</b> — With the header in view, defining mean with a wrong signature is an immediate compile error. Skip the self-include and the mismatch survives until link time — or worse, until runtime UB with a wrong calling convention.</p></details></div>
+
+<h2>Forward declarations: cutting the include web</h2>
+<p>Headers including headers including headers makes builds slow and dependencies tangled. Often you don't need a type's full definition — a pointer to it is enough:</p>
+<figure class="code"><figcaption>engine.h — forward declaration instead of #include</figcaption><pre><code>#ifndef ENGINE_H
+#define ENGINE_H
+
+struct logger;                 /* forward declaration: incomplete type */
+
+struct engine *engine_start(struct logger *log);
+/* pointers to incomplete types are fine — no logger.h needed! */
+
+#endif</code></pre></figure>
+<p><code>struct logger;</code> is a <em>forward declaration</em>: it names an <strong>incomplete type</strong>. You can declare pointers to it and pass them around; you just can't dereference it, take its <code>sizeof</code>, or copy it by value. Since <code>engine.h</code> only handles <code>struct logger *</code>, it doesn't need — and shouldn't pay for — <code>logger.h</code>.</p>
+
+<h2>The opaque pointer pattern</h2>
+<p>Take that idea to its logical end and you get C's flagship encapsulation technique. The header declares that a type <em>exists</em>, but its layout lives only in the <code>.c</code> file:</p>
+<figure class="code"><figcaption>stack.h — opaque interface</figcaption><pre><code>#ifndef STACK_H
+#define STACK_H
+#include &lt;stdbool.h&gt;
+
+typedef struct Stack Stack;    /* exists... but layout is secret */
+
+Stack *stack_new(void);
+void   stack_push(Stack *s, int value);
+int    stack_pop(Stack *s);
+bool   stack_empty(const Stack *s);
+void   stack_free(Stack *s);
+
+#endif</code></pre></figure>
+<figure class="code"><figcaption>stack.c — the secret layout</figcaption><pre><code>#include &quot;stack.h&quot;
+#include &lt;stdlib.h&gt;
+
+struct Stack {                 /* only THIS file knows the fields  */
+    int  data[64];
+    int  top;
+};
+
+Stack *stack_new(void) {
+    Stack *s = malloc(sizeof *s);
+    if (s) s-&gt;top = 0;
+    return s;
+}
+void stack_push(Stack *s, int value) { s-&gt;data[s-&gt;top++] = value; }
+int  stack_pop(Stack *s)             { return s-&gt;data[--s-&gt;top]; }
+bool stack_empty(const Stack *s)     { return s-&gt;top == 0; }
+void stack_free(Stack *s)            { free(s); }</code></pre></figure>
+<p>Client code can hold a <code>Stack *</code> and call the functions, but <code>s-&gt;top</code> won't even compile — the compiler doesn't know the struct has a <code>top</code>. The implementation can be completely rewritten (array today, linked list tomorrow) <strong>without touching or even recompiling client code</strong>, as long as the function signatures hold. This is exactly how <code>FILE *</code> works: you've been using an opaque pointer since your first <code>printf</code>.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Client code holds a <code>Stack *s</code> from the opaque header. What happens on <code>s-&gt;top</code>?</p><ul><li>Works — pointers can always be dereferenced</li><li>Linker error: top not found</li><li>Compile error: the struct type is incomplete in this file</li><li>Runtime crash</li></ul><details><summary>Show answer</summary><p><b>Compile error: the struct type is incomplete in this file</b> — The client only saw "typedef struct Stack Stack;" — an incomplete type. Member access needs the full definition, which lives solely in stack.c. That is encapsulation, enforced by the compiler. FILE * from stdio.h works the same way.</p></details></div>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Header checklist:</b> ① include guard (or <code>#pragma once</code>) · ② includes only what its own declarations need · ③ no function bodies (except <code>static inline</code>) · ④ no variable definitions, <code>extern</code> declarations only · ⑤ hide struct layouts that clients shouldn't touch.</p></div></div>
+
+<h2>Try it</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/header-organization">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>🎩 The preprocessor is fully yours — next, Part 5 steps into the modern era: <code>static_assert</code>, alignment control, generics, atomics, and the shiniest corners of C23.</p>
+
+<a class="cta" href="../../index.html#/lesson/header-organization">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../pragma-error-line/">← #error, #warning, #pragma, #line — and a taste of #embed</a>
+<a href="../static-assert/">static_assert: catch bugs before the program even exists →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

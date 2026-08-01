@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Where data lives: stack, heap &amp; friends — The C Path</title>
+<meta name="description" content="The most famous programming site on the internet is named after a crash — Stack Overflow — and you're about to find out precisely what that crash is. Your…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Where data lives: stack, heap &amp; friends — The C Path">
+<meta property="og:description" content="The most famous programming site on the internet is named after a crash — Stack Overflow — and you're about to find out precisely what that crash is. Your…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Where data lives: stack, heap & friends","description":"The most famous programming site on the internet is named after a crash — Stack Overflow — and you're about to find out precisely what that crash is. Your…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🧮 Foundations — Before C</p>
+<h1>Where data lives: stack, heap &amp; friends</h1>
+<p class="meta">⏱ 13 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/memory-model">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>The most famous programming site on the internet is named after a crash — <em>Stack Overflow</em> — and you're about to find out precisely what that crash is. Your program's memory is split into a few neighborhoods with different rules, and the classic C disasters (leaks, overflows, using memory that's already gone) are simply those rules being broken. Learn the map now, and those bugs will make sense before you ever hit one.</p></div>
+
+<p>To master C — a language famous for letting you touch memory directly — you first need a map of that memory. When your program runs, the OS hands it one big private stretch of memory — its <em>address space</em> — divided into <strong>segments</strong>, regions that each play by different rules:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/memory-model">This spot has an interactive memmap widget — open the interactive lesson to play with it.</a></p>
+
+<h2>The stack: fast, automatic, small</h2>
+<p>Every function call pushes a <em>stack frame</em> holding its local variables and where to return to. When the function returns, the frame is popped — <b>locals die automatically</b>. It's blazingly fast (just moving one pointer) but limited (typically ~8 MB).</p>
+<figure class="code"><figcaption>stack.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int square(int n) {      /* n lives in square's frame   */
+    int result = n * n;  /* result too                  */
+    return result;       /* frame destroyed on return   */
+}
+
+int main(void) {
+    int x = 7;           /* x lives in main's frame     */
+    printf(&quot;%d\n&quot;, square(x));
+    return 0;
+}</code></pre></figure>
+<p>Each call to <code>square</code> gets a fresh <code>n</code>. Recursion works because each level has its own frame — and infinite recursion gives the segment its famous crash: <em>stack overflow</em>.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What happens to a function’s local variables when it returns?</p><ul><li>They are freed by the garbage collector</li><li>Their stack frame is popped — they cease to exist</li><li>They move to the heap</li><li>They keep their values for the next call</li></ul><details><summary>Show answer</summary><p><b>Their stack frame is popped — they cease to exist</b> — The stack pointer simply moves back — the memory isn’t even wiped, it’s just up for grabs by the next call. C has no garbage collector.</p></details></div>
+
+<h2>The heap: big, manual, yours to manage</h2>
+<p>Need memory that <em>outlives</em> the function that made it, or whose size you only know at runtime? That's the heap: you ask with <code>malloc</code>, you give back with <code>free</code>. Nothing is automatic — forget to free and you <em>leak</em>; free twice and you <em>corrupt</em>. (Full lesson in Part 2.)</p>
+
+<h2>Static storage: there the whole time</h2>
+<p>Globals and <code>static</code> variables live in <code>.data</code> (if initialized) or <code>.bss</code> (zero-initialized — costs nothing in the executable file!). They exist from before <code>main</code> starts until the program exits.</p>
+
+<figure class="code"><figcaption>segments.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int counter = 42;            /* .data  — initialized global   */
+int zeros[1000];             /* .bss   — auto zero-filled     */
+
+int main(void) {
+    int local = 1;           /* stack                         */
+    int *dyn = malloc(4);    /* dyn on stack, target on heap  */
+    static int calls = 0;    /* .data — survives across calls */
+
+    printf(&quot;global: %p\n&quot;, (void *)&amp;counter);
+    printf(&quot;stack : %p\n&quot;, (void *)&amp;local);
+    printf(&quot;heap  : %p\n&quot;, (void *)dyn);
+    free(dyn);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc segments.c -o segments &amp;&amp; ./segments
+global: 0x55d1c9e0a010
+stack : 0x7ffd4a1b2a94
+heap  : 0x55d1cb2426b0
+# stack addresses are way up high; globals &amp; heap much lower</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Where does <code>static int hits = 0;</code> inside a function live?</p><ul><li>On the stack, like other locals</li><li>On the heap</li><li>In static storage (.data/.bss) — it survives between calls</li><li>In the CPU cache</li></ul><details><summary>Show answer</summary><p><b>In static storage (.data/.bss) — it survives between calls</b> — <code>static</code> changes the storage, not the visibility: it’s still only nameable inside the function, but it lives in static storage for the whole program lifetime.</p></details></div>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>The #1 beginner crash:</b> returning a pointer to a local variable. The variable's stack frame is gone the moment the function returns — the pointer now points at a ghost. Compilers warn about this; never ignore that warning.</p></div></div>
+
+<figure class="code"><figcaption>dangling.c — DON’T do this</figcaption><pre><code>int *broken(void) {
+    int x = 42;
+    return &amp;x;        /* ⚠ warning: address of local returned */
+}                     /* x dies here — the pointer dangles!  */</code></pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why is <code>return &x;</code> (x being a local) broken?</p><ul><li>You can’t take addresses of ints</li><li>x’s memory is reclaimed when the function returns</li><li>The compiler deletes unused variables</li><li>Pointers can’t leave functions</li></ul><details><summary>Show answer</summary><p><b>x’s memory is reclaimed when the function returns</b> — The frame is popped; the address now points into dead stack space that the very next function call will overwrite. Reading it is undefined behavior.</p></details></div>
+
+<p>🎉 That's the foundations done! You now know how machines count, store, and execute. Time to actually <b>write some C</b>.</p>
+
+<a class="cta" href="../../index.html#/lesson/memory-model">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../how-compilers-work/">← From source to silicon: the compiler pipeline</a>
+<a href="../hello-world/">Hello, World: your first C program →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

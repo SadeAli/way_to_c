@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atomics &amp; threads: sharing memory without lying to yourself — The C Path</title>
+<meta name="description" content="Your phone plays music, downloads a file, and redraws the screen all at once because real programs run several threads — independent streams of work — at…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Atomics &amp; threads: sharing memory without lying to yourself — The C Path">
+<meta property="og:description" content="Your phone plays music, downloads a file, and redraws the screen all at once because real programs run several threads — independent streams of work — at…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Atomics & threads: sharing memory without lying to yourself","description":"Your phone plays music, downloads a file, and redraws the screen all at once because real programs run several threads — independent streams of work — at…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🚀 Modern C (C11 → C23)</p>
+<h1>Atomics &amp; threads: sharing memory without lying to yourself</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/atomics-threads">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Your phone plays music, downloads a file, and redraws the screen all at once because real programs run several <em>threads</em> — independent streams of work — at the same time. Let two threads each add 1 to the same counter a million times, though, and the total comes out wrong, and <em>differently</em> wrong, every single run. You'll watch an update vanish in slow motion, then fix the code so shared numbers — scores, balances, download counts — always come out right.</p></div>
+
+<p>Until C11, the C standard pretended threads didn't exist — real programs used <code>pthreads</code>, a Unix add-on library, and hoped. C11 finally made threads official: rules for how threads may share memory, the <code>_Atomic</code> marker for shared variables, <code>&lt;stdatomic.h&gt;</code>, and a portable thread library in <code>&lt;threads.h&gt;</code>. To see why any of that is needed, let's watch innocent code fall apart.</p>
+
+<h2>The crime scene: <code>counter++</code></h2>
+<p><code>counter++</code> looks like one operation. To the CPU it's <em>three</em>: load the value into a register, add one, store it back. Run two threads and the OS can pause either one between any of those steps. Step through a lost update:</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/atomics-threads">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+
+<p>Two increments happened; the counter went up by one. Scale that to a million increments per thread and you get garbage — a different garbage every run. This is a <strong>data race</strong>, and in C it isn't just "wrong numbers": two threads accessing the same non-atomic object, at least one writing, with no synchronization, is <strong>undefined behavior</strong>, full stop.</p>
+
+<figure class="code"><figcaption>race.c — broken on purpose</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;threads.h&gt;
+
+#define N 1000000
+long counter = 0;                 /* shared, NOT protected */
+
+int worker(void *arg) {
+    (void)arg;
+    for (int i = 0; i &lt; N; i++)
+        counter++;                /* load + add + store: a data race */
+    return 0;
+}
+
+int main(void) {
+    thrd_t a, b;
+    thrd_create(&amp;a, worker, NULL);
+    thrd_create(&amp;b, worker, NULL);
+    thrd_join(a, NULL);
+    thrd_join(b, NULL);
+    printf(&quot;expected %d, got %ld\n&quot;, 2 * N, counter);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c17 race.c -o race -lpthread &amp;&amp; ./race
+expected 2000000, got 1183957
+$ ./race
+expected 2000000, got 1427312
+$ ./race
+expected 2000000, got 1996004
+# different every run — and since a data race is UB, even &quot;close&quot; runs
+# prove nothing. The program is simply wrong.</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why does <code>counter++</code> lose updates across threads?</p><ul><li>The compiler removes duplicate increments</li><li>It’s three steps (load, add, store) and threads can interleave between them</li><li>ints can’t be shared between threads at all</li><li>printf is not thread-safe</li></ul><details><summary>Show answer</summary><p><b>It’s three steps (load, add, store) and threads can interleave between them</b> — Each thread works on a private register copy. If both load the same old value, both store back old+1 — one increment is overwritten. The C standard classifies this unsynchronized write as a data race: undefined behavior.</p></details></div>
+
+<h2>The fix, part 1: <code>_Atomic</code></h2>
+<p>Declare the shared variable <code>_Atomic</code> and every load, store, and read-modify-write on it becomes indivisible — the hardware does the whole load-add-store as one uninterruptible operation (think x86 <code>lock add</code>). <code>&lt;stdatomic.h&gt;</code> provides convenience typedefs (<code>atomic_int</code>, <code>atomic_long</code>, <code>atomic_bool</code>…) and explicit functions (<code>atomic_load</code>, <code>atomic_store</code>, <code>atomic_fetch_add</code>, <code>atomic_compare_exchange_strong</code>).</p>
+
+<figure class="code"><figcaption>fixed.c — same program, atomic counter</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;threads.h&gt;
+#include &lt;stdatomic.h&gt;
+
+#define N 1000000
+atomic_long counter = 0;          /* == _Atomic long */
+
+int worker(void *arg) {
+    (void)arg;
+    for (int i = 0; i &lt; N; i++)
+        counter++;                /* now ONE indivisible hardware op */
+    return 0;
+}
+
+int main(void) {
+    thrd_t a, b;
+    thrd_create(&amp;a, worker, NULL);
+    thrd_create(&amp;b, worker, NULL);
+    thrd_join(a, NULL);
+    thrd_join(b, NULL);
+    printf(&quot;expected %d, got %ld\n&quot;, 2 * N, (long)counter);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c17 fixed.c -o fixed -lpthread &amp;&amp; ./fixed
+expected 2000000, got 2000000
+$ ./fixed
+expected 2000000, got 2000000
+# correct every single time — at the cost of slower, serialized increments</pre></figure>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>Atomics protect operations, not logic.</b> <code>if (atomic_load(&amp;n) &gt; 0) { atomic_fetch_sub(&amp;n, 1); }</code> is still racy — another thread can jump in between the check and the subtract. Each atomic op is indivisible; a <em>sequence</em> of them is not. For multi-step invariants, you want a mutex.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Thread A runs <code>if (atomic_load(&amp;n) &gt; 0) atomic_fetch_sub(&amp;n, 1);</code>. Safe?</p><ul><li>Yes — every operation is atomic</li><li>No — another thread can act between the load and the sub</li><li>Only if n is also volatile</li><li>Only on x86</li></ul><details><summary>Show answer</summary><p><b>No — another thread can act between the load and the sub</b> — Each call is individually atomic, but the check-then-act SEQUENCE is not: n can hit 0 between the two calls and you subtract into negative territory. Fix with a mutex, or a compare-exchange loop (atomic_compare_exchange_strong).</p></details></div>
+
+<h2>The fix, part 2: mutexes and <code>&lt;threads.h&gt;</code></h2>
+<p>C11's thread API is small and readable: <code>thrd_create</code> / <code>thrd_join</code> for threads (a thread function is <code>int f(void *arg)</code>), <code>mtx_t</code> with <code>mtx_lock</code> / <code>mtx_unlock</code> for mutual exclusion, and <code>cnd_t</code> condition variables for "sleep until someone signals". A mutex makes a whole region exclusive:</p>
+
+<figure class="code"><figcaption>mutex.c (core pattern)</figcaption><pre><code>#include &lt;threads.h&gt;
+
+mtx_t lock;                        /* mtx_init(&amp;lock, mtx_plain); */
+long items = 0, total_weight = 0;  /* must change TOGETHER        */
+
+void add_item(long w) {
+    mtx_lock(&amp;lock);       /* one thread at a time from here...   */
+    items += 1;
+    total_weight += w;     /* invariant: total matches item count */
+    mtx_unlock(&amp;lock);     /* ...to here. Others block on lock.   */
+}
+
+/* cnd_t (condition variables) complete the toolkit: a consumer can
+   cnd_wait(&amp;nonempty, &amp;lock) — sleep, releasing the lock — until a
+   producer calls cnd_signal(&amp;nonempty). */</code></pre></figure>
+
+<p>Rule of thumb: use an <b>atomic</b> for a single hot counter or flag; use a <b>mutex</b> the moment two or more values must change together (push an item <em>and</em> bump a count). Atomics are faster; mutexes protect invariants.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> When do you need a mutex rather than atomics?</p><ul><li>Whenever more than 2 threads exist</li><li>When several variables must be updated as one consistent unit</li><li>Never — atomics fully replace mutexes</li><li>Only when using pthreads instead of threads.h</li></ul><details><summary>Show answer</summary><p><b>When several variables must be updated as one consistent unit</b> — Atomics make single operations on single objects indivisible. The moment your invariant spans multiple values (or multiple steps), you need mutual exclusion around the whole region — that’s exactly what mtx_lock/mtx_unlock provide.</p></details></div>
+
+<h2>Two honest footnotes</h2>
+<p><b>Memory ordering exists.</b> Every atomic op above uses the default, <code>memory_order_seq_cst</code> — the strongest and safest ordering. The standard also offers weaker orderings (<code>relaxed</code>, <code>acquire</code>, <code>release</code>…) that let experts trade guarantees about <em>when other threads see your writes</em> for speed. It is a genuinely deep topic; until you've read up on it properly, staying with the sequentially-consistent defaults is not a cop-out — it's engineering.</p>
+
+<p><b>pthreads vs C11 threads.</b> In the real world you'll mostly see POSIX <code>pthread_create</code> &amp; co. — older, richer (read-write locks, barriers, attributes), and universal on Unix. <code>&lt;threads.h&gt;</code> is a thin portable wrapper over the same machinery (glibc ships it since 2.28; it's even optional — check <code>__STDC_NO_THREADS__</code>). The concepts transfer one-to-one, so learn either and you've learned both.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/atomics-threads">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>From the hardest feature in modern C to one of the simplest — next, a one-word promise to the compiler: this function <b>never returns</b>.</p>
+
+<a class="cta" href="../../index.html#/lesson/atomics-threads">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../generic-selection/">← _Generic: compile-time dispatch on type</a>
+<a href="../noreturn/">_Noreturn: functions that never come back →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

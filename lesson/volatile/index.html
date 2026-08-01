@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>volatile: &quot;this memory has a mind of its own&quot; — The C Path</title>
+<meta name="description" content="Picture a program that should stop when you press Ctrl+C — but it spins forever, because the compiler &quot;helpfully&quot; optimized away the check you wrote.…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="volatile: &quot;this memory has a mind of its own&quot; — The C Path">
+<meta property="og:description" content="Picture a program that should stop when you press Ctrl+C — but it spins forever, because the compiler &quot;helpfully&quot; optimized away the check you wrote.…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"volatile: \"this memory has a mind of its own\"","description":"Picture a program that should stop when you press Ctrl+C — but it spins forever, because the compiler \"helpfully\" optimized away the check you wrote.…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🧬 Types &amp; Qualifiers, In Depth</p>
+<h1>volatile: &quot;this memory has a mind of its own&quot;</h1>
+<p class="meta">⏱ 13 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/volatile">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Picture a program that should stop when you press Ctrl+C — but it spins forever, because the compiler "helpfully" optimized away the check you wrote. <code>volatile</code> is the one-word fix. It's also the keyword that lets C code on a tiny board like an Arduino talk to real buttons and LEDs — which is why you'll find it all over embedded code.</p></div>
+
+<p>Optimizing compilers are aggressive. If your code reads the same variable twice without writing it, the compiler thinks: "same value — I'll read it once and keep it in a register" (a tiny, super-fast storage slot inside the CPU). Usually that's brilliant. But some memory <strong>changes behind the compiler's back</strong>: addresses wired directly to hardware devices, or variables written by a signal handler — the function that jumps in when you press Ctrl+C. For those, the "optimization" is a bug — and <code>volatile</code> is the fix.</p>
+
+<p><strong>What <code>volatile</code> actually means:</strong> every read and write of this object in your source code must really happen in the machine code — the instructions the CPU actually runs — in source order. No caching in registers, no deleting "redundant" accesses, no reordering accesses to volatile objects relative to each other.</p>
+
+<h2>Watch the optimizer break your loop</h2>
+<figure class="code"><figcaption>spin.c — correct-looking, broken at -O2</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int flag = 0;               /* set from &quot;outside&quot;: signal/ISR */
+
+void wait_for_flag(void) {
+    while (flag == 0) {
+        /* spin, waiting for the outside world */
+    }
+    puts(&quot;flag is up!&quot;);
+}</code></pre></figure>
+<p>Looks fine, right? Now put on the compiler's glasses: inside the loop, nothing writes <code>flag</code>. Nothing in this translation unit <em>can</em> change it mid-loop (as far as the compiler can prove). So at <code>-O2</code> it hoists the read out of the loop:</p>
+<figure class="code"><figcaption>what gcc -O2 emits (x86-64)</figcaption><pre><code>wait_for_flag:
+        mov     eax, DWORD PTR flag[rip]   ; read flag ONCE
+        test    eax, eax
+        jne     .Ldone
+.Lspin: jmp     .Lspin                     ; while(1) — forever!
+.Ldone:
+        ; ... puts(&quot;flag is up!&quot;)</code></pre></figure>
+<div class="sq"><p class="sq-q">🤔 Was the compiler wrong to do this?</p><details><summary>Think first</summary><p><b>No — you were.</b> By the rules of the abstract machine, an ordinary <code>int</code> can only change via code the compiler can see. You never told it this one is special. The optimization is 100% legal; the program was incorrect the moment it relied on invisible modification without <code>volatile</code>.</p></details></div>
+<p>Declare it <code>volatile int flag;</code> and the compiler must re-read memory on every iteration — the loop works again.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>volatile</code> guarantee?</p><ul><li>The variable is stored in the CPU cache</li><li>Every source-level access becomes a real memory access, in order</li><li>Other threads always see updates instantly</li><li>The variable cannot be modified</li></ul><details><summary>Show answer</summary><p><b>Every source-level access becomes a real memory access, in order</b> — That is the whole contract: no eliding, no caching in registers, no reordering among volatile accesses. It says nothing about threads, atomicity, or caches — those need _Atomic and friends.</p></details></div>
+
+<h2>Legit use #1: memory-mapped hardware</h2>
+<p>On microcontrollers (and inside every OS kernel), devices are controlled by reading and writing special addresses. That memory isn't RAM — a "read" might pop a byte out of a UART's receive queue, and two reads of the <em>same address</em> can return different values.</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/volatile">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+<figure class="code"><figcaption>uart.c — classic embedded pattern</figcaption><pre><code>#include &lt;stdint.h&gt;
+
+#define UART_STATUS (*(volatile uint32_t *)0x40021000)
+#define UART_DATA   (*(volatile uint32_t *)0x40021004)
+#define RX_READY    0x01u
+
+char uart_getc(void) {
+    while ((UART_STATUS &amp; RX_READY) == 0) {
+        /* volatile: STATUS is genuinely re-read each pass */
+    }
+    return (char)UART_DATA;   /* volatile read pops the byte */
+}</code></pre></figure>
+<p>Without <code>volatile</code>, the compiler would happily read <code>STATUS</code> once and spin forever, or "optimize" two writes to <code>DATA</code> into one — deleting a character you meant to transmit.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why must hardware register accesses be <code>volatile</code>?</p><ul><li>Hardware memory is slower than RAM</li><li>It makes the access atomic</li><li>The register can change (or act!) independently of the program, so no access may be cached, merged, or deleted</li><li>C forbids casting integers to pointers otherwise</li></ul><details><summary>Show answer</summary><p><b>The register can change (or act!) independently of the program, so no access may be cached, merged, or deleted</b> — Reads can return new values each time and writes can have side effects (transmit a byte, clear an interrupt). Deleting or merging them changes behavior — volatile forbids the compiler from doing so.</p></details></div>
+
+<h2>Legit use #2: signal handlers (and setjmp)</h2>
+<p>A signal handler can run <em>between any two instructions</em> of your program — it's exactly the "changes behind your back" scenario. The standard blesses precisely one pattern for sharing a flag with a handler:</p>
+<figure class="code"><figcaption>sigint.c</figcaption><pre><code>#include &lt;signal.h&gt;
+#include &lt;stdio.h&gt;
+
+volatile sig_atomic_t got_sigint = 0;
+
+void handler(int sig) {
+    (void)sig;
+    got_sigint = 1;           /* only safe kind of shared write */
+}
+
+int main(void) {
+    signal(SIGINT, handler);
+    puts(&quot;Working... press Ctrl+C to stop.&quot;);
+    while (!got_sigint) {
+        /* do work */
+    }
+    puts(&quot;Caught SIGINT — shutting down cleanly.&quot;);
+    return 0;
+}</code></pre></figure>
+<p>The type <code>volatile sig_atomic_t</code> is the portable contract: <code>volatile</code> so the main loop really re-reads it, <code>sig_atomic_t</code> so reads and writes can't be torn halfway by a signal. Similarly, local variables modified between <code>setjmp</code> and <code>longjmp</code> must be <code>volatile</code>, or their values after the jump are indeterminate — try it in the exercise below.</p>
+
+<h2>What volatile is NOT</h2>
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>volatile is not a threading tool.</b> It gives you <em>no atomicity</em> (a 64-bit volatile write can still be torn into two 32-bit stores), <em>no memory barriers</em> (the CPU can still reorder what other cores observe), and <em>no happens-before</em> relationship. Two threads touching a <code>volatile int</code> without synchronization is a <strong>data race — undefined behavior</strong>. For threads, use <code>_Atomic</code>, mutexes, or condition variables (Part 5). Volatile is for hardware and signals, full stop.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Two threads communicate through a <code>volatile int done;</code> flag with no other synchronization. This is…</p><ul><li>Fine — that is what volatile is for</li><li>A data race, i.e. undefined behavior — use <code>_Atomic</code> or a mutex</li><li>Fine on x86, UB elsewhere</li><li>A compile error since C11</li></ul><details><summary>Show answer</summary><p><b>A data race, i.e. undefined behavior — use <code>_Atomic</code> or a mutex</b> — volatile constrains the COMPILER, not the CPU or the memory model. Concurrent unsynchronized access to a non-atomic object is a data race and UB per C11. (It may "work" on x86 today — that is the worst kind of bug.)</p></details></div>
+
+<div class="callout fun"><div class="co-ic">🤔</div><div class="co-body"><p>Why the weird name? Think of a "volatile" chemical that evaporates when you're not watching. The variable's value is similarly unstable — the compiler must never assume it "stays put".</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/volatile">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>From a qualifier that changes how code is <em>generated</em>, we move to a keyword that generates no code at all — it just gives types better names: <code>typedef</code>.</p>
+
+<a class="cta" href="../../index.html#/lesson/volatile">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../const/">← const: promises the compiler enforces</a>
+<a href="../typedef/">typedef: giving types better names →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

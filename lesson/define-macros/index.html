@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#define: object-like macros &amp; text substitution — The C Path</title>
+<meta name="description" content="In a game where the number 64 means &quot;max players&quot; in ten different places, updating nine of them means you've shipped a bug. #define lets you name that…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="#define: object-like macros &amp; text substitution — The C Path">
+<meta property="og:description" content="In a game where the number 64 means &quot;max players&quot; in ten different places, updating nine of them means you've shipped a bug. #define lets you name that…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"#define: object-like macros & text substitution","description":"In a game where the number 64 means \"max players\" in ten different places, updating nine of them means you've shipped a bug. #define lets you name that…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎩 The Preprocessor</p>
+<h1>#define: object-like macros &amp; text substitution</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/define-macros">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>In a game where the number 64 means "max players" in ten different places, updating nine of them means you've shipped a bug. <code>#define</code> lets you name that number once and change it everywhere with a single edit, which is why real C code is full of ALL_CAPS names like <code>MAX_USERS</code>. You'll also see how this find-and-replace can quietly betray you, and how one pair of parentheses saves the day.</p></div>
+
+<p><code>#define</code> teaches the preprocessor a new word. From that line on, every time the word appears on its own as a name in your code, it's replaced by the text you gave — before compilation, with <strong>zero understanding of C</strong>. That last clause is where all the power and all the danger live.</p>
+
+<figure class="code"><figcaption>defines.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+#define MAX_USERS 64
+#define GREETING  &quot;hello, &quot;
+#define PI        3.14159265358979
+
+int main(void) {
+    int slots[MAX_USERS];              /* becomes: int slots[64];  */
+    printf(GREETING &quot;world\n&quot;);        /* string literals concat!  */
+    printf(&quot;circumference: %f\n&quot;, 2 * PI * 10);
+    printf(&quot;slots: %zu\n&quot;, sizeof slots / sizeof slots[0]);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc defines.c -o defines &amp;&amp; ./defines
+hello, world
+circumference: 62.831853
+slots: 64</pre></figure>
+
+<p>A macro like this — just a name and its replacement text, no parentheses after the name — is called an <em>object-like</em> macro, and it's the classic way to name a constant. Convention: macro names are <code>SCREAMING_SNAKE_CASE</code> — the all-caps shout warns readers "this is not a variable, it's a substitution."</p>
+
+<h2>It really is just text</h2>
+<p>The preprocessor doesn't compute <code>10+10</code> into 20. It stores the five characters <code>1</code>&nbsp;<code>0</code>&nbsp;<code>+</code>&nbsp;<code>1</code>&nbsp;<code>0</code> and pastes them wherever <code>SIZE</code> appears. Predict this one before peeking:</p>
+<figure class="code"><figcaption>trap.c — predict the output</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+#define SIZE 10+10        /* looks like 20... */
+
+int main(void) {
+    printf(&quot;%d\n&quot;, SIZE);       /* line A */
+    printf(&quot;%d\n&quot;, SIZE * 2);   /* line B */
+    return 0;
+}</code></pre></figure>
+<div class="sq"><p class="sq-q">🤔 What do lines A and B print?</p><details><summary>Think first</summary><p>Line A prints <b>20</b> — but line B prints <b>30</b>, not 40!</p><p>The substitution is textual: <code>SIZE * 2</code> becomes <code>10+10 * 2</code>, and multiplication binds tighter than addition, so it computes <code>10 + (10*2) = 30</code>. The preprocessor never saw "20"; it only ever saw five characters of text. The fix: <code>#define SIZE (10+10)</code>.</p></details></div>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>Rule zero of macros:</b> if the replacement text is an expression, <b>wrap it in parentheses</b>: <code>#define SIZE (10+10)</code>. You cannot control what precedence-sensitive context your macro gets pasted into.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> With <code>#define N 2+3</code>, what does <code>N * N</code> evaluate to?</p><ul><li>25</li><li>11</li><li>10</li><li>13</li></ul><details><summary>Show answer</summary><p><b>11</b> — Textually: 2+3 * 2+3 → 2 + (3×2) + 3 = 11. Parenthesize the definition — (2+3) — and you would get 25 as intended.</p></details></div>
+
+<h2>Fine print on substitution</h2>
+<ul>
+<li>Macros are <b>not</b> replaced inside string literals: <code>printf("SIZE")</code> prints the word SIZE.</li>
+<li>Nor inside other identifiers: <code>SIZES</code> or <code>my_SIZE</code> are untouched — replacement works on whole tokens, not substrings.</li>
+<li>Macro definitions last until the end of the file — <em>scope means nothing</em> to the preprocessor. A <code>#define</code> inside a function still applies to every later function.</li>
+<li>To retire a macro early, use <code>#undef SIZE</code>. It's rare, but handy when a library macro shadows something you need (e.g. the standard library is allowed to define function-like macros for its functions — <code>#undef getc</code> gets you the real function).</li>
+</ul>
+
+<h2>Macros the compiler defines for you</h2>
+<p>The implementation predefines a set of magic macros, refreshed at each use site:</p>
+<table>
+<tr><th>macro</th><th>expands to</th><th>example</th></tr>
+<tr><td><code>__FILE__</code></td><td>current file name (string)</td><td><code>"main.c"</code></td></tr>
+<tr><td><code>__LINE__</code></td><td>current line number (int)</td><td><code>42</code></td></tr>
+<tr><td><code>__DATE__</code> / <code>__TIME__</code></td><td>compilation date / time (strings)</td><td><code>"Aug  1 2026"</code></td></tr>
+<tr><td><code>__STDC__</code></td><td><code>1</code> on a conforming compiler</td><td><code>1</code></td></tr>
+<tr><td><code>__STDC_VERSION__</code></td><td>the C standard in use (long)</td><td>see below</td></tr>
+<tr><td><code>__func__</code></td><td>enclosing function's name</td><td><code>"main"</code></td></tr>
+</table>
+<p>Pedantic gem: <code>__func__</code> is technically not a macro but a <em>predefined identifier</em> — it behaves like a local <code>static const char[]</code>, because the preprocessor has no idea what function it's in. Everyone lumps it in with these anyway.</p>
+<p><code>__STDC_VERSION__</code> is how code detects the standard version:</p>
+<table>
+<tr><th>standard</th><th>__STDC_VERSION__</th></tr>
+<tr><td>C89/C90</td><td>not defined (only <code>__STDC__</code>)</td></tr>
+<tr><td>C95</td><td><code>199409L</code></td></tr>
+<tr><td>C99</td><td><code>199901L</code></td></tr>
+<tr><td>C11</td><td><code>201112L</code></td></tr>
+<tr><td>C17</td><td><code>201710L</code></td></tr>
+<tr><td>C23</td><td><code>202311L</code></td></tr>
+</table>
+
+<figure class="code"><figcaption>whoami.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    printf(&quot;file: %s, line: %d\n&quot;, __FILE__, __LINE__);
+    printf(&quot;func: %s\n&quot;, __func__);
+    printf(&quot;built: %s %s\n&quot;, __DATE__, __TIME__);
+    printf(&quot;standard: %ld\n&quot;, __STDC_VERSION__);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc whoami.c -o whoami &amp;&amp; ./whoami
+file: whoami.c, line: 4
+func: main
+built: Aug  1 2026 14:03:22
+standard: 201710
+# gcc's current default is C17 (201710L); try -std=c23</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Your code compiled with <code>-std=c11</code> checks <code>__STDC_VERSION__</code>. What value does it see?</p><ul><li>199901L</li><li>201112L</li><li>201710L</li><li>11L</li></ul><details><summary>Show answer</summary><p><b>201112L</b> — The value encodes year and month of the standard: 2011-12 for C11. C99 is 199901L, C17 is 201710L, C23 is 202311L.</p></details></div>
+
+<h2>#define vs const vs enum</h2>
+<p>C gives you three ways to name a constant, and they are genuinely different:</p>
+<table>
+<tr><th></th><th><code>#define MAX 100</code></th><th><code>const int max = 100;</code></th><th><code>enum { MAX = 100 };</code></th></tr>
+<tr><td>has a type?</td><td>no — raw text</td><td>yes</td><td>yes (<code>int</code>)</td></tr>
+<tr><td>obeys scope?</td><td>no</td><td>yes</td><td>yes</td></tr>
+<tr><td>visible in debugger?</td><td>usually not</td><td>yes</td><td>yes</td></tr>
+<tr><td>usable as case label / array size?</td><td>yes</td><td><b>no</b> (in C it's not a constant expression!)</td><td>yes (integers only)</td></tr>
+</table>
+<p>That third row surprises people coming from C++: in C, a <code>const int</code> is merely a read-only variable, so <code>int arr[max];</code> is a VLA and <code>case max:</code> is an error. For integer constants, <code>enum</code> gives you type + scope + constant-expression status — often the best of all worlds. (C23 finally adds a true <code>constexpr</code>; that story continues in Part 5.)</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why does <code>const int max = 100; ... case max:</code> fail to compile in C?</p><ul><li>case labels must be literals only</li><li>In C a const variable is not a constant expression</li><li>const variables cannot be read in a switch</li><li>It compiles fine</li></ul><details><summary>Show answer</summary><p><b>In C a const variable is not a constant expression</b> — Unlike C++, C treats a const-qualified variable as a read-only object, not a compile-time constant. Case labels need integer constant expressions — use a macro, an enum constant, or (C23) constexpr.</p></details></div>
+
+<h2>Try it</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/define-macros">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Object-like macros substitute text; give them parameters and they substitute <em>parameterized</em> text — welcome to function-like macros, where the real footguns are stored.</p>
+
+<a class="cta" href="../../index.html#/lesson/define-macros">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../include/">← #include: copy-paste as a language feature</a>
+<a href="../function-macros/">Function-like macros: power tools with no guard →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

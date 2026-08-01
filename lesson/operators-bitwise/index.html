@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitwise operators: surgery on individual bits — The C Path</title>
+<meta name="description" content="The hex color #FF8800 you decoded in Part 0 is really three small numbers squeezed into one, and a file permission like chmod 644 is three on/off switches…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Bitwise operators: surgery on individual bits — The C Path">
+<meta property="og:description" content="The hex color #FF8800 you decoded in Part 0 is really three small numbers squeezed into one, and a file permission like chmod 644 is three on/off switches…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Bitwise operators: surgery on individual bits","description":"The hex color #FF8800 you decoded in Part 0 is really three small numbers squeezed into one, and a file permission like chmod 644 is three on/off switches…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>Bitwise operators: surgery on individual bits</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/operators-bitwise">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>The hex color <code>#FF8800</code> you decoded in Part 0 is really three small numbers squeezed into one, and a file permission like <code>chmod 644</code> is three on/off switches per digit. Bitwise operators are the tools for packing, unpacking, and flipping those hidden pieces — you'll finish by rebuilding the exact permissions trick Unix has used for fifty years.</p></div>
+
+<p>Part 0 taught you that everything is bits. Now C hands you the scalpel: six <strong>bitwise operators</strong> that let you read and flip each individual bit of a number without disturbing its neighbors. They power the code that talks directly to hardware, file formats, compression, cryptography — and every byte of packed on/off switches (<em>flags</em>) you'll meet in real code.</p>
+
+<table>
+<tr><th>op</th><th>name</th><th>rule per bit</th><th>example (8-bit)</th></tr>
+<tr><td><code>&amp;</code></td><td>AND</td><td>1 only if <em>both</em> are 1</td><td><code>1100 &amp; 1010</code> → <code>1000</code></td></tr>
+<tr><td><code>|</code></td><td>OR</td><td>1 if <em>either</em> is 1</td><td><code>1100 | 1010</code> → <code>1110</code></td></tr>
+<tr><td><code>^</code></td><td>XOR</td><td>1 if the bits <em>differ</em></td><td><code>1100 ^ 1010</code> → <code>0110</code></td></tr>
+<tr><td><code>~</code></td><td>NOT</td><td>flip every bit</td><td><code>~00001111</code> → <code>11110000</code></td></tr>
+<tr><td><code>&lt;&lt;</code></td><td>left shift</td><td>slide bits left, fill with 0</td><td><code>00000101 &lt;&lt; 2</code> → <code>00010100</code></td></tr>
+<tr><td><code>&gt;&gt;</code></td><td>right shift</td><td>slide bits right</td><td><code>00010100 &gt;&gt; 2</code> → <code>00000101</code></td></tr>
+</table>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p>Don't confuse <code>&amp;</code>/<code>|</code> (bitwise, works on every bit) with <code>&amp;&amp;</code>/<code>||</code> (logical, works on whole truth values). <code>1 &amp; 2</code> is 0 (no common bits!) but <code>1 &amp;&amp; 2</code> is 1 (both nonzero). Mixing them up compiles fine and fails weirdly.</p></div></div>
+
+<figure class="code"><figcaption>bitwise.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    unsigned int a = 0xC, b = 0xA;   /* 1100 and 1010 */
+
+    printf(&quot;a &amp; b  = 0x%X\n&quot;, a &amp; b);    /* AND: 1000 */
+    printf(&quot;a | b  = 0x%X\n&quot;, a | b);    /* OR : 1110 */
+    printf(&quot;a ^ b  = 0x%X\n&quot;, a ^ b);    /* XOR: 0110 */
+    printf(&quot;~a     = 0x%X\n&quot;, ~a);       /* flip all 32 bits */
+    printf(&quot;1 &lt;&lt; 4 = %u\n&quot;, 1u &lt;&lt; 4);    /* 16: bit 4 set  */
+    printf(&quot;80 &gt;&gt; 3 = %u\n&quot;, 80u &gt;&gt; 3);  /* 80 / 8 = 10    */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc bitwise.c -o bitwise &amp;&amp; ./bitwise
+a &amp; b  = 0x8
+a | b  = 0xE
+a ^ b  = 0x6
+~a     = 0xFFFFFFF3
+1 &lt;&lt; 4 = 16
+80 &gt;&gt; 3 = 10</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is <code>5 &amp; 3</code>?</p><ul><li>7</li><li>2</li><li>1</li><li>0</li></ul><details><summary>Show answer</summary><p><b>1</b> — 5 = 101, 3 = 011. AND keeps positions where BOTH have a 1 — only the ones bit: 001 = 1. (5 | 3 would be 111 = 7, and 5 ^ 3 = 110 = 6.)</p></details></div>
+
+<h2>Shifts are multiplication and division</h2>
+<p>Shifting left by n multiplies by 2ⁿ (each bit's place value doubles per step); shifting right divides by 2ⁿ, discarding the remainder. <code>1 &lt;&lt; n</code> is THE idiom for "a number with only bit n set" — you'll write it constantly.</p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>Shift with care:</b> left-shifting a negative number is <strong>undefined behavior</strong>, right-shifting a negative number is <em>implementation-defined</em> (arithmetic vs logical shift), and shifting by ≥ the type's width (e.g. <code>x &lt;&lt; 32</code> on a 32-bit int) is UB too. Habit to build: do bit twiddling on <code>unsigned</code> types.</p></div></div>
+
+<h2>The four moves of bit surgery</h2>
+<p>Say a byte holds eight on/off <em>flags</em> and you want to manipulate flag n without disturbing its neighbors. Four idioms cover everything:</p>
+<figure class="code"><figcaption>flags.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    unsigned char flags = 0;       /* 00000000 */
+    unsigned char BOLD  = 1u &lt;&lt; 0; /* 00000001 */
+    unsigned char CAPS  = 1u &lt;&lt; 3; /* 00001000 */
+
+    flags |= CAPS;                 /* SET:    force bit to 1  */
+    flags |= BOLD;
+    printf(&quot;after set   : 0x%02X\n&quot;, flags);
+
+    flags &amp;= ~BOLD;                /* CLEAR:  force bit to 0  */
+    printf(&quot;after clear : 0x%02X\n&quot;, flags);
+
+    flags ^= CAPS;                 /* TOGGLE: flip the bit    */
+    printf(&quot;after toggle: 0x%02X\n&quot;, flags);
+
+    if (flags &amp; CAPS)              /* TEST:   is the bit on?  */
+        printf(&quot;caps is ON\n&quot;);
+    else
+        printf(&quot;caps is OFF\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc flags.c -o flags &amp;&amp; ./flags
+after set   : 0x09
+after clear : 0x08
+after toggle: 0x00
+caps is OFF</pre></figure>
+
+<p>Try it with your own hands — here's a byte; the mask <code>1 &lt;&lt; 3</code> is <code>00001000</code>:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/operators-bitwise">This spot has an interactive bits widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which expression CLEARS bit 5 of <code>x</code> and leaves the rest alone?</p><ul><li><code>x |= (1 << 5)</code></li><li><code>x ^= (1 << 5)</code></li><li><code>x &amp;= ~(1 << 5)</code></li><li><code>x = ~(1 << 5)</code></li></ul><details><summary>Show answer</summary><p><b><code>x &amp;= ~(1 << 5)</code></b> — ~(1&lt;&lt;5) is all-ones except bit 5. ANDing keeps every bit where the mask is 1 and zeroes bit 5. (<code>|=</code> sets; <code>^=</code> toggles — it would SET the bit if it was clear!)</p></details></div>
+
+<h2>Idioms you'll meet in the wild</h2>
+<ul>
+<li><code>n &amp; 1</code> — is n odd? (checks the ones bit; no division needed)</li>
+<li><code>x &amp; 0xFF</code> — keep only the low byte</li>
+<li><code>(x &gt;&gt; 8) &amp; 0xFF</code> — extract the second byte (remember the color example from the hex lesson?)</li>
+<li><code>x &amp; (x - 1)</code> — clear the lowest set bit; zero iff x was a power of two</li>
+</ul>
+
+<div class="callout fun"><div class="co-ic">🎉</div><div class="co-body"><p><b>Party trick:</b> XOR can swap two variables without a temporary: <code>a ^= b; b ^= a; a ^= b;</code>. It works because XOR is its own inverse (<code>x ^ y ^ y == x</code>). Fun to know, terrible to use — it's slower than a temp on modern CPUs and breaks if a and b are the same variable. Interviews love it anyway.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/operators-bitwise">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> <code>n &lt;&lt; 3</code> computes… (for small unsigned n)</p><ul><li>n × 3</li><li>n × 8</li><li>n ÷ 8</li><li>n + 3</li></ul><details><summary>Show answer</summary><p><b>n × 8</b> — Each left shift doubles the value, so shifting by 3 multiplies by 2³ = 8. Compilers know this too — they turn ×8 into a shift automatically, so write whichever is clearer.</p></details></div>
+
+<p>That's the full operator toolbox. Now let's put conditions to work steering your program: <b>if and else</b>.</p>
+
+<a class="cta" href="../../index.html#/lesson/operators-bitwise">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../operators-comparison/">← Comparisons &amp; logic: how C decides</a>
+<a href="../if-else/">if &amp; else: teaching programs to choose →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#error, #warning, #pragma, #line — and a taste of #embed — The C Path</title>
+<meta name="description" content="Sometimes an install fails with one clear line — &quot;requires a 64-bit system&quot; — instead of pages of gibberish. That's a program refusing to build on purpose,…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="#error, #warning, #pragma, #line — and a taste of #embed — The C Path">
+<meta property="og:description" content="Sometimes an install fails with one clear line — &quot;requires a 64-bit system&quot; — instead of pages of gibberish. That's a program refusing to build on purpose,…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"#error, #warning, #pragma, #line — and a taste of #embed","description":"Sometimes an install fails with one clear line — \"requires a 64-bit system\" — instead of pages of gibberish. That's a program refusing to build on purpose,…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎩 The Preprocessor</p>
+<h1>#error, #warning, #pragma, #line — and a taste of #embed</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/pragma-error-line">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Sometimes an install fails with one clear line — "requires a 64-bit system" — instead of pages of gibberish. That's a program refusing to build on purpose, with a message a human wrote, and <code>#error</code> is how you'll do the same. Along the way you'll learn how to make a struct match a file format or network message byte-for-byte, and how C23 finally lets you drop an image straight into a program with one line.</p></div>
+
+<p>You've now met the two big preprocessor jobs: pasting (<code>#include</code>, <code>#define</code>) and choosing (<code>#if</code>). This lesson collects the remaining directives — the ones that <em>talk to the compiler</em> and to whoever is reading its output.</p>
+
+<h2><code>#error</code>: refuse to compile</h2>
+<p>Sometimes the right move is to stop the build with a human-readable message. Paired with <code>#if</code>, it turns silent assumptions into loud requirements:</p>
+<figure class="code"><figcaption>requirements.c</figcaption><pre><code>#include &lt;limits.h&gt;
+
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ &lt; 201112L
+    #error &quot;This project requires C11 or newer (try -std=c17)&quot;
+#endif
+
+#if LONG_MAX &lt; 9223372036854775807
+    #error &quot;This code assumes 64-bit long — 32-bit targets unsupported&quot;
+#endif
+
+int main(void) { return 0; }</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c17 requirements.c &amp;&amp; echo OK
+OK
+$ gcc -std=c90 requirements.c
+requirements.c:4:6: error: #error &quot;This project requires C11 or newer (try -std=c17)&quot;
+# the build stops immediately, with YOUR message</pre></figure>
+<p>Details worth knowing: with <code>-std=c90</code>, <code>__STDC_VERSION__</code> isn't defined at all, so it evaluates to 0 and the check fires. And notice we tested <code>LONG_MAX</code> from <code>&lt;limits.h&gt;</code> rather than <code>sizeof(long)</code> — because <strong>the preprocessor cannot evaluate <code>sizeof</code></strong>. It runs before the compiler, so it has no idea how big anything is; limit macros are the workaround. (Part 5's <code>static_assert</code> handles compile-time checks that <em>do</em> need real type knowledge.)</p>
+
+<p><code>#warning "message"</code> is the gentler sibling: it prints the message and compilation continues. It was a common extension for decades and became standard in C23. Classic use: <code>#warning "TODO: replace this stub before release"</code>.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why check <code>LONG_MAX</code> instead of <code>sizeof(long)</code> in a <code>#if</code>?</p><ul><li>LONG_MAX is faster to evaluate</li><li>sizeof is spelled differently in the preprocessor</li><li>The preprocessor runs before the compiler and cannot evaluate sizeof at all</li><li>sizeof(long) is undefined behavior</li></ul><details><summary>Show answer</summary><p><b>The preprocessor runs before the compiler and cannot evaluate sizeof at all</b> — Preprocessing is pure text-and-integer work with no type knowledge; sizeof in a #if is just an undefined identifier (= 0) followed by a syntax error. Limit macros from limits.h are the preprocessor-friendly mirror of type sizes.</p></details></div>
+
+<h2><code>#pragma</code>: vendor-specific dials</h2>
+<p><code>#pragma</code> is the standard's official escape hatch: implementation-defined instructions to the compiler, ignored if unrecognized. Three you'll actually meet:</p>
+<h3>1. <code>#pragma once</code></h3>
+<p>The include-guard alternative from the <code>#include</code> lesson — first line of a header, done.</p>
+<h3>2. <code>#pragma pack</code>: squeezing struct padding</h3>
+<p>Compilers insert invisible padding bytes into structs so each member sits at its natural alignment (full story in Part 5). <code>#pragma pack(1)</code> tells the compiler: no padding, pack tight — essential when a struct must mirror a file format or network packet byte-for-byte:</p>
+<figure class="code"><figcaption>pack.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+struct loose {            /* natural alignment (default) */
+    char  tag;            /* 1 byte  + 3 padding         */
+    int   value;          /* 4 bytes                     */
+    short id;             /* 2 bytes + 2 tail padding    */
+};
+
+#pragma pack(push, 1)     /* save state, then pack tight */
+struct tight {
+    char  tag;
+    int   value;
+    short id;
+};
+#pragma pack(pop)         /* restore normal alignment    */
+
+int main(void) {
+    printf(&quot;loose: %zu bytes\n&quot;, sizeof(struct loose));
+    printf(&quot;tight: %zu bytes\n&quot;, sizeof(struct tight));
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc pack.c -o pack &amp;&amp; ./pack
+loose: 12 bytes
+tight: 7 bytes
+# 5 of the 12 bytes were invisible padding</pre></figure>
+<p class="iw">▶ <a href="../../index.html#/lesson/pragma-error-line">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p>Packed structs are not free: on some CPUs, misaligned loads are slow; on a few (and with vector instructions) they can crash outright. Worse, taking a pointer to a misaligned member and passing it around is undefined behavior territory. Pack only at the I/O boundary, then copy into normal structs.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> When is <code>#pragma pack(1)</code> genuinely the right tool?</p><ul><li>Always — padding wastes memory</li><li>When a struct must match an on-disk or on-wire byte layout exactly</li><li>To speed up member access</li><li>To make sizeof portable across compilers</li></ul><details><summary>Show answer</summary><p><b>When a struct must match an on-disk or on-wire byte layout exactly</b> — Packing exists for I/O boundaries: file headers, network packets, memory-mapped hardware. Everywhere else, padding is your friend — aligned members are faster and pointer-safe.</p></details></div>
+
+<h3>3. <code>#pragma GCC diagnostic</code>: surgical warning control</h3>
+<figure class="code"><figcaption>diagnostic.c — scoped warning silence</figcaption><pre><code>#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored &quot;-Wdeprecated-declarations&quot;
+    legacy_init(cfg);      /* we know, we know — scheduled for v3 */
+#pragma GCC diagnostic pop
+/* from here on, the warning is active again */</code></pre></figure>
+<p><code>push</code> saves the current warning state, <code>ignored</code> silences one warning, <code>pop</code> restores everything — so the exception stays scoped to the few lines that earn it, instead of nuking the warning project-wide with a compiler flag.</p>
+
+<h2><code>_Pragma</code>: the operator form</h2>
+<p><code>#pragma</code> has one fatal flaw: a macro can't expand into a directive — <code>#</code> lines aren't produced by expansion. C99 added the operator <code>_Pragma("string")</code>, which <em>is</em> usable in macros:</p>
+<figure class="code"><figcaption>pragma-op.c — pragmas from macros</figcaption><pre><code>/* impossible with #pragma: macros cannot expand into '#' lines */
+#define SILENCE_DEPRECATED \
+    _Pragma(&quot;GCC diagnostic push&quot;) \
+    _Pragma(&quot;GCC diagnostic ignored \&quot;-Wdeprecated-declarations\&quot;&quot;)
+#define RESTORE_DIAGNOSTICS \
+    _Pragma(&quot;GCC diagnostic pop&quot;)
+
+SILENCE_DEPRECATED
+/* ... legacy calls ... */
+RESTORE_DIAGNOSTICS</code></pre></figure>
+
+<h2><code>#line</code>: lying about where you are</h2>
+<p><code>#line 42 "original.src"</code> sets what <code>__LINE__</code> and <code>__FILE__</code> report from that point on. Why would anyone want that? <strong>Code generators.</strong> Tools like bison/yacc, or anything that compiles another language into C, emit <code>#line</code> markers pointing back at the <em>user's</em> source — so when the generated C fails to compile, the error message points at <code>parser.y:17</code> (the file the human wrote), not <code>parser.tab.c:3841</code> (the machine-made noise). The linemarkers you saw in <code>gcc -E</code> output are the same mechanism.</p>
+<figure class="code"><figcaption>lineliar.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    printf(&quot;really at %s:%d\n&quot;, __FILE__, __LINE__);
+#line 500 &quot;grammar.y&quot;
+    printf(&quot;now 'at' %s:%d\n&quot;, __FILE__, __LINE__);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc lineliar.c -o lineliar &amp;&amp; ./lineliar
+really at lineliar.c:4
+now 'at' grammar.y:500
+# compile errors after the #line would ALSO blame grammar.y</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why do code-generating tools (bison, etc.) emit <code>#line</code> directives into the C they produce?</p><ul><li>To make the generated file shorter</li><li>So compiler errors point at the file the human wrote, not the generated C</li><li>To speed up preprocessing</li><li>To renumber lines after macros expand</li></ul><details><summary>Show answer</summary><p><b>So compiler errors point at the file the human wrote, not the generated C</b> — A syntax error in generated C is almost always caused by the source the tool consumed. #line redirects __FILE__/__LINE__ — and therefore every diagnostic — back to that original file and line.</p></details></div>
+
+<h2>C23 teaser: <code>#embed</code></h2>
+<p>For fifty years, shipping a binary asset (icon, font, firmware blob) inside a C program meant writing a script to convert it into a giant <code>{0x89, 0x50, ...}</code> initializer. C23 finally builds that in:</p>
+<figure class="code"><figcaption>logo.c — C23</figcaption><pre><code>/* C23: the file's bytes become the initializer, at preprocess time */
+static const unsigned char logo_png[] = {
+#embed &quot;logo.png&quot;
+};
+
+/* before C23 you needed xxd -i logo.png &gt; logo.h, or objcopy */</code></pre></figure>
+<p>The preprocessor expands the file into a comma-separated list of byte values. Freshly landed in GCC 15 and Clang 19 — more C23 goodies await in Part 5.</p>
+
+<h2>Try it</h2>
+<p class="iw">▶ <a href="../../index.html#/lesson/pragma-error-line">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>That's every directive in the language — the finale of this part puts them all to work designing clean multi-file projects.</p>
+
+<a class="cta" href="../../index.html#/lesson/pragma-error-line">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../conditional-compilation/">← Conditional compilation: code that decides to exist</a>
+<a href="../header-organization/">Header organization: designing multi-file programs →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

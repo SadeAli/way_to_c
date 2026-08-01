@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>static_assert: catch bugs before the program even exists — The C Path</title>
+<meta name="description" content="Plenty of crashes in shipped software are just assumptions nobody ever wrote down — &quot;an int is 4 bytes here&quot;, &quot;this table has an entry for every enum…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="static_assert: catch bugs before the program even exists — The C Path">
+<meta property="og:description" content="Plenty of crashes in shipped software are just assumptions nobody ever wrote down — &quot;an int is 4 bytes here&quot;, &quot;this table has an entry for every enum…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"static_assert: catch bugs before the program even exists","description":"Plenty of crashes in shipped software are just assumptions nobody ever wrote down — \"an int is 4 bytes here\", \"this table has an entry for every enum…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🚀 Modern C (C11 → C23)</p>
+<h1>static_assert: catch bugs before the program even exists</h1>
+<p class="meta">⏱ 10 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/static-assert">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Plenty of crashes in shipped software are just assumptions nobody ever wrote down — "an <code>int</code> is 4 bytes here", "this table has an entry for every enum value". Today you learn the one-line habit that makes the compiler <em>refuse to build</em> your program until an assumption actually holds. A bug caught that way can never reach anyone's machine, because the broken binary is never created at all.</p></div>
+
+<p>You already know <code>assert()</code> from debugging: it checks a condition <em>while the program runs</em> and aborts if it's false. But some bugs can be caught much, much earlier — before an executable is even produced. That's what C11's <strong><code>_Static_assert</code></strong> is for: an assertion the <em>compiler</em> checks, at compile time, for free.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/static-assert">This spot has an interactive flow widget — open the interactive lesson to play with it.</a></p>
+
+<h2>Compile time vs run time</h2>
+<p>The difference is enormous. A failed <code>assert()</code> crashes in front of your users, on their machine, at 3 a.m. A failed <code>static_assert</code> refuses to compile on <em>your</em> machine — the broken binary never exists. The trade-off: a static assert can only check things the compiler can compute — <strong>integer constant expressions</strong> like <code>sizeof</code>, enum values, and arithmetic on literals. It cannot check user input, file contents, or anything known only at runtime.</p>
+
+<figure class="code"><figcaption>check.c</figcaption><pre><code>#include &lt;assert.h&gt;   /* gives you the static_assert macro (C11/C17) */
+#include &lt;stdio.h&gt;
+
+/* Write your assumptions down — at file scope, checked while parsing: */
+static_assert(sizeof(int) == 4,  &quot;this code assumes 32-bit int&quot;);
+static_assert(sizeof(void *) == 8, &quot;this code assumes 64-bit pointers&quot;);
+
+/* Classic ABI check: a network packet header must be EXACTLY 8 bytes */
+struct packet {
+    unsigned char  type;
+    unsigned char  flags;
+    unsigned short len;
+    unsigned int   seq;
+};
+static_assert(sizeof(struct packet) == 8, &quot;packet layout broke!&quot;);
+
+int main(void) {
+    printf(&quot;all compile-time checks passed before main() existed\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -std=c17 check.c -o check &amp;&amp; ./check
+all compile-time checks passed before main() existed
+# the asserts cost NOTHING at runtime — they left no trace in the binary</pre></figure>
+
+<p>Notice where the asserts live: <em>at file scope</em>, outside any function. That's allowed — a static assert is a declaration, so it can appear at file scope, inside functions, and even inside a <code>struct</code> definition. Nothing runs; the compiler simply evaluates the condition while parsing.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which of these can <code>static_assert</code> check?</p><ul><li>That a file exists on disk</li><li>That <code>sizeof(long) == 8</code></li><li>That user input is positive</li><li>That malloc succeeded</li></ul><details><summary>Show answer</summary><p><b>That <code>sizeof(long) == 8</code></b> — Only integer constant expressions — things the compiler can compute without running the program. Files, input, and malloc results exist only at runtime; those need assert() or real error handling.</p></details></div>
+
+<h2>Watching one fail</h2>
+<p>Here's the payoff. Suppose your code genuinely assumes <code>long</code> is 8 bytes (say, you pack pointers into longs). Add the assert, and on any platform where that's false — 32-bit Linux, or Windows where <code>long</code> is 4 bytes even in 64-bit builds — the build stops cold with <em>your</em> message:</p>
+
+<figure class="code term"><figcaption>the same file on 32-bit / Windows</figcaption><pre>$ gcc -std=c17 check.c -o check
+check.c:6:1: error: static assertion failed: &quot;this code assumes 64-bit pointers&quot;
+    6 | static_assert(sizeof(void *) == 8, &quot;this code assumes 64-bit pointers&quot;);
+      | ^~~~~~~~~~~~~
+# build stops. No binary. The bug is caught at the earliest possible moment.</pre></figure>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p><b>Rule of thumb:</b> every time you catch yourself <em>assuming</em> something about sizes, layout, or ranges ("an int is 4 bytes here", "this struct matches the wire format"), write the assumption down as a <code>static_assert</code>. Assumptions rot; asserts don't.</p></div></div>
+
+<h2>Three spellings, one feature</h2>
+<table>
+<tr><th>standard</th><th>how you write it</th></tr>
+<tr><td>C11 / C17</td><td><code>_Static_assert(expr, "message")</code> — the keyword; <code>&lt;assert.h&gt;</code> adds the nicer macro <code>static_assert</code></td></tr>
+<tr><td>C23</td><td><code>static_assert</code> is a real keyword (no header needed), and the message is <em>optional</em>: <code>static_assert(sizeof(int) == 4);</code></td></tr>
+</table>
+<p>Why the ugly <code>_Static_assert</code> spelling first? Backwards compatibility: names starting with underscore + capital are reserved, so old code that happened to define its own <code>static_assert</code> couldn't break. C23 finally promoted the pretty name once the world had caught up. You'll see the same <code>_Ugly</code> → <code>pretty</code> pattern all through this part.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What did C23 change about static asserts?</p><ul><li>They can now check runtime values</li><li><code>static_assert</code> became a keyword and the message became optional</li><li>They were removed in favor of assert()</li><li>They now abort at runtime instead</li></ul><details><summary>Show answer</summary><p><b><code>static_assert</code> became a keyword and the message became optional</b> — C23 promoted static_assert from an assert.h macro to a true keyword, and made the second argument optional: static_assert(sizeof(int) == 4); is now legal.</p></details></div>
+
+<h2>Real-world use: keeping tables in sync</h2>
+<p>A classic maintenance bug: an enum grows, but a parallel array of names doesn't. Six months later someone indexes past the end. A static assert turns that silent landmine into an instant compile error:</p>
+
+<figure class="code"><figcaption>opsync.c</figcaption><pre><code>#include &lt;assert.h&gt;
+#include &lt;stdio.h&gt;
+
+enum op { OP_ADD, OP_SUB, OP_MUL, OP_COUNT };   /* _COUNT sentinel trick */
+
+static const char *op_names[] = { &quot;add&quot;, &quot;sub&quot;, &quot;mul&quot; };
+
+/* If the enum and the table ever disagree, the BUILD breaks — not prod: */
+static_assert(sizeof(op_names) / sizeof(op_names[0]) == OP_COUNT,
+              &quot;op_names[] out of sync with enum op&quot;);
+
+int main(void) {
+    for (int i = 0; i &lt; OP_COUNT; i++)
+        printf(&quot;op %d = %s\n&quot;, i, op_names[i]);
+    return 0;
+}</code></pre></figure>
+
+<p>Add <code>OP_DIV</code> to the enum and forget the string? The build fails with "op_names[] out of sync" — pointing you at the exact fix. This pattern (a <code>_COUNT</code> sentinel plus a static assert) is everywhere in production C.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/static-assert">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why must <code>static_assert</code> messages help future readers, e.g. "packet must match wire format"?</p><ul><li>The message is printed every run</li><li>The message becomes the compile error someone sees years later</li><li>The linker requires unique messages</li><li>Messages are mandatory in C23</li></ul><details><summary>Show answer</summary><p><b>The message becomes the compile error someone sees years later</b> — When the assert finally fires — often on a new platform, years later — your message IS the diagnostic. "Assertion failed: 1 == 2" helps nobody; a sentence explaining the assumption fixes the bug in minutes. (And C23 actually made messages optional, not mandatory.)</p></details></div>
+
+<p>Next up: another thing the compiler knows at compile time — how your data must be <b>aligned</b> in memory, and how to query and control it.</p>
+
+<a class="cta" href="../../index.html#/lesson/static-assert">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../header-organization/">← Header organization: designing multi-file programs</a>
+<a href="../alignment/">Alignment: why your struct is bigger than its parts →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30 C Gotchas — famous C traps, each one runnable — The C Path</title>
+<meta name="description" content="30 famous C gotchas — integer division, dangling pointers, macro traps, undefined behavior — each one a runnable program you can compile in your browser.">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="30 C Gotchas — famous C traps, each one runnable in your browser">
+<meta property="og:description" content="30 famous C gotchas — integer division, dangling pointers, macro traps, undefined behavior — each one a runnable program you can compile in your browser.">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+
+.g{margin:34px 0}.vs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.vs div{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14.5px;color:var(--ink2)}
+.vs b{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)}
+.vs .bad b{color:#e66767}
+@media(max-width:620px){.vs{grid-template-columns:1fr}}</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="index.html">&lt;C&gt;</a><a href="index.html">The C Path — learn C, visually</a></header>
+<h1>🪤 30 C Gotchas</h1>
+<p>The bugs that bite <i>every</i> C programmer once. Each is a complete, runnable program — read it, guess what it does, then run it on real gcc in your browser.</p>
+<a class="cta" href="index.html#/gotchas">▶ Open the interactive gallery — run every trap live, free, no signup</a>
+<div class="g">
+<h2>➗ Integer division silently throws away the fraction</h2>
+<p><i>Quick: what does 7 / 2 print?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    printf(&quot;7 / 2       = %d\n&quot;, 7 / 2);
+    int total = 90 + 91;
+    printf(&quot;average     = %d\n&quot;, total / 2);
+    printf(&quot;100 C in F  = %d\n&quot;, 100 * (9 / 5) + 32);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>3.5 for 7/2, 90.5 for the average, 212 for the temperature</div><div class="bad"><b>what actually happens</b>3, 90, and 132 — every fraction was silently discarded</div></div>
+<p>When <em>both</em> operands of <code>/</code> are integers, C performs integer division and truncates toward zero (C17 6.5.5) — the fractional part simply vanishes. That is why the average of 90 and 91 is "90", and why the Fahrenheit formula collapses: <code>9 / 5</code> is <code>1</code>, so the whole conversion becomes <code>100 + 32</code>. The fix costs one character: make either operand floating point — <code>7 / 2.0</code>, or <code>total / 2.0</code> stored in a <code>double</code>.</p>
+<p><a href="lesson/operators-arithmetic/">📖 Learn it properly: Arithmetic: +, −, ×, ÷ and the truncation trap →</a></p>
+</div><div class="g">
+<h2>🧭 Modulo of a negative number is negative</h2>
+<p><i>Everyone knows % wraps around... so what is -7 % 3?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    printf(&quot; 7 %% 3 = %d\n&quot;, 7 % 3);
+    printf(&quot;-7 %% 3 = %d\n&quot;, -7 % 3);
+    int i = -1;
+    printf(&quot;wrapped index: %d\n&quot;, i % 5);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>2 — like Python, so -1 % 5 gives a friendly wrap-around index of 4</div><div class="bad"><b>what actually happens</b>-7 % 3 is -1, and -1 % 5 is -1 — a negative &quot;index&quot;</div></div>
+<p>Since C99, integer division truncates toward zero, and <code>%</code> must satisfy <code>(a/b)*b + a%b == a</code> (C17 6.5.5) — so the result of <code>%</code> takes the <em>sign of the dividend</em>. Python floors instead, which is why the two languages disagree about every negative operand. If you want a wrap-around array index that is always non-negative, use the idiom <code>((i % n) + n) % n</code>.</p>
+<p><a href="lesson/operators-arithmetic/">📖 Learn it properly: Arithmetic: +, −, ×, ÷ and the truncation trap →</a></p>
+</div><div class="g">
+<h2>🔓 if (x = 1): the assignment that always says yes</h2>
+<p><i>One missing = turns a login check into a skeleton key.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int logged_in = 0;
+    if (logged_in = 1)
+        printf(&quot;Welcome back, admin!\n&quot;);
+    else
+        printf(&quot;Access denied.\n&quot;);
+    printf(&quot;logged_in is now %d\n&quot;, logged_in);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>logged_in is 0, so the check fails and it prints &quot;Access denied.&quot;</div><div class="bad"><b>what actually happens</b>prints &quot;Welcome back, admin!&quot; — and logged_in has been overwritten to 1</div></div>
+<p><code>=</code> assigns, <code>==</code> compares — and both are legal inside a condition. An assignment is an expression whose value is the value assigned, so <code>if (logged_in = 1)</code> stores 1 and then tests 1: nonzero, true, <em>every single time</em>. No error, no warning by default — just silently broken logic. Compile with <code>-Wall</code> and GCC will ask if you really meant it (and suggest extra parentheses when you do).</p>
+<p><a href="lesson/operators-comparison/">📖 Learn it properly: Comparisons &amp; logic: how C decides →</a></p>
+</div><div class="g">
+<h2>🫥 The semicolon that ate the if</h2>
+<p><i>Why does this program insist it is boiling at 10 degrees?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int temperature = 10;
+    if (temperature &gt; 30);
+        printf(&quot;It's boiling outside!\n&quot;);
+    printf(&quot;(temperature is %d)\n&quot;, temperature);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>the printf runs only when temperature &gt; 30</div><div class="bad"><b>what actually happens</b>&quot;It's boiling outside!&quot; prints at every temperature</div></div>
+<p>That innocent semicolon in <code>if (temperature &gt; 30);</code> is a complete, <em>empty statement</em> — and it is the entire body of the if. The condition is dutifully evaluated, controls nothing, and the indented printf below is just the next statement, running unconditionally. The same trap works on <code>while</code> and <code>for</code>, where <code>while (cond);</code> becomes an accidental infinite loop. GCC's <code>-Wall</code> flags the suspicious empty body.</p>
+<p><a href="lesson/if-else/">📖 Learn it properly: if &amp; else: teaching programs to choose →</a></p>
+</div><div class="g">
+<h2>🎭 The else that pairs with the wrong if</h2>
+<p><i>The indentation says one thing. The compiler sees another.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a = 0, b = 1;
+    if (a == 1)
+        if (b == 1)
+            printf(&quot;a and b are both 1\n&quot;);
+    else
+        printf(&quot;a is not 1\n&quot;);
+    printf(&quot;done\n&quot;);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>a is 0, so the else fires and prints &quot;a is not 1&quot;</div><div class="bad"><b>what actually happens</b>only &quot;done&quot; prints — the else secretly belongs to the INNER if</div></div>
+<p>C attaches an <code>else</code> to the <em>nearest</em> unmatched <code>if</code> (C17 6.8.4.1) — indentation is invisible to the parser. Here the else pairs with <code>if (b == 1)</code>, and since the outer condition <code>a == 1</code> is false, the whole inner if/else never runs at all. Braces around every if body make the pairing explicit and the trap impossible — which is exactly why style guides insist on them.</p>
+<p><a href="lesson/if-else/">📖 Learn it properly: if &amp; else: teaching programs to choose →</a></p>
+</div><div class="g">
+<h2>🕳️ switch cases fall through by default</h2>
+<p><i>Second place should win one medal. It wins three.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int place = 2;
+    switch (place) {
+        case 1:  printf(&quot;gold medal\n&quot;);
+        case 2:  printf(&quot;silver medal\n&quot;);
+        case 3:  printf(&quot;bronze medal\n&quot;);
+        default: printf(&quot;thanks for playing\n&quot;);
+    }
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>place is 2, so it prints just &quot;silver medal&quot;</div><div class="bad"><b>what actually happens</b>prints silver medal, bronze medal, AND thanks for playing</div></div>
+<p>A <code>case</code> label is just an entry point, not a fence: once execution jumps in, it keeps flowing straight through every following case until it hits a <code>break</code> or the end of the switch (C17 6.8.4.2). Forgetting <code>break</code> is one of the oldest bugs in C — famous enough that C23 added the <code>[[fallthrough]]</code> attribute so you can mark the rare times you fall through <em>on purpose</em>. GCC's <code>-Wimplicit-fallthrough</code> (part of <code>-Wextra</code>) catches the accidental kind.</p>
+<p><a href="lesson/switch-case/">📖 Learn it properly: switch, case, default: the multi-way jump →</a></p>
+</div><div class="g">
+<h2>🪢 The comma operator keeps only the last value</h2>
+<p><i>a = (1, 2, 3) and b = 1, 2, 3 — surely the same thing?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a = (1, 2, 3);               /* comma: run all, keep the LAST */
+    int b;
+    b = 1, 2, 3;                     /* = binds tighter than , */
+    printf(&quot;a = %d\n&quot;, a);
+    printf(&quot;b = %d\n&quot;, b);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>both variables end up holding the same value, whatever it is</div><div class="bad"><b>what actually happens</b>a = 3 but b = 1 — the two lines parse completely differently</div></div>
+<p>The comma <em>operator</em> evaluates left to right and yields only its <em>last</em> operand (C17 6.5.17), so <code>(1, 2, 3)</code> is 3. But comma has the <em>lowest</em> precedence in C — lower than <code>=</code> — so <code>b = 1, 2, 3</code> parses as <code>(b = 1), 2, 3</code>: b gets 1 and the rest is evaluated and discarded. The comma earns its keep in <code>for</code> headers like <code>i++, j--</code>; anywhere else it is usually a bug wearing a disguise.</p>
+<p><a href="lesson/loops-for/">📖 Learn it properly: for loops: init, test, step — all in one line →</a></p>
+</div><div class="g">
+<h2>🎯 == binds tighter than &amp;</h2>
+<p><i>flags is binary 110. So why does C swear bit 2 is clear?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int flags = 6;                       /* binary 110: bit 2 is set */
+    if (flags &amp; 4 == 4)
+        printf(&quot;bit 2 is set\n&quot;);
+    else
+        printf(&quot;bit 2 is NOT set\n&quot;);
+    printf(&quot;flags &amp; 4 == 4 evaluates to %d\n&quot;, flags &amp; 4 == 4);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>it tests (flags &amp; 4) == 4 and reports that bit 2 is set</div><div class="bad"><b>what actually happens</b>reports &quot;bit 2 is NOT set&quot; — it computed flags &amp; (4 == 4), i.e. 6 &amp; 1 = 0</div></div>
+<p>The comparison operators outrank the bitwise operators <code>&amp;</code>, <code>^</code> and <code>|</code> in C's precedence table, so <code>flags &amp; 4 == 4</code> parses as <code>flags &amp; (4 == 4)</code> — that's <code>6 &amp; 1</code>, which is 0. This ranking is a historical accident from before C had <code>&amp;&amp;</code>, and Dennis Ritchie himself listed it among his regrets. The rule to tattoo somewhere visible: <em>always parenthesize bit tests</em> — <code>(flags &amp; 4) == 4</code> or simply <code>flags &amp; 4</code> as the whole condition.</p>
+<p><a href="lesson/operators-bitwise/">📖 Learn it properly: Bitwise operators: surgery on individual bits →</a></p>
+</div><div class="g">
+<h2>↔️ x &lt;&lt; 2 + 1 is not (x &lt;&lt; 2) + 1</h2>
+<p><i>Shift left by two, then add one. C hears something else.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int x = 1;
+    printf(&quot;x &lt;&lt; 2 + 1   = %d\n&quot;, x &lt;&lt; 2 + 1);
+    printf(&quot;(x &lt;&lt; 2) + 1 = %d\n&quot;, (x &lt;&lt; 2) + 1);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>1 shifted left twice is 4, plus 1 makes 5</div><div class="bad"><b>what actually happens</b>8 — it parsed as 1 &lt;&lt; (2 + 1)</div></div>
+<p>Addition binds tighter than the shift operators, so <code>x &lt;&lt; 2 + 1</code> means <code>x &lt;&lt; 3</code>. This bites hardest in bit-packing code like <code>base &lt;&lt; 4 + offset</code>, which quietly shifts by the wrong amount instead of adding after the shift. Same medicine as every precedence trap: parentheses around anything mixing shifts with arithmetic — they cost nothing and remove all doubt.</p>
+<p><a href="lesson/operators-bitwise/">📖 Learn it properly: Bitwise operators: surgery on individual bits →</a></p>
+</div><div class="g">
+<h2>🎈 0.1 + 0.2 is not 0.3</h2>
+<p><i>The most famous decimal lie in computing.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    double sum = 0.1 + 0.2;
+    if (sum == 0.3)
+        printf(&quot;equal\n&quot;);
+    else
+        printf(&quot;NOT equal: sum is %.17f\n&quot;, sum);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>equal — 0.1 + 0.2 is 0.3, this is grade-school math</div><div class="bad"><b>what actually happens</b>NOT equal: the sum is 0.30000000000000004</div></div>
+<p>Doubles are <em>binary</em> fractions, and 0.1, 0.2, 0.3 all fall between the representable ones — each literal is really the nearest binary neighbor, and the rounding errors of <code>0.1 + 0.2</code> don't land exactly on the neighbor chosen for <code>0.3</code>. Nothing overflowed and nothing is broken; the values differ in the 17th decimal place, and <code>==</code> is merciless about it. Compare floating-point with a tolerance — <code>fabs(a - b) &lt; 1e-9</code> — or work in integer units (cents, not dollars).</p>
+<p><a href="lesson/floating-point/">📖 Learn it properly: Floating point: scientific notation in bits →</a></p>
+</div><div class="g">
+<h2>🎲 Uninitialized locals are stack garbage <small>(undefined behavior)</small></h2>
+<p><i>sum starts at 0 automatically... doesn't it?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+void scribble(void) {
+    volatile int junk[6] = {111111, 222222, 333333, 444444, 555555, 666666};
+    (void)junk[0];
+}
+
+int sum_to(int n) {
+    int sum;                         /* forgot  = 0  */
+    for (int i = 1; i &lt;= n; i++) sum += i;
+    return sum;
+}
+
+int main(void) {
+    scribble();
+    printf(&quot;1+2+3+4+5 = %d\n&quot;, sum_to(5));
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>1+2+3+4+5 = 15</div><div class="bad"><b>what actually happens</b>printed 29491 on our verified run — 15 plus whatever garbage the previous call left on the stack (a different number in every environment; -O2 happened to print 15)</div></div>
+<p>Automatic (local) variables are <em>not</em> zeroed — <code>sum</code> begins life as whatever bytes the last function call left in that stack slot, which is exactly why <code>scribble()</code> runs first here: to salt the stack and make the garbage visible. Using an indeterminate value like this is undefined behavior (C17 6.3.2.1), and the result genuinely changes between machines, runs, and optimization levels. Initialize at the point of declaration, always — and note that <code>static</code> and global variables <em>are</em> zero-initialized, which is why this bug loves to appear only after a refactor moves a variable.</p>
+<p><a href="lesson/variables-types/">📖 Learn it properly: Variables &amp; types: naming your bytes →</a></p>
+</div><div class="g">
+<h2>🃏 Lying to printf about a type <small>(undefined behavior)</small></h2>
+<p><i>Print a double with %d — and watch your 3.14 come out of a different printf.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    double price = 3.14;
+    printf(&quot;with %%d: %d\n&quot;, price);
+    printf(&quot;with %%f: %f\n&quot;, 42);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>with %d: 3 (truncated, maybe?), with %f: 42.000000</div><div class="bad"><b>what actually happens</b>%d printed garbage (1664582216 on our verified run) — and %f printed 3.140000, the 3.14 left over in a floating-point register!</div></div>
+<p>printf cannot see your types — it trusts the format string and reads whatever the specifier implies from the varargs machinery. On x86-64, doubles travel in floating-point registers and ints in integer registers, so <code>%d</code> read an integer register nobody had set (garbage), and the later <code>%f</code> read the float register still holding 3.14 from the first call. A mismatched conversion specifier is undefined behavior per C17 7.21.6.1p9 — the spooky register reuse is just one way it can look. <code>-Wall</code> makes GCC check format strings against arguments; treat those warnings as errors.</p>
+<p><a href="lesson/variables-types/">📖 Learn it properly: Variables &amp; types: naming your bytes →</a></p>
+</div><div class="g">
+<h2>💥 scanf without &amp; is a crash, not a typo <small>(undefined behavior)</small></h2>
+<p><i>One missing character stands between you and a segfault.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int age = 0;
+    scanf(&quot;%d&quot;, age);                /* forgot the &amp; */
+    printf(&quot;You are %d\n&quot;, age);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>reads 21 from input and prints &quot;You are 21&quot;</div><div class="bad"><b>what actually happens</b>instant crash (SIGSEGV) — scanf tried to write the number to address 0</div></div>
+<p><code>scanf</code> must <em>modify</em> your variable, so it needs the variable's address: <code>scanf("%d", &amp;age)</code>. Passing <code>age</code> instead hands scanf the <em>value</em> 0, which it dutifully uses as the address to store into — undefined behavior, and on our verified run an immediate segmentation fault. It won't always be so merciful: had <code>age</code> held stack garbage that happened to be a writable address, scanf would corrupt memory silently. GCC's format checking (<code>-Wall</code>) catches this one at compile time — let it.</p>
+<p><a href="lesson/stdio-lib/">📖 Learn it properly: stdio.h: printf, scanf &amp; files, done right →</a></p>
+</div><div class="g">
+<h2>🕵️ Why getchar returns int, not char</h2>
+<p><i>A perfectly normal byte in your file that looks exactly like EOF.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    char c = 0xFF;     /* a perfectly normal data byte, say from an image */
+    if (c == EOF)
+        printf(&quot;Looks like the end of the file!\n&quot;);
+    printf(&quot;c = %d, EOF = %d\n&quot;, c, EOF);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>0xFF is just byte 255 — nothing like the end-of-file marker</div><div class="bad"><b>what actually happens</b>prints &quot;Looks like the end of the file!&quot; — stored in a char, 0xFF is -1, which equals EOF</div></div>
+<p><code>getchar()</code> returns <code>int</code> for a reason: it must express 257 distinct results — all 256 byte values <em>plus</em> <code>EOF</code> (-1). Squeeze the result into a <code>char</code> and the distinction dies: on x86-64 Linux, where plain char is signed, the honest data byte 0xFF becomes -1 and compares equal to EOF, so reading a binary file stops early. On platforms where char is unsigned (ARM Linux!), it's the opposite disaster — <code>c == EOF</code> is <em>never</em> true and the read loop never ends. Whether char is signed is implementation-defined (C17 6.2.5); the cure is always <code>int c = getchar();</code>.</p>
+<p><a href="lesson/stdio-lib/">📖 Learn it properly: stdio.h: printf, scanf &amp; files, done right →</a></p>
+</div><div class="g">
+<h2>🔤 sizeof 'a' is 4, because 'a' is an int</h2>
+<p><i>sizeof 'a' — one byte, obviously?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    char c = 'a';
+    printf(&quot;sizeof 'a'   = %zu\n&quot;, sizeof 'a');
+    printf(&quot;sizeof c     = %zu\n&quot;, sizeof c);
+    printf(&quot;sizeof(char) = %zu\n&quot;, sizeof(char));
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>1 — 'a' is a character</div><div class="bad"><b>what actually happens</b>sizeof 'a' is 4, while sizeof c and sizeof(char) are 1</div></div>
+<p>In C, a character constant like <code>'a'</code> has type <code>int</code> (C17 6.4.4.4p10) — it only becomes a one-byte value when you store it into a <code>char</code>. So <code>sizeof 'a'</code> is <code>sizeof(int)</code>, 4 on this platform. C++ chose differently (<code>'a'</code> is a <code>char</code> there, size 1), making this the classic "is this file really C?" interview question. Mostly harmless trivia — until you memcpy <code>sizeof 'x'</code> bytes and stomp three neighbors.</p>
+<p><a href="lesson/sizeof/">📖 Learn it properly: sizeof: the measuring-tape operator →</a></p>
+</div><div class="g">
+<h2>🪜 unsigned char b = ~a, and yet b != ~a</h2>
+<p><i>Flip the bits of 0xFF and compare. C says they're different.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    unsigned char a = 0xFF;
+    unsigned char b = ~a;            /* surely b == ~a now... */
+    printf(&quot;b       = %u\n&quot;, b);
+    printf(&quot;~a      = %d\n&quot;, ~a);
+    printf(&quot;b == ~a : %d\n&quot;, b == ~a);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>~0xFF is 0x00, so b == ~a prints 1</div><div class="bad"><b>what actually happens</b>b = 0 but ~a = -256, so b == ~a prints 0</div></div>
+<p>Before almost any arithmetic happens, C silently widens anything smaller than <code>int</code> up to <code>int</code> — the <em>integer promotions</em> (C17 6.3.1.1). So <code>~a</code> is not 8-bit bit-flipping: <code>a</code> becomes the int 255, and <code>~255</code> is -256. Assigning that to <code>b</code> truncates back to 0, but the comparison <code>b == ~a</code> happens in int-land: 0 versus -256. When you need byte-sized bit math to stay byte-sized, mask it: <code>(unsigned char)~a</code> or <code>~a &amp; 0xFF</code>.</p>
+<p><a href="lesson/casting-conversions/">📖 Learn it properly: Conversions &amp; casts: C changes your types behind your back →</a></p>
+</div><div class="g">
+<h2>🌀 Unsigned numbers can't go below zero — they wrap</h2>
+<p><i>3 minus 5 equals 4,294,967,294 items in stock.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    unsigned int have = 3, need = 5;
+    printf(&quot;have - need = %u\n&quot;, have - need);
+    unsigned int u = 0;
+    if (u - 1 &lt; 0)
+        printf(&quot;u - 1 is negative\n&quot;);
+    else
+        printf(&quot;u - 1 = %u, and it can NEVER be negative\n&quot;, u - 1);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>have - need is -2, and u - 1 is less than 0 when u is 0</div><div class="bad"><b>what actually happens</b>have - need = 4294967294, and the u - 1 &lt; 0 branch can never run</div></div>
+<p>Unsigned arithmetic is defined as modulo 2<sup>N</sup> (C17 6.2.5p9) — dip below zero and you wrap to the top. That's not a bug in the compiler; it's the deal you signed by writing <code>unsigned</code>. Worse, the <em>usual arithmetic conversions</em> drag signed values along: compare an <code>int</code> to an <code>unsigned</code> and the int converts, so <code>-1 &gt; 2000000000u</code> is true. This is why <code>for (size_t i = n - 1; i &gt;= 0; i--)</code> loops forever — a <code>size_t</code> is <em>always</em> ≥ 0 — and why subtracting sizes is a minefield: prefer <code>if (have &gt;= need)</code> over inspecting <code>have - need</code>.</p>
+<p><a href="lesson/casting-conversions/">📖 Learn it properly: Conversions &amp; casts: C changes your types behind your back →</a></p>
+</div><div class="g">
+<h2>🧨 INT_MAX + 1 is undefined, not just wrong <small>(undefined behavior)</small></h2>
+<p><i>Add 1 to the biggest int. What could go wrong?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;limits.h&gt;
+
+int main(void) {
+    int n = INT_MAX;
+    printf(&quot;n     = %d\n&quot;, n);
+    printf(&quot;n + 1 = %d\n&quot;, n + 1);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>2147483648 — or at worst some error</div><div class="bad"><b>what actually happens</b>printed -2147483648 on our verified run: positive + positive = negative. And because it is UB, the optimizer may assume it never happens at all</div></div>
+<p>Signed integer overflow is undefined behavior (C17 6.5p5) — the standard doesn't promise wraparound, garbage, or anything else. At <code>-O0</code> you'll typically observe the two's-complement wrap shown here, which lulls people into trusting it; at <code>-O2</code> GCC instead <em>assumes overflow cannot happen</em> and deletes "impossible" code — the classic victim being the safety check <code>if (n + 1 &lt; n)</code>, optimized away entirely. Contrast with unsigned types, whose wraparound is fully defined. If you need to detect overflow, check <em>before</em> the operation (<code>n &gt; INT_MAX - 1</code>) or use GCC's <code>__builtin_add_overflow</code>.</p>
+<p><a href="lesson/undefined-behavior/">📖 Learn it properly: Undefined behavior: here be nasal demons →</a></p>
+</div><div class="g">
+<h2>🎰 Shifting a 32-bit int by 32 places <small>(undefined behavior)</small></h2>
+<p><i>1 &lt;&lt; 32 — zero, obviously? This program printed 1.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    unsigned int x = 1;
+    int n = 32;
+    printf(&quot;1 &lt;&lt; 31 = %u\n&quot;, x &lt;&lt; 31);
+    printf(&quot;1 &lt;&lt; 32 = %u\n&quot;, x &lt;&lt; n);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>0 — every bit was shifted out the far end</div><div class="bad"><b>what actually happens</b>printed 1 at -O0 (the x86 shift instruction masks the count to 5 bits, so 32 acts like 0) — and 0 at -O2 when the compiler folds it. Same program, two answers</div></div>
+<p>Shifting by an amount ≥ the width of the (promoted) type is undefined behavior (C17 6.5.7p3) — and this one shows why "UB" doesn't mean "crash": the program runs happily and simply gives different answers depending on who computes the shift. The x86 <code>shl</code> instruction masks its count mod 32, so at runtime <code>1 &lt;&lt; 32</code> becomes <code>1 &lt;&lt; 0</code>; when the optimizer constant-folds it instead, it can produce 0 (or anything else). Note the promotion angle too: <code>1 &lt;&lt; 31</code> already overflows a signed int — for bit masks, work unsigned and keep counts strictly below the width.</p>
+<p><a href="lesson/undefined-behavior/">📖 Learn it properly: Undefined behavior: here be nasal demons →</a></p>
+</div><div class="g">
+<h2>📦 Array parameters are secretly pointers</h2>
+<p><i>Ten elements go in. The function counts two.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+void report(int arr[]) {
+    printf(&quot;inside func: %zu elements?\n&quot;, sizeof(arr) / sizeof(arr[0]));
+}
+
+int main(void) {
+    int a[10] = {0};
+    printf(&quot;in main    : %zu elements\n&quot;, sizeof(a) / sizeof(a[0]));
+    report(a);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>both lines print 10 elements</div><div class="bad"><b>what actually happens</b>in main: 10 elements — inside the function: 2 (sizeof gave the size of a pointer, 8, not the array, 40)</div></div>
+<p>A parameter declared <code>int arr[]</code> — even <code>int arr[10]</code> — is <em>adjusted</em> to <code>int *arr</code> (C17 6.7.6.3p7): arrays are never passed by value in C, only a pointer to their first element travels. So inside the function, <code>sizeof(arr)</code> is <code>sizeof(int *)</code> = 8, and the "element count" is 8/4 = 2 regardless of what was passed. The <code>sizeof a / sizeof a[0]</code> trick works only where the actual array is in scope; a function must be handed the length as a separate parameter. GCC even ships a dedicated warning for this one: <code>-Wsizeof-array-argument</code>.</p>
+<p><a href="lesson/arrays-vs-pointers/">📖 Learn it properly: Arrays vs pointers: the great confusion →</a></p>
+</div><div class="g">
+<h2>🧱 i &lt;= 5 walks one step past the end <small>(undefined behavior)</small></h2>
+<p><i>We zero five scores. So why is total wiped too?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    struct { int scores[5]; int total; } s = { {10, 20, 30, 40, 50}, 150 };
+    for (int i = 0; i &lt;= 5; i++)     /* &lt;=  goes one step too far */
+        s.scores[i] = 0;
+    printf(&quot;total = %d\n&quot;, s.total); /* we never touched total... right? */
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>total = 150 — the loop only touches scores</div><div class="bad"><b>what actually happens</b>total = 0: writing scores[5] landed on the neighboring field (verified at -O0; at -O2 the same UB happened to leave total at 150)</div></div>
+<p>An array of 5 has valid indexes 0 through 4 — the condition <code>i &lt;= 5</code> performs six writes, and <code>scores[5]</code> is one past the end: undefined behavior (C17 6.5.6). Here the stray write deterministically lands on <code>total</code>, the next struct member in memory — a tidy demonstration of how buffer overflows corrupt whatever innocent data lives next door (in real programs: other variables, heap bookkeeping, return addresses — the raw material of security exploits). The idiomatic C loop is <code>for (i = 0; i &lt; N; i++)</code>: start at 0, compare with <code>&lt;</code>, and the count of iterations equals N.</p>
+<p><a href="lesson/arrays/">📖 Learn it properly: Arrays: many values, one name →</a></p>
+</div><div class="g">
+<h2>🚷 A string without its \0 doesn't know where to stop <small>(undefined behavior)</small></h2>
+<p><i>Five letters, five bytes. What could printf get wrong?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    struct {
+        char word[5];
+        char next[9];
+    } s = { {'h', 'e', 'l', 'l', 'o'}, &quot;neighbor&quot; };
+    printf(&quot;word = %s\n&quot;, s.word);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>word = hello</div><div class="bad"><b>what actually happens</b>word = helloneighbor — printf kept walking straight into the next field</div></div>
+<p>A C string is bytes-until-<code>\0</code>, so "hello" really needs <em>six</em> bytes. The initializer <code>{'h','e','l','l','o'}</code> fills all five slots of <code>word</code> with letters and leaves no room for the terminator — and <code>%s</code>, which just walks memory until it meets a zero byte, strolls past the end into <code>next</code>. That out-of-bounds read is undefined behavior; here the struct layout makes the damage visible and repeatable. Write <code>char word[6] = "hello";</code> (or let the compiler count: <code>char word[] = "hello";</code>) and the terminator is included automatically.</p>
+<p><a href="lesson/strings/">📖 Learn it properly: Strings: char arrays with a secret handshake →</a></p>
+</div><div class="g">
+<h2>✂️ strncpy doesn't promise a \0 <small>(undefined behavior)</small></h2>
+<p><i>The &quot;safe&quot; string copy that quietly leaves strings unterminated.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(void) {
+    struct { char dst[4]; char after[10]; } s;
+    strcpy(s.after, &quot;OOPS!&quot;);
+    strncpy(s.dst, &quot;gotcha&quot;, sizeof s.dst);   /* copies g,o,t,c - no '\0' */
+    printf(&quot;dst = %s\n&quot;, s.dst);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>dst = &quot;gotc&quot; — truncated, but a proper string</div><div class="bad"><b>what actually happens</b>dst = gotcOOPS! — four characters were copied, no terminator was written, and printf ran on into the next field</div></div>
+<p><code>strncpy</code> has a nasty contract (C17 7.24.2.4): if the source has ≥ n characters, it copies <em>exactly n</em> and does <strong>not</strong> write a terminator. "gotcha" is longer than 4, so <code>dst</code> got <code>g o t c</code> and nothing else — an unterminated buffer that <code>%s</code> happily reads past (undefined behavior, made visible here by the neighboring field). Despite the reassuring <code>n</code> in the name, strncpy was designed for fixed-width fields in 1970s Unix directory entries, not for safety. Either terminate manually — <code>dst[sizeof dst - 1] = '\0';</code> — or use <code>snprintf(dst, sizeof dst, "%s", src)</code>, which always terminates.</p>
+<p><a href="lesson/string-lib/">📖 Learn it properly: string.h: the null-terminated toolbox →</a></p>
+</div><div class="g">
+<h2>🔐 strcmp returns 0 when strings are EQUAL</h2>
+<p><i>The password is correct. The program says it is wrong.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(void) {
+    char stored[] = &quot;hunter2&quot;, typed[] = &quot;hunter2&quot;;
+    if (strcmp(stored, typed))
+        printf(&quot;Password accepted!\n&quot;);
+    else
+        printf(&quot;Wrong password.\n&quot;);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>the strings match, strcmp reports success, &quot;Password accepted!&quot;</div><div class="bad"><b>what actually happens</b>prints &quot;Wrong password.&quot; — strcmp returned 0 (falsy) precisely because the strings are equal</div></div>
+<p><code>strcmp</code> is not an "are these equal?" predicate — it's a three-way comparison for <em>sorting</em>: negative if the first string orders earlier, positive if later, and <code>0</code> on equality. Used bare in a condition, that 0 is falsy, so <code>if (strcmp(a, b))</code> actually means "if <em>different</em>" — the exact opposite of what it appears to say. Always compare the result explicitly: <code>strcmp(a, b) == 0</code> for equality. (Bonus trap in the same family: <code>a == b</code> on two char arrays compares their <em>addresses</em>, never their contents.)</p>
+<p><a href="lesson/string-lib/">📖 Learn it properly: string.h: the null-terminated toolbox →</a></p>
+</div><div class="g">
+<h2>🧟 Returning the address of a local variable <small>(undefined behavior)</small></h2>
+<p><i>The function returned an address. The variable did not survive the trip.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int *birthday(void) {
+    int candles = 21;
+    return &amp;candles;                 /* address of a variable about to die */
+}
+
+void party(void) {
+    volatile int balloons[4] = {99, 98, 97, 96};
+    (void)balloons[0];
+}
+
+int main(void) {
+    int *p = birthday();
+    party();
+    printf(&quot;candles: %d\n&quot;, *p);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>candles: 21</div><div class="bad"><b>what actually happens</b>crash (SIGSEGV) — GCC spotted the escape, warned, and returned NULL instead of the dead address; on compilers that return the real address you read whatever the next call scribbled there</div></div>
+<p><code>candles</code> lives in <code>birthday</code>'s stack frame, which is torn down the moment the function returns — the returned pointer refers to memory whose lifetime has ended, and using it is undefined behavior (C17 6.2.4). It's treacherous because it often <em>appears</em> to work: the stale value survives until the next call (here, <code>party()</code>) reuses the frame. GCC's <code>-Wreturn-local-addr</code> warning fires on this pattern and the compiler deliberately returns NULL instead, converting a subtle corruption into the honest crash we verified. To return data from a function, return it <em>by value</em>, or hand back <code>malloc</code>'d memory, or write into a caller-supplied buffer.</p>
+<p><a href="lesson/scope-lifetime/">📖 Learn it properly: Scope &amp; lifetime: who sees what, and for how long →</a></p>
+</div><div class="g">
+<h2>👻 Use after free: the haunted ticket <small>(undefined behavior)</small></h2>
+<p><i>You freed it. malloc recycled it. Your old pointer never got the memo.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(void) {
+    int *ticket = malloc(sizeof *ticket);
+    *ticket = 42;
+    free(ticket);
+    int *other = malloc(sizeof *other);   /* recycles the same spot */
+    *other = 777;
+    printf(&quot;my ticket says: %d\n&quot;, *ticket);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>my ticket says: 42</div><div class="bad"><b>what actually happens</b>printed 777 — the second malloc reused the same chunk, so the freed pointer showed the new tenant's data (at -O2 it printed allocator garbage instead)</div></div>
+<p>After <code>free(ticket)</code>, that pointer's value is indeterminate and dereferencing it is undefined behavior (C17 7.22.3) — but the bytes don't vanish, the allocator just puts the chunk back on its shelf. Ask for the same size again and glibc hands you the very same address, which is why <code>*ticket</code> "worked" and showed 777: two owners, one address, and the old pointer reads the new owner's data. This is the use-after-free — a bug class behind countless real-world exploits, and invisible in testing whenever the memory hasn't been reused <em>yet</em>. Discipline: <code>free(p); p = NULL;</code> so any later dereference crashes honestly.</p>
+<p><a href="lesson/dynamic-memory/">📖 Learn it properly: malloc &amp; friends: memory on demand →</a></p>
+</div><div class="g">
+<h2>☠️ free() twice, abort once <small>(undefined behavior)</small></h2>
+<p><i>If one free is good, surely two is thorough?</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(void) {
+    char *p = malloc(16);
+    free(p);
+    free(p);                         /* freeing the same pointer twice */
+    printf(&quot;done\n&quot;);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>freeing twice is harmless — then it prints &quot;done&quot;</div><div class="bad"><b>what actually happens</b>crashes before &quot;done&quot; with: free(): double free detected in tcache 2</div></div>
+<p>Calling <code>free</code> on a pointer that was already freed is undefined behavior (C17 7.22.3.3) — the second call hands the allocator a chunk that's already on its free list, corrupting the bookkeeping that every future <code>malloc</code> depends on. Historically that corruption was silently exploitable (an attacker could steer where the next allocation lands), which is why modern glibc actively checks and aborts with the message we verified. Note that "done" never printed: the abort fired before stdout was flushed. The same discipline as use-after-free saves you here — <code>free(p); p = NULL;</code> — because <code>free(NULL)</code> is defined to do nothing.</p>
+<p><a href="lesson/dynamic-memory/">📖 Learn it properly: malloc &amp; friends: memory on demand →</a></p>
+</div><div class="g">
+<h2>🚱 malloc can say no <small>(undefined behavior)</small></h2>
+<p><i>Ask for 18 quintillion bytes, then store 42 in the answer.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(void) {
+    size_t huge = (size_t)-1;        /* ~18 quintillion bytes */
+    int *p = malloc(huge);
+    *p = 42;                         /* malloc said no. p is NULL. */
+    printf(&quot;stored %d\n&quot;, *p);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>either the allocation works or the program stops politely</div><div class="bad"><b>what actually happens</b>crash (SIGSEGV) — malloc returned NULL, and *p = 42 wrote to address 0</div></div>
+<p><code>malloc</code> reports failure by returning <code>NULL</code> (C17 7.22.3.4) — it cannot throw, print, or apologize, and glibc rejects any request larger than <code>PTRDIFF_MAX</code> outright, so this one fails instantly. Dereferencing that NULL is undefined behavior; on Linux it's a segfault, on small embedded systems it can silently corrupt address 0 and keep running. Every allocation deserves the three-line tax: <code>if (!p) { /* report and bail */ }</code>. The subtler sibling to watch for: <code>malloc(n * sizeof(int))</code> where the <em>multiplication</em> overflows first, allocating a tiny block that "succeeds" — <code>calloc(n, sizeof(int))</code> checks that product for you.</p>
+<p><a href="lesson/dynamic-memory/">📖 Learn it properly: malloc &amp; friends: memory on demand →</a></p>
+</div><div class="g">
+<h2>🪤 SQUARE(a + 1) = 9</h2>
+<p><i>A macro that squares 3 perfectly and butchers a + 1.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#define SQUARE(x) x * x
+
+int main(void) {
+    int a = 4;
+    printf(&quot;SQUARE(3)     = %d\n&quot;, SQUARE(3));
+    printf(&quot;SQUARE(a + 1) = %d\n&quot;, SQUARE(a + 1));
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>a is 4, so SQUARE(a + 1) is 5 squared: 25</div><div class="bad"><b>what actually happens</b>SQUARE(3) = 9 as advertised, but SQUARE(a + 1) = 9 too</div></div>
+<p>Macros are <em>text paste</em>, not function calls: <code>SQUARE(a + 1)</code> expands to <code>a + 1 * a + 1</code>, and precedence regroups it as <code>a + (1 * a) + 1</code> = 4 + 4 + 1 = 9. The macro never saw the value 5 — it saw three tokens and dropped them into a precedence minefield. The armor is parentheses on <em>every</em> parameter <em>and</em> the whole body: <code>#define SQUARE(x) ((x) * (x))</code> — the inner pairs guard against the argument's operators, the outer pair against operators at the call site (<code>100 / SQUARE(5)</code>). And even fully armored, never pass side effects: <code>SQUARE(i++)</code> expands to two unsequenced <code>i++</code>s — undefined behavior.</p>
+<p><a href="lesson/function-macros/">📖 Learn it properly: Function-like macros: power tools with no guard →</a></p>
+</div><div class="g">
+<h2>🪞 Even a perfectly parenthesized macro evaluates twice</h2>
+<p><i>MAX(i++, 9) — fully armored in parentheses, and still wrong.</i></p>
+<figure class="code"><figcaption>gotcha.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+#define MAX(a, b) ((a) &gt; (b) ? (a) : (b))
+
+int main(void) {
+    int i = 10;
+    int best = MAX(i++, 9);          /* fully parenthesized... safe now? */
+    printf(&quot;best = %d, i = %d\n&quot;, best, i);
+    return 0;
+}</code></pre></figure>
+<div class="vs"><div><b>you might expect</b>best = 10 (the current value of i), and i becomes 11</div><div class="bad"><b>what actually happens</b>best = 11 and i = 12 — the i++ ran twice: once in the comparison, once producing the result</div></div>
+<p>Parentheses fix precedence, but they cannot fix <em>double evaluation</em> — the macro pastes its argument text everywhere the parameter appears, so <code>MAX(i++, 9)</code> becomes <code>((i++) &gt; (9) ? (i++) : (9))</code>: the first <code>i++</code> yields 10 (i→11), the comparison succeeds, and the <em>second</em> <code>i++</code> yields 11 (i→12). This particular expansion is well-defined (<code>?:</code> is a sequence point) — just quietly wrong; with <code>SQUARE(i++)</code> the two increments are unsequenced and it's outright UB. A real function evaluates each argument exactly once; a macro makes no such promise. Keep side effects out of macro arguments — or use a function and let the optimizer inline it.</p>
+<p><a href="lesson/function-macros/">📖 Learn it properly: Function-like macros: power tools with no guard →</a></p>
+</div>
+<a class="cta" href="index.html#/gotchas">▶ Run all 30 traps interactively</a>
+</div>
+</body>
+</html>

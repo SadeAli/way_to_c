@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arithmetic: +, −, ×, ÷ and the truncation trap — The C Path</title>
+<meta name="description" content="Ask C to average the test scores 90 and 91 and it confidently answers 90 — the .5 silently vanishes. That quiet trap has skewed grades, prices, and game…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Arithmetic: +, −, ×, ÷ and the truncation trap — The C Path">
+<meta property="og:description" content="Ask C to average the test scores 90 and 91 and it confidently answers 90 — the .5 silently vanishes. That quiet trap has skewed grades, prices, and game…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Arithmetic: +, −, ×, ÷ and the truncation trap","description":"Ask C to average the test scores 90 and 91 and it confidently answers 90 — the .5 silently vanishes. That quiet trap has skewed grades, prices, and game…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>Arithmetic: +, −, ×, ÷ and the truncation trap</h1>
+<p class="meta">⏱ 13 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/operators-arithmetic">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Ask C to average the test scores 90 and 91 and it confidently answers 90 — the .5 silently vanishes. That quiet trap has skewed grades, prices, and game scores in real software. Here you'll learn all of C's math, exactly where that trap hides, and the one-character fix that defuses it.</p></div>
+
+<p>Time to compute. C's arithmetic operators look like grade-school math — <code>+</code> <code>-</code> <code>*</code> <code>/</code> — plus one newcomer, <code>%</code> (modulo, the <em>remainder</em> of a division). The values an operator works on are called its <em>operands</em> — and when both operands are whole numbers, C hides a sharp edge in the most innocent-looking operator: division.</p>
+
+<h2>The big five</h2>
+<figure class="code"><figcaption>arith.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int a = 7, b = 2;
+
+    printf(&quot;a + b = %d\n&quot;, a + b);
+    printf(&quot;a - b = %d\n&quot;, a - b);
+    printf(&quot;a * b = %d\n&quot;, a * b);
+    printf(&quot;a / b = %d   &lt;- surprise!\n&quot;, a / b);
+    printf(&quot;a %% b = %d   (the remainder)\n&quot;, a % b);
+    printf(&quot;a / 2.0 = %f\n&quot;, a / 2.0);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc arith.c -o arith &amp;&amp; ./arith
+a + b = 9
+a - b = 5
+a * b = 14
+a / b = 3   &lt;- surprise!
+a % b = 1   (the remainder)
+a / 2.0 = 3.500000</pre></figure>
+
+<div class="callout danger"><div class="co-ic">💀</div><div class="co-body"><p><b>The integer division trap:</b> <code>7 / 2</code> is <code>3</code>, not 3.5! When <em>both</em> operands are integers, C performs integer division and <strong>truncates toward zero</strong> — the fraction is thrown away. This bites everyone: <code>(a + b) / 2</code> for an average, <code>celsius * 9 / 5</code>… If you want 3.5, make one side floating point: <code>7 / 2.0</code> or <code>7.0 / 2</code>.</p></div></div>
+
+<p><code>%</code> gives what division threw away: <code>7 % 2</code> is <code>1</code>. It's the workhorse of "is this even?", "wrap this index around", and clock arithmetic. Since C99, the sign of the result follows the <em>dividend</em>: <code>-7 % 2</code> is <code>-1</code>. And <code>x % 0</code>, like <code>x / 0</code>, is undefined behavior — no friendly exception, just chaos.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does <code>int avg = (90 + 91) / 2;</code> store?</p><ul><li>90.5</li><li>90</li><li>91</li><li>undefined behavior</li></ul><details><summary>Show answer</summary><p><b>90</b> — 90 + 91 = 181; both operands of / are ints, so 181 / 2 truncates toward zero: 90. The .5 is silently discarded. To keep it, divide by 2.0 and store in a double.</p></details></div>
+
+<h2>++ and −−: the increment twins</h2>
+<p>Adding or subtracting 1 is so common that C gives it dedicated operators — the very ones that named C++. Each comes in two flavors, and the difference is <em>when you see the new value</em>:</p>
+<ul>
+<li><code>i++</code> (<b>postfix</b>): hand back the <em>old</em> value, <em>then</em> increment.</li>
+<li><code>++i</code> (<b>prefix</b>): increment <em>first</em>, hand back the <em>new</em> value.</li>
+</ul>
+<p>Step through it — watch the variable panel closely:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/operators-arithmetic">This spot has an interactive trace widget — open the interactive lesson to play with it.</a></p>
+
+<div class="callout danger"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Never modify a variable twice in one expression.</b> <code>i = i++;</code> and <code>x = i++ + ++i;</code> are <strong>undefined behavior</strong> — the standard doesn't say which happens first, and compilers genuinely produce different answers. If code looks like a puzzle, it's a bug.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> After <code>int n = 10; int m = n--;</code>, what are n and m?</p><ul><li>n=9, m=9</li><li>n=10, m=9</li><li>n=9, m=10</li><li>n=10, m=10</li></ul><details><summary>Show answer</summary><p><b>n=9, m=10</b> — Postfix decrement: m gets the old value (10), then n drops to 9. With prefix (<code>m = --n;</code>) both would be 9.</p></details></div>
+
+<h2>Compound assignment: the <code>+=</code> family</h2>
+<p><code>x = x + 5</code> is so common it has a shorthand: <code>x += 5</code>. Every arithmetic (and bitwise) operator has one — <code>-=</code>, <code>*=</code>, <code>/=</code>, <code>%=</code>. They say "update this variable using its own value", and they say it without repeating the name:</p>
+<figure class="code"><figcaption>compound.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int score = 100;
+
+    score += 50;    /* score = score + 50  -&gt; 150 */
+    score -= 30;    /* -&gt; 120 */
+    score *= 2;     /* -&gt; 240 */
+    score /= 10;    /* -&gt; 24  */
+    score %= 5;     /* -&gt; 4   */
+
+    printf(&quot;final score: %d\n&quot;, score);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc compound.c -o compound &amp;&amp; ./compound
+final score: 4</pre></figure>
+
+<h2>Who goes first? Precedence</h2>
+<p>Just like in math, <code>2 + 3 * 4</code> is 14, not 20 — multiplication binds tighter. The arithmetic pecking order:</p>
+<table>
+<tr><th>priority</th><th>operators</th><th>note</th></tr>
+<tr><td>1 (tightest)</td><td><code>()</code>, <code>x++</code>, <code>x--</code></td><td>parentheses always win</td></tr>
+<tr><td>2</td><td>unary <code>-</code>, <code>++x</code>, <code>--x</code></td><td>as in <code>-x</code></td></tr>
+<tr><td>3</td><td><code>*</code> <code>/</code> <code>%</code></td><td>left to right</td></tr>
+<tr><td>4</td><td><code>+</code> <code>-</code></td><td>left to right</td></tr>
+<tr><td>5 (loosest)</td><td><code>=</code> <code>+=</code> <code>-=</code> …</td><td>right to left</td></tr>
+</table>
+
+<div class="callout tip"><div class="co-ic">💡</div><div class="co-body"><p>Memorizing the full 15-level C precedence table is a party trick, not a skill. When in doubt, <b>add parentheses</b> — they cost nothing and your readers (including future-you) will thank you.</p></div></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/operators-arithmetic">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is <code>2 + 3 * 4 % 5</code>?</p><ul><li>0</li><li>4</li><li>2</li><li>14</li></ul><details><summary>Show answer</summary><p><b>4</b> — <code>*</code> and <code>%</code> share a precedence level and go left to right: 3*4 = 12, then 12 % 5 = 2, then 2 + 2 = 4. If you had to think hard — that’s the argument for parentheses.</p></details></div>
+
+<p>You can now compute — next you'll <b>compare</b>: the operators that let programs make decisions.</p>
+
+<a class="cta" href="../../index.html#/lesson/operators-arithmetic">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../variables-types/">← Variables &amp; types: naming your bytes</a>
+<a href="../operators-comparison/">Comparisons &amp; logic: how C decides →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

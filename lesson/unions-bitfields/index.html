@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unions &amp; bit-fields: one space, many shapes — The C Path</title>
+<meta name="description" content="One slot, several possible shapes: a spreadsheet cell holds a number or text — never both at once — and a game inventory slot holds a sword or a potion.…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Unions &amp; bit-fields: one space, many shapes — The C Path">
+<meta property="og:description" content="One slot, several possible shapes: a spreadsheet cell holds a number or text — never both at once — and a game inventory slot holds a sword or a potion.…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Unions & bit-fields: one space, many shapes","description":"One slot, several possible shapes: a spreadsheet cell holds a number or text — never both at once — and a game inventory slot holds a sword or a potion.…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🎯 Pointers &amp; Memory</p>
+<h1>Unions &amp; bit-fields: one space, many shapes</h1>
+<p class="meta">⏱ 12 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/unions-bitfields">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>One slot, several possible shapes: a spreadsheet cell holds a number <em>or</em> text — never both at once — and a game inventory slot holds a sword <em>or</em> a potion. Unions are C's way of storing "one of several things" without paying for the space of all of them at once. There's a party trick thrown in: using one to expose the raw bits hiding inside a <code>float</code> — the very bits you toggled back in Part 0.</p></div>
+
+<p>A struct gives each member its own bytes, side by side. A <strong>union</strong> does the opposite: every member starts at the <em>same address</em>, overlapping in the same bytes. Its size is (roughly) the size of the <em>largest</em> member. Why would you want that? Storage where a value is only ever <em>one</em> of several things at a time.</p>
+
+<h2>Members that overlap</h2>
+<figure class="code"><figcaption>word.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+union Word {
+    unsigned int  u;      /* 4 bytes            */
+    unsigned char b[4];   /* the SAME 4 bytes   */
+};
+
+int main(void) {
+    union Word w;
+    w.u = 0x11223344;
+
+    printf(&quot;sizeof(union Word) = %zu\n&quot;, sizeof w);
+    for (int i = 0; i &lt; 4; i++)
+        printf(&quot;b[%d] = 0x%02x\n&quot;, i, w.b[i]);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc word.c -o word &amp;&amp; ./word
+sizeof(union Word) = 4
+b[0] = 0x44
+b[1] = 0x33
+b[2] = 0x22
+b[3] = 0x11
+# one write to u changed all four b[i] — same bytes!
+# (and the 0x44 came FIRST… hold that thought)</pre></figure>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/unions-bitfields">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is <code>sizeof</code> a union whose members are an <code>int</code> (4) and a <code>double</code> (8)?</p><ul><li>12</li><li>8 — the largest member (plus any alignment padding)</li><li>4 — the first member</li><li>Implementation-defined, could be 1</li></ul><details><summary>Show answer</summary><p><b>8 — the largest member (plus any alignment padding)</b> — All members share one storage area, so it only needs to fit the biggest: 8 bytes. A struct with the same members would need at least 12 (usually 16, with alignment).</p></details></div>
+
+<p>Writing <code>w.u</code> then reading <code>w.b</code> — reading a different member than you last wrote — is called <strong>type punning</strong>. In C it's allowed: you get the stored bytes reinterpreted as the other type (C99 onwards spells this out; beware, the same trick is undefined behavior in C++!). It's how programmers peek at the raw bytes of floats, ints, and more.</p>
+
+<h2>Tagged unions: the honest pattern</h2>
+<p>A raw union doesn't remember which member is currently valid — <em>you</em> must. The universal solution pairs the union with an enum <strong>tag</strong> recording what's inside. This is C's answer to "a value that can be one of several types":</p>
+<figure class="code"><figcaption>tagged.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+enum Kind { KIND_INT, KIND_FLOAT };
+
+struct Value {
+    enum Kind kind;          /* the TAG: what's inside?   */
+    union {
+        int    i;
+        double f;
+    } as;                    /* the payload               */
+};
+
+void print_value(struct Value v) {
+    switch (v.kind) {
+    case KIND_INT:   printf(&quot;int   %d\n&quot;, v.as.i); break;
+    case KIND_FLOAT: printf(&quot;float %g\n&quot;, v.as.f); break;
+    }
+}
+
+int main(void) {
+    print_value((struct Value){ KIND_INT,   { .i = 42 } });
+    print_value((struct Value){ KIND_FLOAT, { .f = 3.14 } });
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc tagged.c -o tagged &amp;&amp; ./tagged
+int   42
+float 3.14</pre></figure>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In a tagged union, what is the tag for?</p><ul><li>It speeds up member access</li><li>It records which union member is currently the valid one</li><li>The linker requires it</li><li>It fixes the union’s alignment</li></ul><details><summary>Show answer</summary><p><b>It records which union member is currently the valid one</b> — The union itself has no memory of what was last stored. The tag is your own bookkeeping — set it on every write, switch on it on every read. Interpreters, JSON parsers, and compilers are built on this pattern.</p></details></div>
+
+<h2>Party trick: discovering endianness</h2>
+<p>Which byte of a multi-byte integer comes first in memory? Little-endian machines (x86, most ARM) store the <em>least</em> significant byte at the lowest address; big-endian stores the most significant first. A union lets your program check at runtime — the classic C interview trick:</p>
+<figure class="code"><figcaption>endian.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    union {
+        unsigned int  u;
+        unsigned char c[4];
+    } probe = { .u = 1 };    /* bytes: 01 00 00 00 or 00 00 00 01? */
+
+    if (probe.c[0] == 1)
+        printf(&quot;little-endian (x86, most ARM)\n&quot;);
+    else
+        printf(&quot;big-endian (network byte order)\n&quot;);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc endian.c -o endian &amp;&amp; ./endian
+little-endian (x86, most ARM)
+# the low byte of 1 sits at the LOWEST address on this machine</pre></figure>
+
+<h2>Bit-fields: members measured in bits</h2>
+<p>Inside a struct, you can give a member a width in <em>bits</em>. The compiler packs adjacent bit-fields into shared storage — ideal for flag sets and matching hardware register layouts:</p>
+<figure class="code"><figcaption>flags.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+struct Flags {
+    unsigned int visible : 1;   /* one bit             */
+    unsigned int locked  : 1;
+    unsigned int mode    : 3;   /* 3 bits: 0..7        */
+};
+
+int main(void) {
+    struct Flags f = { .visible = 1, .mode = 5 };
+    f.locked = 1;
+
+    printf(&quot;sizeof = %zu\n&quot;, sizeof f);   /* 5 bits, but…  */
+    printf(&quot;mode   = %u\n&quot;, f.mode);
+    f.mode = 9;                 /* only 3 bits: 9 mod 8 = 1  */
+    printf(&quot;mode   = %u\n&quot;, f.mode);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc flags.c -o flags &amp;&amp; ./flags
+sizeof = 4
+mode   = 5
+mode   = 1
+# 5 bits of data, one 4-byte storage unit; overflow wrapped mod 8</pre></figure>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Bit-field layout is implementation-defined:</b> packing order, straddling of storage units, and more vary by compiler and ABI. Fine within one program; <em>not</em> a portable serialization format. Also: you can't take the address of a bit-field — <code>&amp;f.mode</code> is illegal, since it isn't byte-aligned.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> On a little-endian machine, after <code>w.u = 0x11223344;</code>, what is <code>w.b[0]</code>?</p><ul><li>0x11</li><li>0x22</li><li>0x33</li><li>0x44</li></ul><details><summary>Show answer</summary><p><b>0x44</b> — Little-endian puts the LEAST significant byte first: 44 33 22 11 in ascending addresses. On big-endian iron the same code prints 0x11 — which is exactly why the union probe works as a detector.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/unions-bitfields">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>You've now pointed at data of every shape. One target remains, the coolest of all: pointing at <em>code</em>.</p>
+
+<a class="cta" href="../../index.html#/lesson/unions-bitfields">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../structs/">← Structs: inventing your own types</a>
+<a href="../function-pointers/">Function pointers: code is data too →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

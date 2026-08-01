@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hexadecimal &amp; Octal: binary for humans — The C Path</title>
+<meta name="description" content="You've already used hexadecimal without knowing it: every web color like #FF8800 is one, and so are the cryptic codes on a crashed blue screen. It's the…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hexadecimal &amp; Octal: binary for humans — The C Path">
+<meta property="og:description" content="You've already used hexadecimal without knowing it: every web color like #FF8800 is one, and so are the cryptic codes on a crashed blue screen. It's the…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Hexadecimal & Octal: binary for humans","description":"You've already used hexadecimal without knowing it: every web color like #FF8800 is one, and so are the cryptic codes on a crashed blue screen. It's the…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🧮 Foundations — Before C</p>
+<h1>Hexadecimal &amp; Octal: binary for humans</h1>
+<p class="meta">⏱ 10 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/hexadecimal">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>You've already used hexadecimal without knowing it: every web color like <code>#FF8800</code> is one, and so are the cryptic codes on a crashed blue screen. It's the shorthand that turns an unreadable wall of 0s and 1s into two characters per byte — and after this lesson you'll convert between the two in your head, no arithmetic required.</p></div>
+
+<p>Binary is what machines speak, but for humans it's painfully verbose: a number like <code>0b11111111101010001001000000000000</code> is unreadable. <strong>Hexadecimal</strong> (base 16) fixes that: each hex digit packs <em>exactly four bits</em>, so any byte is just two characters.</p>
+
+<h2>Sixteen digits</h2>
+<p>Base 16 needs 16 symbols. We use 0–9, then borrow letters: <code>A</code>=10, <code>B</code>=11, <code>C</code>=12, <code>D</code>=13, <code>E</code>=14, <code>F</code>=15.</p>
+<table>
+<tr><th>binary</th><th>hex</th><th>dec</th><th>binary</th><th>hex</th><th>dec</th></tr>
+<tr><td><code>0000</code></td><td>0</td><td>0</td><td><code>1000</code></td><td>8</td><td>8</td></tr>
+<tr><td><code>0001</code></td><td>1</td><td>1</td><td><code>1001</code></td><td>9</td><td>9</td></tr>
+<tr><td><code>0010</code></td><td>2</td><td>2</td><td><code>1010</code></td><td>A</td><td>10</td></tr>
+<tr><td><code>0011</code></td><td>3</td><td>3</td><td><code>1011</code></td><td>B</td><td>11</td></tr>
+<tr><td><code>0100</code></td><td>4</td><td>4</td><td><code>1100</code></td><td>C</td><td>12</td></tr>
+<tr><td><code>0101</code></td><td>5</td><td>5</td><td><code>1101</code></td><td>D</td><td>13</td></tr>
+<tr><td><code>0110</code></td><td>6</td><td>6</td><td><code>1110</code></td><td>E</td><td>14</td></tr>
+<tr><td><code>0111</code></td><td>7</td><td>7</td><td><code>1111</code></td><td>F</td><td>15</td></tr>
+</table>
+
+<p>The trick: to convert binary ↔ hex you <strong>never do arithmetic</strong> — you just group bits in fours. <code>1011 0110</code> → <code>B6</code>. Done.</p>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/hexadecimal">This spot has an interactive baseconv widget — open the interactive lesson to play with it.</a></p>
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What is hex <code>0x2F</code> in decimal?</p><ul><li>37</li><li>47</li><li>52</li><li>215</li></ul><details><summary>Show answer</summary><p><b>47</b> — 0x2F = 2×16 + 15 = 47. The F is 15, and the 2 sits in the sixteens place.</p></details></div>
+
+<h2>Hex in C: the <code>0x</code> prefix</h2>
+<figure class="code"><figcaption>hex.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int main(void) {
+    int color = 0xFF8800;         /* an orange, as one int  */
+    int red   = (color &gt;&gt; 16) &amp; 0xFF;
+    int green = (color &gt;&gt; 8)  &amp; 0xFF;
+    int blue  =  color        &amp; 0xFF;
+
+    printf(&quot;red=%d green=%d blue=%d\n&quot;, red, green, blue);
+    printf(&quot;42 is 0x%x in hex, %o in octal\n&quot;, 42, 42);
+    return 0;
+}</code></pre></figure>
+<p>Notice <code>%x</code> in printf prints a value as hex, and <code>%o</code> prints octal (base 8, prefix <code>0</code> — a leading zero!).</p>
+
+<div class="callout danger"><div class="co-ic">⚠️</div><div class="co-body"><p><b>Classic trap:</b> in C, <code>int x = 010;</code> is <em>octal</em> — it means <b>8</b>, not ten! A leading zero changes the base. Never zero-pad integer literals.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> In C, what is the value of <code>int x = 011;</code>?</p><ul><li>11</li><li>9</li><li>3</li><li>compile error</li></ul><details><summary>Show answer</summary><p><b>9</b> — The leading zero makes it octal: 011 = 1×8 + 1 = 9. This surprising rule dates back to the 1970s — beware!</p></details></div>
+
+<h2>Where you'll meet hex daily</h2>
+<ul>
+<li><b>Memory addresses:</b> <code>0x7ffee4c01a2c</code> — every pointer you'll ever print.</li>
+<li><b>Colors:</b> <code>#FF8800</code> is just three bytes: red=0xFF, green=0x88, blue=0x00.</li>
+<li><b>Bit masks:</b> <code>value &amp; 0x0F</code> keeps the low <em>nibble</em> (4 bits — half a byte).</li>
+<li><b>File formats:</b> a PNG file always starts with bytes <code>89 50 4E 47</code>.</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> How many bits does one hex digit represent?</p><ul><li>2</li><li>4</li><li>8</li><li>16</li></ul><details><summary>Show answer</summary><p><b>4</b> — One hex digit covers exactly 16 values = 2⁴ = 4 bits (a "nibble"). That is why two hex digits describe a byte perfectly.</p></details></div>
+
+<a class="cta" href="../../index.html#/lesson/hexadecimal">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../bits-binary/">← Bits &amp; Binary: how machines count</a>
+<a href="../negative-numbers/">Negative numbers: two’s complement →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

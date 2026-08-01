@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Undefined behavior: here be nasal demons — The C Path</title>
+<meta name="description" content="In 2009, a compiler silently deleted a safety check inside the Linux kernel and turned a small bug into a security exploit — and it broke no rules doing so.…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Undefined behavior: here be nasal demons — The C Path">
+<meta property="og:description" content="In 2009, a compiler silently deleted a safety check inside the Linux kernel and turned a small bug into a security exploit — and it broke no rules doing so.…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Undefined behavior: here be nasal demons","description":"In 2009, a compiler silently deleted a safety check inside the Linux kernel and turned a small bug into a security exploit — and it broke no rules doing so.…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🧬 Types &amp; Qualifiers, In Depth</p>
+<h1>Undefined behavior: here be nasal demons</h1>
+<p class="meta">⏱ 16 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/undefined-behavior">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>In 2009, a compiler silently deleted a safety check inside the Linux kernel and turned a small bug into a security exploit — and it broke no rules doing so. That's undefined behavior: the reason C programs can "work for years", then fail the day you upgrade your compiler. This lesson is your survival kit, including the tools that catch these bugs at the exact line they happen.</p></div>
+
+<p>The C standard defines what programs mean — but for certain operations it deliberately says: <em>nothing</em>. "Undefined behavior: behavior, upon use of a nonportable or erroneous program construct, for which this document imposes <strong>no requirements</strong>." No requirements. Your program may crash, print 42, silently corrupt a file, or appear to work perfectly for ten years and fail during the demo.</p>
+
+<div class="callout fun"><div class="co-ic">🤔</div><div class="co-body"><p>Usenet, 1992: a comp.std.c regular quipped that when a program hits UB, it's legal for the compiler "to make demons fly out of your nose". <b>Nasal demons</b> have been the mascot of UB ever since. The joke has a sharp point: <em>anything</em> is a conforming outcome.</p></div></div>
+
+<h2>The right mental model: a contract</h2>
+<p>Think of the standard as a contract between you and the compiler. You promise your program never executes UB; in exchange, the compiler generates blazingly fast code <em>that only has to be correct for programs that keep the promise</em>. UB isn't "an error the compiler catches" — it's a case the compiler is allowed to <strong>assume never happens</strong> and optimize accordingly. That assumption is where the shocking stories come from.</p>
+
+<h2>Exhibit A: the vanishing NULL check</h2>
+<figure class="code"><figcaption>vanish.c — the optimizer deletes your safety net</figcaption><pre><code>int get(int *p) {
+    int v = *p;          /* deref first...                     */
+    if (p == NULL)       /* ...check later. Compiler: &quot;p was   */
+        return -1;       /*  dereferenced, so it can't be NULL
+                            here&quot; — branch DELETED at -O2      */
+    return v;
+}</code></pre></figure>
+<p>Read line 2: <code>p</code> is dereferenced. The compiler reasons: "if <code>p</code> were NULL, line 2 would be UB, and UB never happens — therefore <code>p</code> isn't NULL — therefore the <code>if</code> on line 3 is dead code." <strong>The safety check is deleted.</strong> This exact pattern (dereference above a check) caused a famous Linux kernel vulnerability in 2009: the compiler removed a NULL check and turned a bug into an exploit.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Why may the compiler delete the NULL check in <code>vanish.c</code>?</p><ul><li>NULL checks are deprecated</li><li>Dereferencing NULL is UB, so after <code>*p</code> the compiler may assume p is non-NULL — making the check dead code</li><li>The function is too small to keep the branch</li><li>It cannot — this would be a compiler bug</li></ul><details><summary>Show answer</summary><p><b>Dereferencing NULL is UB, so after <code>*p</code> the compiler may assume p is non-NULL — making the check dead code</b> — UB reasoning runs BACKWARDS from the deref: "well-defined executions never deref NULL, so in every execution I must care about, p != NULL." Deleting the check is then a correct optimization of all non-UB executions. The fix: check BEFORE dereferencing.</p></details></div>
+
+<h2>Exhibit B: one program, two answers</h2>
+<figure class="code"><figcaption>wraps.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int wraps(int x) {
+    return x + 1 &lt; x;    /* &quot;detect overflow&quot;... via overflow  */
+}
+
+int main(void) {
+    printf(&quot;%d\n&quot;, wraps(2147483647));   /* INT_MAX */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -O0 wraps.c &amp;&amp; ./a.out
+1
+$ gcc -O2 wraps.c &amp;&amp; ./a.out
+0
+# same source, both &quot;correct&quot;: the program's meaning was undefined</pre></figure>
+<p>Since signed overflow is UB, the compiler may assume <code>x + 1</code> never wraps — so <code>x + 1 &lt; x</code> is simply <em>false</em>, at compile time, for all x. At <code>-O0</code> the wrap physically happens and you see 1. Neither answer is "wrong": a program that executes UB has no defined answer at all.</p>
+
+<h2>The classics gallery</h2>
+<table>
+<tr><th>undefined behavior</th><th>typical crime scene</th></tr>
+<tr><td>signed integer overflow</td><td><code>INT_MAX + 1</code>, absolute value of <code>INT_MIN</code></td></tr>
+<tr><td>out-of-bounds access</td><td><code>a[n]</code> on an n-element array — the beloved off-by-one</td></tr>
+<tr><td>use after free / double free</td><td>any pointer used after its object's lifetime ends</td></tr>
+<tr><td>reading uninitialized variables</td><td><code>int sum; sum += x;</code></td></tr>
+<tr><td>NULL dereference</td><td>unchecked malloc, unchecked find()</td></tr>
+<tr><td>data races</td><td>two threads, one non-atomic object, no sync</td></tr>
+<tr><td>shift ≥ width, or negative shift</td><td><code>1 &lt;&lt; 32</code> on 32-bit int</td></tr>
+<tr><td>modifying a string literal / const object</td><td><code>char *s = "hi"; s[0] = 'H';</code></td></tr>
+</table>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/undefined-behavior">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Which of these is <em>well-defined</em> in C?</p><ul><li><code>unsigned u = UINT_MAX; u + 1</code></li><li><code>int i = INT_MAX; i + 1</code></li><li><code>int a[3]; a[3]</code></li><li><code>char *s = "hi"; s[0] = 'H';</code></li></ul><details><summary>Show answer</summary><p><b><code>unsigned u = UINT_MAX; u + 1</code></b> — Unsigned arithmetic wraps modulo 2ⁿ by definition — u + 1 is exactly 0. The others are all UB: signed overflow, out-of-bounds read, and writing a string literal.</p></details></div>
+
+<h2>Why does UB exist at all?</h2>
+<p>It's not sadism — it's the price of C's two core promises:</p>
+<ul>
+<li><b>Performance:</b> checking every array index, every pointer, every add for validity would cost cycles on every operation. UB says: no mandatory checks — programs pay only for what they use. It also licenses big optimizations: assuming <code>i++</code> never wraps is what lets loops vectorize.</li>
+<li><b>Portability (of the language, across weird machines):</b> C runs on hardware that traps on overflow, on machines where NULL isn't bit-pattern zero. By defining nothing, the standard lets each platform do what's natural and fast <em>there</em>.</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🤔 A colleague says: "I tested it — signed overflow just wraps on my machine, so I rely on it." What's wrong with this reasoning?</p><details><summary>Think first</summary><p>They observed one compiler, one flag set, one day. UB has no contract, so the observation predicts nothing: enable <code>-O2</code>, upgrade GCC, or inline the function into a new context, and the optimizer may assume the overflow never happens and restructure the code (see <code>wraps.c</code>). "Works today" is precisely how UB bugs incubate. If wrapping is wanted, use <code>unsigned</code>, or check limits <em>before</em> the operation.</p></details></div>
+
+<h2>Your defense kit</h2>
+<figure class="code"><figcaption>buggy.c — let the sanitizers point at the crime</figcaption><pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(void) {
+    int a[3] = { 1, 2, 3 };
+    int sum = 0;
+    for (int i = 0; i &lt;= 3; i++)    /* off by one! */
+        sum += a[i];
+    printf(&quot;%d\n&quot;, sum);
+
+    int *p = malloc(sizeof *p);
+    free(p);
+    *p = 5;                          /* use after free! */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc -g -fsanitize=address,undefined buggy.c &amp;&amp; ./a.out
+buggy.c:8:16: runtime error: index 3 out of bounds for type 'int [3]'
+=================================================================
+==4242==ERROR: AddressSanitizer: heap-use-after-free on address
+    0x602000000010 ... WRITE of size 4 at buggy.c:13
+    freed by thread T0 here: #1 main buggy.c:12
+# file and line of the bug AND of the free — debugging on easy mode</pre></figure>
+<ul>
+<li><b>Always:</b> <code>-Wall -Wextra</code> (and treat warnings as errors with <code>-Werror</code> in CI). Free, instant, catches whole bug classes.</li>
+<li><b>During development:</b> <code>-fsanitize=address,undefined</code> — ASan catches out-of-bounds and use-after-free at the moment they happen; UBSan pinpoints overflow, bad shifts, misaligned access with file:line precision.</li>
+<li><b>Occasionally:</b> Valgrind (no recompile needed), and <code>-O2</code> vs <code>-O0</code> behavior differences as a smoke alarm: if optimization "breaks" your program, suspect UB in <em>your</em> code first, not a compiler bug.</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> Your program works at <code>-O0</code> but misbehaves at <code>-O2</code>. The most likely culprit is…</p><ul><li>A bug in the optimizer</li><li>Undefined behavior in your code that the optimizer's assumptions exposed</li><li>-O2 changes the C standard</li><li>Insufficient RAM for optimized code</li></ul><details><summary>Show answer</summary><p><b>Undefined behavior in your code that the optimizer's assumptions exposed</b> — Compiler bugs exist but are rare; UB is everywhere. Optimization doesn't create the bug — it acts on the "UB never happens" assumption your code violated. First move: rebuild with -fsanitize=undefined and listen.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/undefined-behavior">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>You now hold the full type system — every qualifier, every keyword, every trapdoor. Next stop, Part 4: the layer that rewrites your code before the compiler even sees it — the preprocessor.</p>
+
+<a class="cta" href="../../index.html#/lesson/undefined-behavior">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../casting-conversions/">← Conversions &amp; casts: C changes your types behind your back</a>
+<a href="../include/">#include: copy-paste as a language feature →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>

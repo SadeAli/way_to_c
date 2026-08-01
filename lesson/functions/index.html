@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Functions: name it once, use it forever — The C Path</title>
+<meta name="description" content="Copy-paste the same five lines into three places and one day you'll fix a bug in two of them and forget the third. Functions let you write logic once, name…">
+
+<meta property="og:type" content="article">
+<meta property="og:title" content="Functions: name it once, use it forever — The C Path">
+<meta property="og:description" content="Copy-paste the same five lines into three places and one day you'll fix a bug in two of them and forget the third. Functions let you write logic once, name…">
+
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Functions: name it once, use it forever","description":"Copy-paste the same five lines into three places and one day you'll fix a bug in two of them and forget the third. Functions let you write logic once, name…","isPartOf":{"@type":"Course","name":"The C Path — Learn C, visually"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:32px;line-height:1.2;margin:0 0 10px}h2{margin-top:34px}h3{margin-top:24px}
+.meta{color:var(--ink3);font-size:14px;margin-bottom:18px}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:6px 0 22px}
+.why{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:22px;color:var(--ink2)}
+.why .k{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+figure.code{margin:18px 0;background:var(--code);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+figure.code figcaption{padding:8px 14px;font:12px var(--mono);color:var(--ink3);border-bottom:1px solid var(--border)}
+figure.code pre{margin:0;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 var(--mono)}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+pre code{background:none;border:none;padding:0}
+.sq{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:18px 0}
+.sq ul{margin:8px 0}.sq-q{margin:0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-weight:600}
+.iw{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:12px 16px}
+.iw a{color:var(--accent);text-decoration:none;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0}
+.callout .co-ic{font-size:20px}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;font-weight:600}
+.nav a{color:var(--accent);text-decoration:none}
+a{color:var(--accent)}
+img,svg,pre{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../../index.html">&lt;C&gt;</a><a href="../../index.html">The C Path — learn C, visually</a></header>
+<article>
+<p class="eyebrow">🌱 C Basics</p>
+<h1>Functions: name it once, use it forever</h1>
+<p class="meta">⏱ 14 min · free interactive lesson · quizzes, visualizations &amp; a real compiler</p>
+<a class="cta" href="../../index.html#/lesson/functions">▶ Open the interactive lesson — free, no signup</a>
+<div class="why"><div class="k">Why you're learning this</div><p>Copy-paste the same five lines into three places and one day you'll fix a bug in two of them and forget the third. Functions let you write logic once, name it, and reuse it forever — they're the reason million-line programs like games and browsers don't collapse under their own weight. You've been calling <code>printf</code> since day one; today you build your own.</p></div>
+
+<p>You've been <em>using</em> functions since your first <code>printf</code> — now you get to <em>make</em> them. A function packages a piece of logic behind a name: define it once, call it from anywhere, trust it to do its job. It is the single most important tool for taming complexity in C.</p>
+
+<h2>Anatomy of a function</h2>
+<figure class="code"><figcaption>square.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+int square(int n) {          /* definition: the real thing */
+    return n * n;
+}
+
+void greet(void) {           /* returns nothing, takes nothing */
+    printf(&quot;Hello from a function!\n&quot;);
+}
+
+int main(void) {
+    greet();
+    int a = square(6);       /* call: argument 6 -&gt; parameter n */
+    printf(&quot;square(6)  = %d\n&quot;, a);
+    printf(&quot;square(a)  = %d\n&quot;, square(a));  /* results compose */
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc square.c -o square &amp;&amp; ./square
+Hello from a function!
+square(6)  = 36
+square(a)  = 1296</pre></figure>
+<ul>
+<li><b>Return type</b> (<code>int</code>) — the type of value handed back. Use the keyword <code>void</code> for "returns nothing".</li>
+<li><b>Name</b> (<code>square</code>) — pick verbs for actions, nouns for computations.</li>
+<li><b>Parameters</b> (<code>int n</code>) — fresh local variables, filled in with the caller's <em>arguments</em> at each call. A function taking nothing declares <code>(void)</code>.</li>
+<li><b><code>return</code></b> — stops the function immediately and delivers the value. A <code>void</code> function may use bare <code>return;</code> or just fall off the end.</li>
+</ul>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> What does the keyword <code>void</code> mean in <code>void greet(void)</code>?</p><ul><li>The function is empty</li><li>Returns nothing, and takes no parameters</li><li>The function can’t be called twice</li><li>The function is private</li></ul><details><summary>Show answer</summary><p><b>Returns nothing, and takes no parameters</b> — First void: no return value (a bare <code>return;</code> or falling off the end is fine). Second void: no parameters. In C, empty parens <code>()</code> historically meant "unspecified parameters" — C23 finally fixed that, but <code>(void)</code> remains the bulletproof spelling.</p></details></div>
+
+<h2>Declaration vs definition: promises vs delivery</h2>
+<p>C compilers read top to bottom, and a function must be <em>known</em> before it's called. Two ways to arrange that:</p>
+<ol>
+<li>Define the function above its callers (fine for small files), or</li>
+<li>Put a <strong>prototype</strong> — the header line ending in a semicolon — near the top, and define the body anywhere:</li>
+</ol>
+<figure class="code"><figcaption>prototype.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+double celsius_to_f(double c);   /* PROTOTYPE: a promise */
+
+int main(void) {
+    printf(&quot;100 C = %.1f F\n&quot;, celsius_to_f(100.0));
+    printf(&quot;37 C  = %.1f F\n&quot;, celsius_to_f(37.0));
+    return 0;
+}
+
+/* DEFINITION: the promise, delivered (below its caller!) */
+double celsius_to_f(double c) {
+    return c * 9.0 / 5.0 + 32.0;
+}</code></pre></figure>
+<p>A prototype is a <em>declaration</em>: "a function with this name, these parameter types, this return type exists — trust me." The <em>definition</em> with the body is the delivery on that promise. Headers like <code>stdio.h</code> are, at heart, just bundles of prototypes — that's the missing piece of the <code>#include</code> story from lesson one. Promise a function and never define it, and you'll meet our old friend from Part 0: the linker's <code>undefined reference</code>.</p>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> A prototype exists but the definition was never written. When does the build fail?</p><ul><li>At the linker stage — undefined reference</li><li>At the compile stage — syntax error</li><li>At runtime — crash on call</li><li>It works; C invents an empty body</li></ul><details><summary>Show answer</summary><p><b>At the linker stage — undefined reference</b> — The compiler is satisfied by the promise (prototype) and generates a call to a name. The LINKER must then find the actual code — and can’t. Compiler checks grammar and types; linker resolves names. Same split you saw in the pipeline lesson.</p></details></div>
+
+<h2>The big rule: arguments are passed BY VALUE</h2>
+<p>When you call <code>doubler(x)</code>, the parameter does not <em>become</em> x — it receives a <strong>copy</strong> of x's value, in a brand-new variable inside the function's own stack frame (remember Part 0's stack?). Modify the copy all you like; the original never notices:</p>
+<figure class="code"><figcaption>byvalue.c</figcaption><pre><code>#include &lt;stdio.h&gt;
+
+void doubler(int n) {
+    n = n * 2;               /* modifies the COPY  */
+    printf(&quot;  inside : n = %d\n&quot;, n);
+}
+
+int main(void) {
+    int x = 10;
+    printf(&quot;before  : x = %d\n&quot;, x);
+    doubler(x);
+    printf(&quot;after   : x = %d  &lt;- unchanged!\n&quot;, x);
+    return 0;
+}</code></pre></figure>
+<figure class="code term"><figcaption>terminal</figcaption><pre>$ gcc byvalue.c -o byvalue &amp;&amp; ./byvalue
+before  : x = 10
+  inside : n = 20
+after   : x = 10  &lt;- unchanged!</pre></figure>
+
+<p>Here's the memory picture at the moment <code>doubler</code> sets <code>n = 20</code> — two separate cells, two separate lives:</p>
+<p class="iw">▶ <a href="../../index.html#/lesson/functions">This spot has an interactive memgrid widget — open the interactive lesson to play with it.</a></p>
+
+<div class="callout warn"><div class="co-ic">⚠️</div><div class="co-body"><p><b>"But I want the function to change my variable!"</b> — everyone, week two. The C answer is to pass the variable's <em>address</em> so the function can reach back and modify the original. That is exactly what pointers are for, and it's the opening act of Part 2. For now: return the new value and assign it, like <code>x = doubler(x);</code>.</p></div></div>
+
+<div class="sq"><p class="sq-q">🧠 <b>Checkpoint:</b> After <code>void f(int a) { a = 99; }</code> is called as <code>f(x)</code> with <code>x = 5</code>, x is…</p><ul><li>99</li><li>undefined</li><li>5</li><li>0</li></ul><details><summary>Show answer</summary><p><b>5</b> — Pass by value: <code>a</code> is a fresh variable initialized with a copy of 5. Assigning to it touches only the copy, which dies when f returns. Every argument in C works this way — even (spoiler) pointers, which copy the address.</p></details></div>
+
+<p class="iw">▶ <a href="../../index.html#/lesson/functions">This spot has an interactive editor widget — open the interactive lesson to play with it.</a></p>
+
+<p>Functions create little private worlds for their variables — the precise rules of who can see what, and for how long, are our final Part 1 topic: <b>scope and lifetime</b>.</p>
+
+<a class="cta" href="../../index.html#/lesson/functions">▶ Practice this lesson interactively (with live gcc)</a>
+<nav class="nav">
+<a href="../break-continue-goto/">← break, continue &amp; goto: bending the flow</a>
+<a href="../scope-lifetime/">Scope &amp; lifetime: who sees what, and for how long →</a>
+</nav>
+</article>
+</div>
+</body>
+</html>
