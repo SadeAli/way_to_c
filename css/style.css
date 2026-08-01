@@ -147,7 +147,8 @@ body {
   overflow-y: auto; padding: 18px 12px 40px; border-right: 1px solid var(--border);
   background: var(--bg); scrollbar-width: thin; transition: transform .25s cubic-bezier(.22,1,.36,1);
 }
-.side-links { display: flex; gap: 6px; margin: 0 10px 16px; }
+.side-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 10px 16px; }
+.side-links a { min-width: 84px; }
 .side-links a {
   flex: 1; text-align: center; font-size: 11.5px; font-weight: 600; color: var(--ink-2);
   text-decoration: none; padding: 7px 4px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface);
@@ -774,3 +775,96 @@ input[type="range"] { accent-color: var(--accent); flex: 1; }
 .backup-box h3 { margin: 0 0 4px; }
 .backup-box p { margin: 0; font-size: 14px; color: var(--ink-2); max-width: 56ch; }
 .backup-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ============================================================
+   Round 2: Daily Bit, share cards, certificate, cheatsheets,
+   support & books pages.
+   ============================================================ */
+
+/* ----- daily bit ----- */
+.daily-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.daily-num { color: var(--accent); font-family: var(--mono); }
+.daily-count { font: 600 13px var(--mono); color: var(--ink-3); }
+.daily-sub { color: var(--ink-2); margin-top: 2px; }
+.daily-card {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg); padding: 20px 22px; margin-top: 16px;
+}
+.daily-card h2 { margin: 0 0 6px; }
+.daily-brief { color: var(--ink-2); margin: 0 0 12px; }
+.daily-solved {
+  margin-top: 18px; border: 1.5px solid var(--good); border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--good) 8%, transparent); padding: 18px 20px;
+}
+.ds-head { font-weight: 800; color: var(--good); font-size: 17px; }
+.ds-expl { margin-top: 10px; color: var(--ink-2); font-size: 14.5px; }
+.ds-share { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.ds-line { font: 600 13px var(--mono); color: var(--ink-3); }
+
+/* ----- share canvases ----- */
+.share-canvas {
+  width: 100%; max-width: 640px; height: auto; display: block;
+  border: 1px solid var(--border-strong); border-radius: var(--r-md);
+  box-shadow: var(--shadow); margin: 18px 0 12px;
+}
+.share-canvas.cert { max-width: 760px; }
+.share-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 18px; }
+
+/* ----- part complete ----- */
+.pc-hero { text-align: center; margin-bottom: 8px; }
+.pc-hero .pc-emoji { font-size: 64px; }
+.pc-hero h1 { margin: 6px 0 6px; }
+.pc-sub { color: var(--ink-2); }
+.pc-hero + .share-canvas { margin-left: auto; margin-right: auto; }
+.pc-next { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+
+/* ----- certificate ----- */
+.cert-name { display: block; font-weight: 600; margin: 14px 0 4px; }
+.cert-name input {
+  display: block; margin-top: 6px; width: min(420px, 100%);
+  font: 16px var(--sans); background: var(--surface-2); color: var(--ink);
+  border: 1.5px solid var(--border-strong); border-radius: 10px; padding: 10px 14px; outline: none;
+}
+.cert-name input:focus { border-color: var(--accent); }
+
+/* ----- cheatsheets ----- */
+.sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px; margin-top: 18px; }
+.sheet-card {
+  display: block; background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg); padding: 18px 20px; text-decoration: none; color: var(--ink);
+  transition: border-color .15s, transform .15s;
+}
+.sheet-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.sheet-card .s-ic { font-size: 30px; }
+.sheet-card h3 { margin: 8px 0 4px; font-size: 16.5px; }
+.sheet-card p { margin: 0; font-size: 13.8px; color: var(--ink-2); }
+.sheet-card .s-open { display: inline-block; margin-top: 10px; font: 700 12px var(--mono); color: var(--accent); }
+
+/* ----- support & books ----- */
+.support-tips { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+.nl-box {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg); padding: 18px 22px; margin: 18px 0;
+}
+.nl-box h3 { margin: 0 0 4px; }
+.nl-box p { margin: 0 0 12px; color: var(--ink-2); font-size: 14.5px; }
+.nl-box form { display: flex; gap: 10px; flex-wrap: wrap; }
+.nl-box input[type="email"] {
+  flex: 1; min-width: 220px; font: 15px var(--sans); background: var(--surface-2);
+  color: var(--ink); border: 1.5px solid var(--border-strong); border-radius: 10px;
+  padding: 10px 14px; outline: none;
+}
+.nl-box input[type="email"]:focus { border-color: var(--accent); }
+.supporters-wall { display: flex; flex-wrap: wrap; gap: 8px; }
+.supporter {
+  font: 600 13.5px var(--sans); color: var(--ink-2); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: 999px; padding: 6px 14px;
+}
+.book-list { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 16px; }
+.book-card {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg); padding: 18px 22px;
+}
+.book-card h3 { margin: 0; font-size: 17px; }
+.book-card .b-author { font: 600 13px var(--mono); color: var(--accent); margin: 3px 0 8px; }
+.book-card p { margin: 0 0 12px; font-size: 14.5px; color: var(--ink-2); }

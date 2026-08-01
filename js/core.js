@@ -68,6 +68,8 @@ window.CT = (function () {
     { id: 'first-green',  ic: '✅', name: 'First Green',        desc: 'Pass your first auto-checked exercise' },
     { id: 'ten-green',    ic: '💚', name: 'Ten Green',          desc: 'Pass 10 auto-checked exercises' },
     { id: 'trap-spotter', ic: '🪤', name: 'Trap Spotter',       desc: 'Reveal 10 C gotchas' },
+    { id: 'daily-7',      ic: '🗓️', name: 'Daily Devotee',      desc: 'Solve 7 Daily Bits' },
+    { id: 'daily-30',     ic: '📅', name: 'Daily Disciple',     desc: 'Solve 30 Daily Bits' },
     { id: 'streak-3',     ic: '🔥', name: 'On Fire',            desc: 'Reach a 3-day streak' },
     { id: 'streak-7',     ic: '☄️', name: 'Unstoppable',        desc: 'Reach a 7-day streak' },
     { id: 'half-way',     ic: '⛰️', name: 'Halfway There',      desc: 'Complete 50% of the course' },
@@ -162,13 +164,33 @@ window.CT = (function () {
     const C = window.CURRICULUM;
     if (!C) return;
     const partBadge = ['binary-brain','flow-master','ptr-wizard','type-sage','macro-mage','modernist','librarian','algo-athlete','toolsmith'];
+    let justFinishedPart = null;
     C.parts.forEach((p, i) => {
-      if (p.lessons.every(id => state.completed[id]) && partBadge[i]) awardBadge(partBadge[i]);
+      if (p.lessons.every(id => state.completed[id]) && partBadge[i]) {
+        if (!state.badges[partBadge[i]]) justFinishedPart = p.id;
+        awardBadge(partBadge[i]);
+      }
     });
     const all = C.parts.flatMap(p => p.lessons);
     const done = all.filter(id => state.completed[id]).length;
     if (done >= all.length / 2) awardBadge('half-way');
     if (done === all.length) { awardBadge('grandmaster'); confetti(300); }
+    // celebrate at the peak: part-complete interstitial with a shareable card
+    if (justFinishedPart) setTimeout(() => navigate('#/part-complete/' + justFinishedPart), 900);
+  }
+
+  /* ---------- Daily Bit ---------- */
+  function dailySolved(dayNumber, tries) {
+    state.daily = state.daily || {};
+    if (state.daily[dayNumber] && state.daily[dayNumber].solved) return false;
+    state.daily[dayNumber] = { solved: Date.now(), tries: tries || 1 };
+    save();
+    addXP(30, 'Daily Bit solved');
+    touchStreak();
+    const n = Object.values(state.daily).filter(d => d.solved).length;
+    if (n >= 7) awardBadge('daily-7');
+    if (n >= 30) awardBadge('daily-30');
+    return true;
   }
 
   function quizCorrect(quizId, xp) {
@@ -326,7 +348,7 @@ window.CT = (function () {
 
   return {
     state, save, LEVELS, BADGES, levelInfo, addXP, awardBadge, touchStreak, streakStatus,
-    lessons, lesson, completeLesson, quizCorrect, exerciseSolved, gotchaRevealed,
+    lessons, lesson, completeLesson, quizCorrect, exerciseSolved, gotchaRevealed, dailySolved,
     exportProgress, importProgress, checkPartBadges,
     updateHud, toast, confetti, applyTheme, toggleTheme,
     route, navigate, dispatch, currentPath, esc, el,
