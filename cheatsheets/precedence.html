@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C operator precedence cheatsheet — The C Path</title>
+<meta name="description" content="All 15 C operator precedence levels with associativity (C17), plus the classic traps: a &amp; b == c, *p++, shifts vs addition, chained comparisons, ternary chaining, and the comma operator.">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--danger:#e66767;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.badge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);border:1px solid var(--border);border-radius:999px;padding:3px 10px;white-space:nowrap}
+h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+h2{font-size:19px;margin:28px 0 4px}
+.meta{color:var(--ink3);font-size:13.5px;margin:0 0 4px}
+p{margin:8px 0;color:var(--ink2)}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.93em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 5px;color:var(--ink)}
+.tablewrap{overflow-x:auto;margin:10px 0 16px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.45}
+th,td{border:1px solid var(--border);padding:5px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);white-space:nowrap}
+td code{background:var(--code)}
+td.lvl{font-weight:800;color:var(--accent);text-align:center;white-space:nowrap}
+.ub{color:var(--danger);font-weight:700}
+.c23{color:#7bc47b;font-weight:700;font-size:.85em;letter-spacing:.03em}
+.ll{font-size:11px;white-space:nowrap;text-decoration:none;color:var(--accent);font-weight:600}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:14px 0;color:var(--ink2)}
+.callout .co-ic{font-size:20px}
+.callout.danger{border-left:4px solid var(--danger)}
+.callout.tip{border-left:4px solid var(--accent)}
+.callout p{margin:0}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;text-decoration:none;margin:16px 0 6px}
+footer{margin-top:26px;border-top:1px solid var(--border)}
+.fine{color:var(--ink3);font-size:12.5px}
+@media print{
+:root{color-scheme:light}
+body{background:#fff;color:#000;font:10.5px/1.35 system-ui,sans-serif}
+.wrap{max-width:none;padding:0}
+header,.cta,.noprint{display:none}
+h1{font-size:18px;color:#000;margin:0 0 2px}
+h2{font-size:13px;color:#000;margin:10px 0 3px;break-after:avoid;page-break-after:avoid}
+p,.meta{color:#222}
+a{color:#000;text-decoration:none}
+.ll{display:none}
+code{background:none;border:none;padding:0;color:#000}
+td code{background:none}
+table{font-size:9px}
+th,td{border:1px solid #888;padding:2px 6px}
+th{background:#eee;color:#000}
+td.lvl{color:#000}
+tr{break-inside:avoid;page-break-inside:avoid}
+.tablewrap{overflow:visible;margin:5px 0 8px}
+.callout{background:#fff;border:1px solid #888;color:#000;padding:5px 10px;border-radius:6px}
+.callout .co-ic{font-size:12px}
+.ub{color:#000;text-decoration:underline}
+.c23{color:#000}
+footer{border-top:1px solid #888;margin-top:10px}
+.fine{color:#333}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../index.html">&lt;C&gt;</a><a href="../index.html">The C Path — learn C, visually</a><span class="badge">printable cheatsheet</span></header>
+
+<h1>C operator precedence &amp; associativity</h1>
+<p class="meta">All 15 levels, C17 · level 1 binds tightest · <span class="ub">UB</span> = undefined behavior</p>
+<p class="noprint meta">Styled for paper — hit Ctrl+P and pin it above your desk.</p>
+
+<p>Precedence decides <em>where the invisible parentheses go</em>; associativity breaks ties between operators on the same level. Neither decides the <em>order</em> in which operands are evaluated — see the warning at the bottom.</p>
+
+<h2>The full table</h2>
+<div class="tablewrap">
+<table>
+<tr><th>lvl</th><th>operators</th><th>what they are</th><th>assoc.</th><th>watch out</th><th>learn</th></tr>
+<tr><td class="lvl">1</td><td><code>()</code> <code>[]</code> <code>.</code> <code>-&gt;</code> <code>x++</code> <code>x--</code> <code>(T){…}</code></td><td>call, index, member, arrow, <em>postfix</em> inc/dec, compound literal</td><td>left → right</td><td><code>x++</code> yields the <em>old</em> value, then bumps x</td><td><a class="ll" href="../index.html#/lesson/arrays">→ lesson</a></td></tr>
+<tr><td class="lvl">2</td><td><code>++x</code> <code>--x</code> <code>+</code> <code>-</code> <code>!</code> <code>~</code> <code>*</code> <code>&amp;</code> <code>(T)</code> <code>sizeof</code> <code>_Alignof</code></td><td><em>prefix</em> inc/dec, unary plus/minus, logical &amp; bitwise NOT, dereference, address-of, cast, sizeof (<span class="c23">C23</span>: <code>alignof</code>)</td><td>right → left</td><td>level 1 beats level 2: <code>*p++</code> is <code>*(p++)</code>, <code>*p.x</code> is <code>*(p.x)</code></td><td><a class="ll" href="../index.html#/lesson/pointers-intro">→ lesson</a></td></tr>
+<tr><td class="lvl">3</td><td><code>*</code> <code>/</code> <code>%</code></td><td>multiply, divide, remainder</td><td>left → right</td><td>all three share the level: <code>2 + 3 * 4 % 5</code> = <code>2 + ((3*4) % 5)</code> = 4</td><td><a class="ll" href="../index.html#/lesson/operators-arithmetic">→ lesson</a></td></tr>
+<tr><td class="lvl">4</td><td><code>+</code> <code>-</code></td><td>add, subtract (binary)</td><td>left → right</td><td><code>a - b - c</code> is <code>(a-b)-c</code>, not <code>a-(b-c)</code></td><td><a class="ll" href="../index.html#/lesson/operators-arithmetic">→ lesson</a></td></tr>
+<tr><td class="lvl">5</td><td><code>&lt;&lt;</code> <code>&gt;&gt;</code></td><td>bit shifts</td><td>left → right</td><td>below <code>+</code>: <code>a &lt;&lt; b + c</code> is <code>a &lt;&lt; (b+c)</code></td><td><a class="ll" href="../index.html#/lesson/operators-bitwise">→ lesson</a></td></tr>
+<tr><td class="lvl">6</td><td><code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code></td><td>relational</td><td>left → right</td><td><code>a &lt; b &lt; c</code> is <code>(a&lt;b) &lt; c</code> — compares a 0/1 with c, not a range test</td><td><a class="ll" href="../index.html#/lesson/operators-comparison">→ lesson</a></td></tr>
+<tr><td class="lvl">7</td><td><code>==</code> <code>!=</code></td><td>equality</td><td>left → right</td><td><code>a == b == c</code> is <code>(a==b) == c</code> — same 0/1 trap</td><td><a class="ll" href="../index.html#/lesson/operators-comparison">→ lesson</a></td></tr>
+<tr><td class="lvl">8</td><td><code>&amp;</code></td><td>bitwise AND</td><td>left → right</td><td><b>below <code>==</code></b>: <code>a &amp; b == c</code> is <code>a &amp; (b==c)</code> — the most famous trap in C</td><td><a class="ll" href="../index.html#/lesson/operators-bitwise">→ lesson</a></td></tr>
+<tr><td class="lvl">9</td><td><code>^</code></td><td>bitwise XOR</td><td>left → right</td><td rowspan="2">same story as <code>&amp;</code> — always parenthesize masks before comparing</td><td><a class="ll" href="../index.html#/lesson/operators-bitwise">→ lesson</a></td></tr>
+<tr><td class="lvl">10</td><td><code>|</code></td><td>bitwise OR</td><td>left → right</td><td><a class="ll" href="../index.html#/lesson/operators-bitwise">→ lesson</a></td></tr>
+<tr><td class="lvl">11</td><td><code>&amp;&amp;</code></td><td>logical AND</td><td>left → right</td><td>short-circuits — right side may never run (that's a sequence point)</td><td><a class="ll" href="../index.html#/lesson/operators-comparison">→ lesson</a></td></tr>
+<tr><td class="lvl">12</td><td><code>||</code></td><td>logical OR</td><td>left → right</td><td>above assignment, below <code>&amp;&amp;</code>: <code>a || b &amp;&amp; c</code> is <code>a || (b &amp;&amp; c)</code></td><td><a class="ll" href="../index.html#/lesson/operators-comparison">→ lesson</a></td></tr>
+<tr><td class="lvl">13</td><td><code>?:</code></td><td>conditional (ternary)</td><td>right → left</td><td>chains nest rightward: <code>a?b:c?d:e</code> is <code>a?b:(c?d:e)</code>; in C the third operand can't be a bare assignment (unlike C++)</td><td><a class="ll" href="../index.html#/lesson/if-else">→ lesson</a></td></tr>
+<tr><td class="lvl">14</td><td><code>=</code> <code>+=</code> <code>-=</code> <code>*=</code> <code>/=</code> <code>%=</code> <code>&lt;&lt;=</code> <code>&gt;&gt;=</code> <code>&amp;=</code> <code>^=</code> <code>|=</code></td><td>assignment &amp; compound assignment</td><td>right → left</td><td><code>x = y = z</code> works because of right-assoc; <code>c = getchar() != EOF</code> assigns 0 or 1 to c</td><td><a class="ll" href="../index.html#/lesson/operators-arithmetic">→ lesson</a></td></tr>
+<tr><td class="lvl">15</td><td><code>,</code></td><td>comma operator — evaluate left, discard, yield right</td><td>left → right</td><td>lowest of all; a sequence point. Commas between function arguments are <em>separators</em>, not this operator</td><td></td></tr>
+</table>
+</div>
+
+<h2>The classic traps, spelled out</h2>
+<div class="tablewrap">
+<table>
+<tr><th>you wrote</th><th>C parsed</th><th>write instead</th><th>learn</th></tr>
+<tr><td><code>if (a &amp; MASK == FLAG)</code></td><td><code>a &amp; (MASK == FLAG)</code> — the comparison runs first, then ANDs with 0 or 1</td><td><code>(a &amp; MASK) == FLAG</code></td><td><a class="ll" href="../index.html#/lesson/operators-bitwise">→ lesson</a></td></tr>
+<tr><td><code>x &amp; 1 == 0</code> ("is x even?")</td><td><code>x &amp; (1 == 0)</code> = <code>x &amp; 0</code> — always 0</td><td><code>(x &amp; 1) == 0</code></td><td><a class="ll" href="../index.html#/lesson/operators-bitwise">→ lesson</a></td></tr>
+<tr><td><code>*p++</code></td><td><code>*(p++)</code> — dereference the old p, then move the <em>pointer</em></td><td>that IS the famous idiom; to bump the pointed-to value: <code>(*p)++</code></td><td><a class="ll" href="../index.html#/lesson/pointer-arithmetic">→ lesson</a></td></tr>
+<tr><td><code>x &lt;&lt; 2 + 1</code></td><td><code>x &lt;&lt; 3</code> — addition outranks shifts</td><td><code>(x &lt;&lt; 2) + 1</code></td><td><a class="ll" href="../index.html#/lesson/operators-bitwise">→ lesson</a></td></tr>
+<tr><td><code>0 &lt;= x &lt;= 9</code></td><td><code>(0 &lt;= x) &lt;= 9</code> — a 0/1 compared with 9: always true</td><td><code>0 &lt;= x &amp;&amp; x &lt;= 9</code></td><td><a class="ll" href="../index.html#/lesson/operators-comparison">→ lesson</a></td></tr>
+<tr><td><code>while (c = getchar() != EOF)</code></td><td><code>c = (getchar() != EOF)</code> — c is forever 0 or 1</td><td><code>while ((c = getchar()) != EOF)</code></td><td><a class="ll" href="../index.html#/lesson/loops-while">→ lesson</a></td></tr>
+<tr><td><code>!flags == 0x4</code></td><td><code>(!flags) == 0x4</code> — 0 or 1 vs 4: always false</td><td><code>flags != 0x4</code>, or <code>!(flags &amp; 0x4)</code> for a bit test</td><td></td></tr>
+<tr><td><code>sizeof x + y</code></td><td><code>(sizeof x) + y</code> — sizeof grabs only the nearest operand</td><td><code>sizeof(x + y)</code></td><td><a class="ll" href="../index.html#/lesson/sizeof">→ lesson</a></td></tr>
+<tr><td><code>*p.x</code> (p is a struct pointer)</td><td><code>*(p.x)</code> — dot outranks star; compile error</td><td><code>p-&gt;x</code>, which is exactly <code>(*p).x</code></td><td><a class="ll" href="../index.html#/lesson/structs">→ lesson</a></td></tr>
+<tr><td><code>a ? x = 1 : x = 2</code></td><td>doesn't compile in C (it does in C++) — the third operand binds before <code>=</code></td><td><code>x = a ? 1 : 2</code></td><td><a class="ll" href="../index.html#/lesson/if-else">→ lesson</a></td></tr>
+<tr><td><code>int x = (1, 2);</code></td><td>comma operator: evaluate 1, discard, x = 2</td><td>probably not what you meant — split into statements</td><td></td></tr>
+<tr><td><code>a[i, j]</code></td><td><code>a[j]</code> — that comma is the operator, not 2-D indexing</td><td><code>a[i][j]</code></td><td><a class="ll" href="../index.html#/lesson/multidim-arrays">→ lesson</a></td></tr>
+</table>
+</div>
+
+<div class="callout danger"><div class="co-ic">💀</div><div><p><b>Precedence is not evaluation order.</b> In <code>f() + g()</code> the parse is fixed but which call runs first is <em>unspecified</em>. And modifying a variable twice without a sequence point — <code>i = i++ + 1</code>, <code>a[i] = i++</code> — is <span class="ub">undefined behavior</span>, whatever the table says. The only operators that guarantee left-before-right evaluation are <code>&amp;&amp;</code>, <code>||</code>, <code>?:</code> and the comma operator. Details: <a href="../index.html#/lesson/undefined-behavior">undefined-behavior lesson</a>.</p></div></div>
+
+<div class="callout tip"><div class="co-ic">💡</div><div><p>Memorizing the full 15-level table is a party trick, not a skill. When in doubt, <b>add parentheses</b> — they cost nothing and your readers (including future-you) will thank you. Historical note: <code>&amp;</code> and <code>|</code> sit below <code>==</code> only for backward compatibility with pre-K&amp;R C — Dennis Ritchie himself called it a mistake.</p></div></div>
+
+<footer>
+<a class="cta" href="../index.html#/lesson/operators-arithmetic">Learn this properly → the interactive operators lessons</a>
+<p class="fine">Part of <a href="../index.html">The C Path</a> — a free interactive C course with quizzes, visualizations and a real compiler. Facts per ISO C17; C23 changes marked.</p>
+</footer>
+</div>
+</body>
+</html>

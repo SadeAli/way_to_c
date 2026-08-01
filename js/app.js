@@ -20,8 +20,11 @@
       <div class="side-links">
         <a href="#/playground" class="${cur === '/playground' ? 'on' : ''}">⌨️ Playground</a>
         <a href="#/gotchas" class="${cur.startsWith('/gotchas') ? 'on' : ''}">🪤 Gotchas</a>
+        <a href="#/daily" class="${cur === '/daily' ? 'on' : ''}">🗓️ Daily Bit${CT.dailyInfo && CT.dailyInfo().solved ? ' ✓' : ''}</a>
+        <a href="#/cheatsheets" class="${cur === '/cheatsheets' ? 'on' : ''}">📋 Cheatsheets</a>
         <a href="#/reference" class="${cur === '/reference' ? 'on' : ''}">📖 Keywords</a>
         <a href="#/badges" class="${cur === '/badges' ? 'on' : ''}">🏅 Badges</a>
+        <a href="#/support" class="${cur === '/support' || cur === '/books' ? 'on' : ''}">💛 Support</a>
       </div>`;
     C.parts.forEach((p, pi) => {
       const pdone = p.lessons.filter(id => CT.state.completed[id]).length;
@@ -88,6 +91,7 @@
            <span class="today-partbar"><span style="width:${Math.round(100 * pdone / part.lessons.length)}%"></span></span></p>` : ''}
          <div class="today-ctas">
            <a class="btn primary" href="#/lesson/${cont}">▶ Pick up where you left off</a>
+           <a class="btn" href="#/daily">🗓️ Daily Bit${CT.dailyInfo && CT.dailyInfo().solved ? ' ✓' : ''}</a>
            <a class="btn" href="#/gotchas">🪤 Gotchas</a>
          </div>`;
     return `<div class="today">
@@ -556,6 +560,183 @@
     }
   }
 
+  /* ================= part-complete celebration ================= */
+  function viewPartComplete(partId) {
+    const part = C.parts.find(p => p.id === partId);
+    if (!part || !part.lessons.every(id => CT.state.completed[id])) { CT.navigate('#/'); return; }
+    const pi = C.parts.indexOf(part);
+    const done = doneLessons(), total = totalLessons();
+    const li = CT.levelInfo();
+    const partXP = part.lessons.reduce((s, id) => s + ((CT.lessons[id] || {}).xp || 100), 0);
+    const allDone = done === total;
+    const nextPart = C.parts[pi + 1];
+    document.title = `${part.title} — complete! — The C Path`;
+
+    main.innerHTML = `<div class="page">
+      <div class="pc-hero">
+        <div class="pc-emoji">${part.emoji}</div>
+        <h1>Part complete!</h1>
+        <p class="pc-sub">You finished <b>${CT.esc(part.title)}</b> — ${part.lessons.length} lessons, ${partXP} XP worth of C knowledge.</p>
+      </div>
+      <canvas id="pcCard" class="share-canvas"></canvas>
+      <div id="pcActions"></div>
+      <div class="pc-next">
+        ${allDone
+          ? `<a class="btn primary" href="#/certificate">👑 Claim your certificate</a>`
+          : nextPart
+            ? `<a class="btn primary" href="#/lesson/${nextPart.lessons[0]}">▶ Start ${CT.esc(nextPart.title)}</a>`
+            : ''}
+        <a class="btn" href="#/">🏠 Home</a>
+      </div>
+    </div>`;
+
+    const canvas = document.getElementById('pcCard');
+    CT.drawShareCard(canvas, {
+      emoji: part.emoji,
+      title: `${part.title} — done!`,
+      subtitle: `Part ${pi + 1} of ${C.parts.length} · ${done}/${total} lessons into The C Path`,
+      stats: [
+        { v: part.lessons.length, k: 'lessons finished' },
+        { v: partXP + ' XP', k: 'earned this part' },
+        { v: 'Lv ' + li.n, k: li.name },
+      ],
+    });
+    const shareText = `I just finished “${part.title}” on The C Path — ${done}/${total} lessons into learning C, free in the browser (real GCC, no signup).`;
+    document.getElementById('pcActions').appendChild(
+      CT.canvasActions(canvas, `c-path-${part.id}-complete.png`, shareText));
+    CT.confetti(160);
+  }
+
+  /* ================= certificate ================= */
+  function viewCertificate() {
+    document.title = 'Certificate — The C Path';
+    const done = doneLessons(), total = totalLessons();
+    if (done < total) {
+      main.innerHTML = `<div class="page">
+        <h1>👑 Course certificate</h1>
+        <p>The certificate unlocks when every lesson is complete. You're at <b>${done} / ${total}</b> — keep going!</p>
+        <div class="p-bar" style="max-width:420px"><div style="width:${Math.round(100 * done / total)}%"></div></div>
+        <p style="margin-top:18px"><a class="btn primary" href="#/">▶ Continue the course</a></p>
+      </div>`;
+      return;
+    }
+    main.innerHTML = `<div class="page">
+      <h1>👑 Grandmaster of C</h1>
+      <p>All ${total} lessons complete. Put your name on it — the certificate renders right here in your browser.</p>
+      <label class="cert-name">Name on the certificate:
+        <input id="certName" maxlength="40" spellcheck="false" placeholder="Your name" value="${CT.esc(CT.state.certName || '')}">
+      </label>
+      <canvas id="certCanvas" class="share-canvas cert"></canvas>
+      <div id="certActions"></div>
+      <p class="note" style="color:var(--ink-3);font-size:13.5px">This certificate is a celebration of real work — every lesson, quiz and exercise behind it ran on a real compiler. It isn’t an accredited credential, and that’s fine: the code you can now write is the credential.</p>
+    </div>`;
+    const canvas = document.getElementById('certCanvas');
+    const actions = document.getElementById('certActions');
+    function draw() {
+      CT.drawCertificate(canvas, {
+        name: CT.state.certName || '',
+        xp: CT.state.xp,
+        date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
+      });
+      actions.innerHTML = '';
+      actions.appendChild(CT.canvasActions(canvas, 'c-path-certificate.png',
+        'I completed The C Path — all 73 interactive C lessons, from binary to inline assembly, on a real compiler. 👑'));
+    }
+    document.getElementById('certName').addEventListener('input', e => {
+      CT.state.certName = e.target.value; CT.save(); draw();
+    });
+    draw();
+  }
+
+  /* ================= cheatsheets ================= */
+  const SHEETS = [
+    ['printf', '🖨️', 'printf & scanf formats', 'Every conversion specifier, flag and length modifier — plus the mismatches that are UB.'],
+    ['precedence', '🪜', 'Operator precedence', 'All 15 levels with associativity, and the classic traps at each level.'],
+    ['string-lib', '🧵', 'string.h survival guide', 'Every function with its signature, contract, and its gotcha.'],
+    ['stdint', '📏', 'Fixed-width integers', 'stdint/limits/inttypes: the right type and the right print macro, every time.'],
+    ['gcc-flags', '🚩', 'GCC flags that matter', 'Warnings, sanitizers, optimization, debugging, standards.'],
+    ['escapes', '↩️', 'Escapes & ASCII', 'Every escape sequence, literal prefixes, and a compact ASCII table.'],
+  ];
+  function viewCheatsheets() {
+    document.title = 'C cheatsheets — The C Path';
+    main.innerHTML = `<div class="page wide">
+      <h1>📋 Cheatsheets</h1>
+      <p>Dense, printable, one-page references — open one, hit <b>Ctrl+P</b>, pin it above your desk. Each row links back to the lesson that teaches it.</p>
+      <div class="sheet-grid">` +
+      SHEETS.map(([f, ic, t, d]) => `
+        <a class="sheet-card" href="cheatsheets/${f}.html" target="_blank" rel="noopener">
+          <div class="s-ic">${ic}</div><h3>${t}</h3><p>${d}</p>
+          <span class="s-open">open ↗</span>
+        </a>`).join('') +
+      `</div></div>`;
+  }
+
+  /* ================= support ================= */
+  function viewSupport() {
+    document.title = 'Support The C Path';
+    const S = window.SUPPORT || {};
+    const tipBtns = [
+      S.githubSponsors ? `<a class="btn primary" href="https://github.com/sponsors/${CT.esc(S.githubSponsors)}" target="_blank" rel="noopener">♥ Sponsor on GitHub</a>` : '',
+      S.kofi ? `<a class="btn" href="https://ko-fi.com/${CT.esc(S.kofi)}" target="_blank" rel="noopener">☕ Buy a coffee</a>` : '',
+    ].filter(Boolean).join('');
+    main.innerHTML = `<div class="page">
+      <h1>💛 Support The C Path</h1>
+      <p>The C Path is <b>100% free — every lesson, every exercise, forever</b>. No signup, no paywall, no ads on lessons.
+      It runs on volunteer time and costs almost nothing to host, which is exactly why small support goes a long way.</p>
+      ${tipBtns ? `<div class="support-tips">${tipBtns}</div>` : ''}
+      ${S.buttondown ? `
+      <div class="nl-box">
+        <h3>📬 C Gotcha of the Week</h3>
+        <p>One runnable C trap in your inbox, weekly. No spam, unsubscribe anytime.</p>
+        <form action="https://buttondown.com/api/emails/embed-subscribe/${CT.esc(S.buttondown)}" method="post" target="_blank">
+          <input type="email" name="email" placeholder="you@example.com" required>
+          <button class="btn primary" type="submit">Subscribe</button>
+        </form>
+      </div>` : ''}
+      ${(S.supporters && S.supporters.length) ? `
+      <h2>Supporters wall</h2>
+      <p>These fine people keep the compiler humming:</p>
+      <div class="supporters-wall">${S.supporters.map(n => `<span class="supporter">${CT.esc(n)}</span>`).join('')}</div>` : ''}
+      <h2>Other ways to help — all free</h2>
+      <ul>
+        <li><b>Tell one person.</b> Word of mouth is genuinely the whole growth plan.</li>
+        <li>Share a <a href="#/gotchas">gotcha</a> that got you, or your <a href="#/daily">Daily Bit</a> result.</li>
+        <li>Found a mistake? Report it — accuracy is the product.</li>
+        <li>Browse the <a href="#/books">recommended C books</a> we keep next to the keyboard.</li>
+      </ul>
+    </div>`;
+  }
+
+  /* ================= recommended books ================= */
+  const BOOKS = [
+    ['The C Programming Language (2nd ed.)', 'Kernighan & Ritchie', '0131103628',
+     'The book, by the language’s creators. Terse, elegant, still the best single tour of C’s soul. Read it after Part 2 and it will feel like meeting the author of a language you already speak.'],
+    ['Modern C (2nd ed.)', 'Jens Gustedt', '1617295817',
+     'The best serious follow-up to this course — rigorous, current (C17/C23), opinionated. The author also publishes a free PDF edition online, so try before you buy.'],
+    ['Effective C (2nd ed.)', 'Robert C. Seacord', '1718504128',
+     'Professional-grade C by the editor of the C standard’s security annex. The chapter on undefined behavior pairs beautifully with our gotchas gallery.'],
+    ['C Programming: A Modern Approach (2nd ed.)', 'K. N. King', '0393979504',
+     'The classic teaching text — slower and more thorough than K&R, with hundreds of exercises. The book version of what this site tries to be.'],
+  ];
+  function viewBooks() {
+    document.title = 'Recommended C books — The C Path';
+    const tag = (window.SUPPORT || {}).amazonTag;
+    main.innerHTML = `<div class="page">
+      <h1>📚 Books worth keeping next to the keyboard</h1>
+      <p>The course is self-contained — but these four have earned permanent desk space. Free excerpts and library copies count too.</p>
+      <div class="book-list">` +
+      BOOKS.map(([t, a, asin, blurb]) => `
+        <div class="book-card">
+          <h3>${CT.esc(t)}</h3>
+          <div class="b-author">${CT.esc(a)}</div>
+          <p>${blurb}</p>
+          <a class="btn" href="https://www.amazon.com/dp/${asin}${tag ? '?tag=' + CT.esc(tag) : ''}" target="_blank" rel="noopener sponsored">View on Amazon ↗</a>
+        </div>`).join('') +
+      `</div>
+      ${tag ? `<p class="note" style="color:var(--ink-3);font-size:13px;margin-top:16px">As an Amazon Associate, The C Path earns from qualifying purchases — at no extra cost to you. It helps keep the site free.</p>` : ''}
+    </div>`;
+  }
+
   /* ================= command palette ================= */
   const overlay = document.getElementById('paletteOverlay');
   const pInput = document.getElementById('paletteInput');
@@ -625,6 +806,12 @@
   CT.route(/^\/playground$/, () => { renderSidebar(); viewPlayground(); });
   CT.route(/^\/badges$/, () => { renderSidebar(); viewBadges(); });
   CT.route(/^\/gotchas(?:\/([a-z0-9-]+))?$/, m => { renderSidebar(); viewGotchas(m[1]); });
+  CT.route(/^\/daily$/, () => { renderSidebar(); CT.viewDaily(main); });
+  CT.route(/^\/cheatsheets$/, () => { renderSidebar(); viewCheatsheets(); });
+  CT.route(/^\/part-complete\/(p[0-9]+)$/, m => { renderSidebar(); viewPartComplete(m[1]); });
+  CT.route(/^\/certificate$/, () => { renderSidebar(); viewCertificate(); });
+  CT.route(/^\/support$/, () => { renderSidebar(); viewSupport(); });
+  CT.route(/^\/books$/, () => { renderSidebar(); viewBooks(); });
   CT.route(/^\/reference$/, () => { renderSidebar(); viewReference(); });
 
   CT.applyTheme();

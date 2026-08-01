@@ -200,7 +200,10 @@ fs.writeFileSync(path.join(__dirname, 'robots.txt'), `User-agent: *\nAllow: /\n$
 console.log('✓ robots.txt');
 
 if (SITE) {
-  const urls = [`${SITE}/`, `${SITE}/gotchas.html`, ...order.filter(id => CT.lessons[id]).map(id => `${SITE}/lesson/${id}/`)];
+  const sheets = ['printf', 'precedence', 'string-lib', 'stdint', 'gcc-flags', 'escapes']
+    .filter(s => fs.existsSync(path.join(__dirname, 'cheatsheets', s + '.html')))
+    .map(s => `${SITE}/cheatsheets/${s}.html`);
+  const urls = [`${SITE}/`, `${SITE}/gotchas.html`, ...sheets, ...order.filter(id => CT.lessons[id]).map(id => `${SITE}/lesson/${id}/`)];
   fs.writeFileSync(path.join(__dirname, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     urls.map(u => `  <url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');

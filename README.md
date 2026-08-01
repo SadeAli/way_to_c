@@ -48,6 +48,25 @@ whitelist-only in February 2026.)
   progress tracking in `localStorage`
 - Keyword reference page mapping every C keyword & directive to its lesson
 
+## Support / monetization switches (Stage 0)
+
+`js/support-config.js` holds every monetization surface, and **each one stays
+completely hidden until you fill in the matching account**, so the site never
+shows a broken link. To activate:
+
+1. **GitHub Sponsors** — enable sponsors on your GitHub account, put your
+   username in `githubSponsors`.
+2. **Ko-fi** — create a page at ko-fi.com, put the page name in `kofi`.
+3. **Buttondown** (newsletter, free under 100 subscribers) — create the
+   newsletter, put the username in `buttondown`. The "C Gotcha of the Week"
+   opt-in form appears on `#/support`.
+4. **Amazon Associates** — put your tag in `amazonTag`; the `#/books` page then
+   appends it to links and shows the required disclosure.
+5. `supporters` — hand-edit the array to grow the supporters wall.
+
+Per the revenue roadmap: lessons, the gotchas gallery and the playground carry
+no commercial surfaces; support lives on its own page plus goodwill moments.
+
 ## Development
 
 - `node verify_lessons.js` — validates every lesson against the curriculum

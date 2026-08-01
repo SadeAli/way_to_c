@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C string.h cheatsheet — The C Path</title>
+<meta name="description" content="Every string.h function with signature, purpose and gotcha — strncpy's missing terminator, strtok's hidden state, memcpy overlap UB, the strcmp return contract — plus safe-usage recipes. C17, C23 additions marked.">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--danger:#e66767;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.badge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);border:1px solid var(--border);border-radius:999px;padding:3px 10px;white-space:nowrap}
+h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+h2{font-size:19px;margin:28px 0 4px}
+.meta{color:var(--ink3);font-size:13.5px;margin:0 0 4px}
+p{margin:8px 0;color:var(--ink2)}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.93em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 5px;color:var(--ink)}
+.tablewrap{overflow-x:auto;margin:10px 0 16px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.45}
+th,td{border:1px solid var(--border);padding:5px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);white-space:nowrap}
+td code{background:var(--code)}
+.ub{color:var(--danger);font-weight:700}
+.impl{color:#d9a441;font-weight:700}
+.c23{color:#7bc47b;font-weight:700;font-size:.85em;letter-spacing:.03em}
+.ll{font-size:11px;white-space:nowrap;text-decoration:none;color:var(--accent);font-weight:600}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:14px 0;color:var(--ink2)}
+.callout .co-ic{font-size:20px}
+.callout.danger{border-left:4px solid var(--danger)}
+.callout.tip{border-left:4px solid var(--accent)}
+.callout p{margin:0}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;text-decoration:none;margin:16px 0 6px}
+footer{margin-top:26px;border-top:1px solid var(--border)}
+.fine{color:var(--ink3);font-size:12.5px}
+@media print{
+:root{color-scheme:light}
+body{background:#fff;color:#000;font:10.5px/1.35 system-ui,sans-serif}
+.wrap{max-width:none;padding:0}
+header,.cta,.noprint{display:none}
+h1{font-size:18px;color:#000;margin:0 0 2px}
+h2{font-size:13px;color:#000;margin:10px 0 3px;break-after:avoid;page-break-after:avoid}
+p,.meta{color:#222}
+a{color:#000;text-decoration:none}
+.ll{display:none}
+code{background:none;border:none;padding:0;color:#000}
+td code{background:none}
+table{font-size:9px}
+th,td{border:1px solid #888;padding:2px 6px}
+th{background:#eee;color:#000}
+tr{break-inside:avoid;page-break-inside:avoid}
+.tablewrap{overflow:visible;margin:5px 0 8px}
+.callout{background:#fff;border:1px solid #888;color:#000;padding:5px 10px;border-radius:6px}
+.callout .co-ic{font-size:12px}
+.ub{color:#000;text-decoration:underline}
+.impl{color:#000;font-style:italic}
+.c23{color:#000}
+footer{border-top:1px solid #888;margin-top:10px}
+.fine{color:#333}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../index.html">&lt;C&gt;</a><a href="../index.html">The C Path — learn C, visually</a><span class="badge">printable cheatsheet</span></header>
+
+<h1>string.h — the null-terminated toolbox</h1>
+<p class="meta">Facts per ISO C17 · <span class="c23">C23</span> additions marked · <span class="ub">UB</span> = undefined behavior, <span class="impl">ID</span> = implementation-defined</p>
+<p class="noprint meta">Styled for paper — hit Ctrl+P and pin it above your desk.</p>
+
+<p>C strings are <code>char</code> arrays ending in <code>'\0'</code> (<a href="../index.html#/lesson/strings">strings lesson</a>). The <code>str*</code> functions stop at that terminator; the <code>mem*</code> functions take explicit lengths and never look for one. Passing NULL to any of them is <span class="ub">UB</span> — none of these functions checks.</p>
+
+<h2>Copy &amp; fill</h2>
+<div class="tablewrap">
+<table>
+<tr><th>signature</th><th>does</th><th>the gotcha</th><th>learn</th></tr>
+<tr><td><code>void *memcpy(void *restrict dst, const void *restrict src, size_t n)</code></td><td>copy n raw bytes</td><td>overlapping regions are <span class="ub">UB</span> — a forward copy clobbers source bytes before reading them. Any doubt → memmove</td><td><a class="ll" href="../index.html#/lesson/string-lib">→ lesson</a></td></tr>
+<tr><td><code>void *memmove(void *dst, const void *src, size_t n)</code></td><td>copy n bytes, overlap-safe</td><td>behaves as if via a temporary buffer; the safe default for shifting data within one array</td><td><a class="ll" href="../index.html#/lesson/string-lib">→ lesson</a></td></tr>
+<tr><td><code>char *strcpy(char *restrict dst, const char *restrict src)</code></td><td>copy including <code>'\0'</code></td><td>dst must be big enough — nothing checks; overflow is <span class="ub">UB</span></td><td><a class="ll" href="../index.html#/lesson/strings">→ lesson</a></td></tr>
+<tr><td><code>char *strncpy(char *restrict dst, const char *restrict src, size_t n)</code></td><td>copy at most n bytes</td><td><b>does not write <code>'\0'</code></b> if src has ≥ n chars — your "string" is now an unterminated byte array. Also zero-fills the remainder when src is shorter (slow for big buffers)</td><td><a class="ll" href="../index.html#/lesson/string-lib">→ lesson</a></td></tr>
+<tr><td><code>void *memset(void *s, int c, size_t n)</code></td><td>fill n bytes with (unsigned char)c</td><td>fine for zeroing byte-wise; note the standard doesn't promise all-bits-zero equals <code>0.0</code> or <code>NULL</code> for floats/pointers (it does on every mainstream platform)</td><td></td></tr>
+<tr><td><code>void *memccpy(void *restrict dst, const void *restrict src, int c, size_t n)</code> <span class="c23">C23</span></td><td>copy up to n bytes, stop after byte c</td><td>returns pointer just past c in dst, or NULL if c wasn't found — handy for bounded string building (long-time POSIX function)</td><td></td></tr>
+<tr><td><code>void *memset_explicit(void *s, int c, size_t n)</code> <span class="c23">C23</span></td><td>fill that can't be optimized away</td><td>use for wiping secrets — a plain memset before <code>free</code> may be deleted by the optimizer</td><td></td></tr>
+</table>
+</div>
+
+<div class="callout danger"><div class="co-ic">💀</div><div><p><b>strncpy does not guarantee termination.</b> If you must use it, always follow with <code>dst[n-1] = '\0';</code>. Better: <code>snprintf(dst, sizeof dst, "%s", src)</code>, which always terminates and tells you (via its return value) if truncation happened.</p></div></div>
+
+<h2>Concatenate</h2>
+<div class="tablewrap">
+<table>
+<tr><th>signature</th><th>does</th><th>the gotcha</th></tr>
+<tr><td><code>char *strcat(char *restrict dst, const char *restrict src)</code></td><td>append src at dst's <code>'\0'</code></td><td>same "trust me" contract as strcpy — no bounds. Also O(len(dst)) just to find the end: repeated strcat in a loop is accidentally quadratic</td></tr>
+<tr><td><code>char *strncat(char *restrict dst, const char *restrict src, size_t n)</code></td><td>append at most n chars, then <code>'\0'</code></td><td>saner than strncpy (always terminates) but <code>n</code> counts what to <em>append</em>, not the buffer size — it may write n+1 bytes past the current end</td></tr>
+</table>
+</div>
+
+<h2>Compare</h2>
+<div class="tablewrap">
+<table>
+<tr><th>signature</th><th>does</th><th>the gotcha</th><th>learn</th></tr>
+<tr><td><code>int strcmp(const char *a, const char *b)</code></td><td>lexicographic compare</td><td>returns <b>&lt;0, 0, or &gt;0</b> — the contract is the <em>sign</em>, not −1/0/+1. Comparison is by <code>unsigned char</code> values. And <b>never</b> <code>if (a == b)</code> — that compares pointers, not text</td><td><a class="ll" href="../index.html#/lesson/string-lib">→ lesson</a></td></tr>
+<tr><td><code>int strncmp(const char *a, const char *b, size_t n)</code></td><td>compare at most n chars</td><td>the prefix-test tool: <code>strncmp(s, "pre", 3) == 0</code></td><td></td></tr>
+<tr><td><code>int memcmp(const void *a, const void *b, size_t n)</code></td><td>compare n raw bytes</td><td>on whole structs it also compares <b>padding bytes</b>, which hold garbage — struct equality needs member-by-member code</td><td><a class="ll" href="../index.html#/lesson/structs">→ lesson</a></td></tr>
+<tr><td><code>int strcoll(const char *a, const char *b)</code></td><td>compare per current locale</td><td>for sorting user-visible text (e.g. accented letters); slower than strcmp</td><td></td></tr>
+<tr><td><code>size_t strxfrm(char *restrict dst, const char *restrict src, size_t n)</code></td><td>transform so strcmp of results == strcoll of originals</td><td>for sorting many strings: transform once, strcmp many times</td><td></td></tr>
+</table>
+</div>
+
+<h2>Search</h2>
+<div class="tablewrap">
+<table>
+<tr><th>signature</th><th>does</th><th>the gotcha</th></tr>
+<tr><td><code>char *strchr(const char *s, int c)</code></td><td>first occurrence of char c, or NULL</td><td><code>strchr(s, '\0')</code> legitimately finds the terminator; c is converted to <code>char</code></td></tr>
+<tr><td><code>char *strrchr(const char *s, int c)</code></td><td>last occurrence, or NULL</td><td>the file-extension / basename tool: <code>strrchr(path, '/')</code></td></tr>
+<tr><td><code>void *memchr(const void *s, int c, size_t n)</code></td><td>first byte c in n bytes, or NULL</td><td>doesn't stop at <code>'\0'</code> — for raw buffers</td></tr>
+<tr><td><code>char *strstr(const char *hay, const char *needle)</code></td><td>first occurrence of substring, or NULL</td><td>empty needle matches at the start; case-sensitive (case-insensitive <code>strcasestr</code> is a GNU extension, not ISO C)</td></tr>
+<tr><td><code>char *strpbrk(const char *s, const char *set)</code></td><td>first char of s that's in set, or NULL</td><td>"pointer to break" — think "find any of"</td></tr>
+<tr><td><code>size_t strspn(const char *s, const char *set)</code></td><td>length of prefix made only of chars in set</td><td>returns a length, not a pointer</td></tr>
+<tr><td><code>size_t strcspn(const char *s, const char *set)</code></td><td>length of prefix containing <em>none</em> of set</td><td>great for stripping fgets' newline: <code>s[strcspn(s, "\n")] = '\0';</code></td></tr>
+<tr><td><code>char *strtok(char *restrict s, const char *restrict delims)</code></td><td>split into tokens</td><td>see below — the most stateful function in the library</td></tr>
+</table>
+</div>
+
+<div class="callout danger"><div class="co-ic">⚠️</div><div><p><b>strtok: useful, stateful, destructive.</b> It <b>mutates your string</b>, stamping <code>'\0'</code> over each delimiter, and keeps <b>hidden static state</b> — that's why every call after the first passes NULL ("continue where you left off"). Consequences: you can't interleave two strtok loops, can't use it on a string literal (mutating one is <span class="ub">UB</span>), and can't call it from multiple threads. C11's <code>strtok_s</code> (optional Annex K) / POSIX <code>strtok_r</code> take the state as an explicit parameter and fix all three. Runs of delimiters are skipped — empty fields are invisible to strtok (bad for CSV).</p></div></div>
+
+<h2>Length &amp; misc</h2>
+<div class="tablewrap">
+<table>
+<tr><th>signature</th><th>does</th><th>the gotcha</th><th>learn</th></tr>
+<tr><td><code>size_t strlen(const char *s)</code></td><td>characters before the <code>'\0'</code></td><td>an O(n) walk, not a stored field — don't call it every loop iteration; and <code>sizeof "hi"</code> is 3 (terminator included) while <code>strlen("hi")</code> is 2</td><td><a class="ll" href="../index.html#/lesson/strings">→ lesson</a></td></tr>
+<tr><td><code>char *strerror(int errnum)</code></td><td>human-readable message for an errno value</td><td>may return a pointer to a static buffer — not thread-safe; POSIX has <code>strerror_r</code></td><td><a class="ll" href="../index.html#/lesson/ctype-assert-errno">→ lesson</a></td></tr>
+<tr><td><code>char *strdup(const char *s)</code> <span class="c23">C23</span></td><td>malloc'd copy of s</td><td>POSIX classic, standard since C23. The copy is heap memory: you <code>free</code> it</td><td><a class="ll" href="../index.html#/lesson/dynamic-memory">→ lesson</a></td></tr>
+<tr><td><code>char *strndup(const char *s, size_t n)</code> <span class="c23">C23</span></td><td>malloc'd copy of at most n chars</td><td>unlike strncpy, the copy is always <code>'\0'</code>-terminated</td><td><a class="ll" href="../index.html#/lesson/dynamic-memory">→ lesson</a></td></tr>
+</table>
+</div>
+
+<h2>Safe-usage recipes</h2>
+<div class="tablewrap">
+<table>
+<tr><th>I want to…</th><th>write</th><th>why this way</th></tr>
+<tr><td>copy with bounds</td><td><code>snprintf(dst, sizeof dst, "%s", src);</code></td><td>always terminates; return ≥ buffer size means truncated (return is the length it <em>wanted</em> to write)</td></tr>
+<tr><td>use strncpy anyway</td><td><code>strncpy(dst, src, sizeof dst); dst[sizeof dst - 1] = '\0';</code></td><td>the ritual terminator — never skip it</td></tr>
+<tr><td>strip fgets' newline</td><td><code>s[strcspn(s, "\n")] = '\0';</code></td><td>works whether or not the newline is there (last line of a file)</td></tr>
+<tr><td>test equality</td><td><code>strcmp(a, b) == 0</code></td><td><code>==</code> compares addresses; identical literals may or may not share one — <span class="impl">ID</span></td></tr>
+<tr><td>test a prefix</td><td><code>strncmp(s, "https:", 6) == 0</code></td><td>bounded, no scan of the whole string</td></tr>
+<tr><td>test a suffix</td><td><code>size_t n = strlen(s); n &gt;= 4 &amp;&amp; strcmp(s + n - 4, ".txt") == 0</code></td><td>check the length first or you index before the string</td></tr>
+<tr><td>duplicate a string</td><td><code>char *p = malloc(strlen(s) + 1); if (p) memcpy(p, s, strlen(s) + 1);</code></td><td>portable pre-C23 strdup; the +1 copies the terminator. <code>free(p)</code> later</td></tr>
+<tr><td>tokenize safely</td><td><code>strtok_r(s, ",", &amp;save)</code> (POSIX)</td><td>reentrant; or hand-roll with <code>strcspn</code>/<code>strspn</code> if you need empty fields</td></tr>
+<tr><td>append with bounds</td><td><code>size_t len = strlen(dst); snprintf(dst + len, size - len, "%s", src);</code></td><td>ensure <code>len &lt; size</code> first; avoids strcat's silent overflow</td></tr>
+<tr><td>zero a struct</td><td><code>memset(&amp;st, 0, sizeof st);</code></td><td>or <code>struct S st = {0};</code> which also zeros padding-independent members portably</td></tr>
+<tr><td>shift data inside one array</td><td><code>memmove(a + 2, a, 4);</code></td><td>same array = overlap = memmove territory, never memcpy</td></tr>
+<tr><td>wipe a password buffer</td><td><code>memset_explicit(buf, 0, sizeof buf);</code> <span class="c23">C23</span></td><td>pre-C23: <code>volatile</code> pointer tricks or platform calls (<code>explicit_bzero</code>)</td></tr>
+</table>
+</div>
+
+<div class="callout tip"><div class="co-ic">💡</div><div><p><b>Mental model:</b> <code>str*</code> = "walk until <code>'\0'</code>", <code>strn*</code> = "walk until <code>'\0'</code> or n (semantics vary per function!)", <code>mem*</code> = "exactly n bytes, no terminator involved". The <code>n</code> in strncpy, strncat and snprintf means a <em>different thing in each</em> — that inconsistency is decades old and not going away.</p></div></div>
+
+<footer>
+<a class="cta" href="../index.html#/lesson/string-lib">Learn this properly → the interactive string.h lesson</a>
+<p class="fine">Part of <a href="../index.html">The C Path</a> — a free interactive C course with quizzes, visualizations and a real compiler. Facts per ISO C17; C23 changes marked.</p>
+</footer>
+</div>
+</body>
+</html>
