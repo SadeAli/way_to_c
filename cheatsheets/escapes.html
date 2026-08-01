@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C escape sequences &amp; ASCII cheatsheet — The C Path</title>
+<meta name="description" content="Every C escape sequence, character and string literal rule (L, u, U, u8 prefixes), the trigraph story (removed in C23), and a compact ASCII 0–127 table with decimal, hex and character.">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--danger:#e66767;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.badge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);border:1px solid var(--border);border-radius:999px;padding:3px 10px;white-space:nowrap}
+h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+h2{font-size:19px;margin:28px 0 4px}
+.meta{color:var(--ink3);font-size:13.5px;margin:0 0 4px}
+p{margin:8px 0;color:var(--ink2)}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.93em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 5px;color:var(--ink)}
+.tablewrap{overflow-x:auto;margin:10px 0 16px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.45}
+th,td{border:1px solid var(--border);padding:5px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);white-space:nowrap}
+td code{background:var(--code)}
+.ub{color:var(--danger);font-weight:700}
+.impl{color:#d9a441;font-weight:700}
+.c23{color:#7bc47b;font-weight:700;font-size:.85em;letter-spacing:.03em}
+.ll{font-size:11px;white-space:nowrap;text-decoration:none;color:var(--accent);font-weight:600}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:14px 0;color:var(--ink2)}
+.callout .co-ic{font-size:20px}
+.callout.danger{border-left:4px solid var(--danger)}
+.callout.tip{border-left:4px solid var(--accent)}
+.callout p{margin:0}
+.ascii{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 16px}
+.ascii .col{flex:1 1 205px;overflow-x:auto}
+.ascii table{font-size:12.5px;line-height:1.3}
+.ascii th,.ascii td{padding:1px 8px;white-space:nowrap}
+.ascii td.d,.ascii th.d{text-align:right}
+.ascii td.c{font-family:var(--mono)}
+.ascii .ctl{color:var(--ink3)}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;text-decoration:none;margin:16px 0 6px}
+footer{margin-top:26px;border-top:1px solid var(--border)}
+.fine{color:var(--ink3);font-size:12.5px}
+@media print{
+:root{color-scheme:light}
+body{background:#fff;color:#000;font:10.5px/1.35 system-ui,sans-serif}
+.wrap{max-width:none;padding:0}
+header,.cta,.noprint{display:none}
+h1{font-size:18px;color:#000;margin:0 0 2px}
+h2{font-size:13px;color:#000;margin:10px 0 3px;break-after:avoid;page-break-after:avoid}
+p,.meta{color:#222}
+a{color:#000;text-decoration:none}
+.ll{display:none}
+code{background:none;border:none;padding:0;color:#000}
+td code{background:none}
+table{font-size:9px}
+th,td{border:1px solid #888;padding:2px 6px}
+th{background:#eee;color:#000}
+tr{break-inside:avoid;page-break-inside:avoid}
+.tablewrap{overflow:visible;margin:5px 0 8px}
+.callout{background:#fff;border:1px solid #888;color:#000;padding:5px 10px;border-radius:6px}
+.callout .co-ic{font-size:12px}
+.ascii{gap:6px;break-inside:avoid}
+.ascii .col{overflow:visible}
+.ascii table{font-size:7.5px}
+.ascii th,.ascii td{padding:0 4px}
+.ascii .ctl{color:#555}
+.ub{color:#000;text-decoration:underline}
+.impl{color:#000;font-style:italic}
+.c23{color:#000}
+footer{border-top:1px solid #888;margin-top:10px}
+.fine{color:#333}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../index.html">&lt;C&gt;</a><a href="../index.html">The C Path — learn C, visually</a><span class="badge">printable cheatsheet</span></header>
+
+<h1>Escape sequences, literals &amp; ASCII</h1>
+<p class="meta">Facts per ISO C17 · <span class="c23">C23</span> changes marked · <span class="ub">UB</span> = undefined behavior, <span class="impl">ID</span> = implementation-defined</p>
+<p class="noprint meta">Styled for paper — hit Ctrl+P and pin it above your desk.</p>
+
+<p>An escape sequence is two or more source characters that become <b>one</b> character in the compiled program: the <code>\n</code> you've typed since <a href="../index.html#/lesson/hello-world">hello-world</a> is backslash + n in your file, but a single byte (10) at runtime.</p>
+
+<h2>Simple escapes</h2>
+<div class="tablewrap">
+<table>
+<tr><th>escape</th><th>byte</th><th>name</th><th>notes</th><th>learn</th></tr>
+<tr><td><code>\n</code></td><td>10</td><td>newline (LF)</td><td>ends a line; also flushes line-buffered stdout on terminals</td><td><a class="ll" href="../index.html#/lesson/hello-world">→ lesson</a></td></tr>
+<tr><td><code>\t</code></td><td>9</td><td>horizontal tab</td><td>quick-and-dirty columns</td><td><a class="ll" href="../index.html#/lesson/hello-world">→ lesson</a></td></tr>
+<tr><td><code>\r</code></td><td>13</td><td>carriage return</td><td>return to column 0 — progress-bar trick <code>\rdone: 42%</code>; half of Windows' <code>\r\n</code> line ending</td><td></td></tr>
+<tr><td><code>\\</code></td><td>92</td><td>backslash</td><td>a literal <code>\</code> — needed for Windows paths in literals</td><td></td></tr>
+<tr><td><code>\'</code></td><td>39</td><td>single quote</td><td>needed in char literals: <code>'\''</code></td><td></td></tr>
+<tr><td><code>\"</code></td><td>34</td><td>double quote</td><td>needed in string literals: <code>"she said \"hi\""</code></td><td></td></tr>
+<tr><td><code>\?</code></td><td>63</td><td>question mark</td><td>exists only to defuse trigraphs (see below) — pointless since C23</td><td></td></tr>
+<tr><td><code>\a</code></td><td>7</td><td>alert (bell)</td><td>historically rang the terminal bell</td><td></td></tr>
+<tr><td><code>\b</code></td><td>8</td><td>backspace</td><td>moves the cursor back one column</td><td></td></tr>
+<tr><td><code>\f</code></td><td>12</td><td>form feed</td><td>page break on line printers</td><td></td></tr>
+<tr><td><code>\v</code></td><td>11</td><td>vertical tab</td><td>museum piece</td><td></td></tr>
+<tr><td><code>\0</code></td><td>0</td><td>NUL</td><td>really the shortest <em>octal</em> escape — the string terminator</td><td><a class="ll" href="../index.html#/lesson/strings">→ lesson</a></td></tr>
+<tr><td><code>\e</code></td><td>27</td><td>escape (ESC)</td><td><b>not ISO C</b> — a GNU extension. Portable: <code>\x1b</code> or <code>\033</code> (start of ANSI color codes)</td><td></td></tr>
+</table>
+</div>
+<p>Anything else after a backslash (<code>\q</code>, <code>\m</code>…) is not a valid escape sequence — the standard gives it no meaning (compilers typically warn and guess).</p>
+
+<h2>Numeric escapes</h2>
+<div class="tablewrap">
+<table>
+<tr><th>form</th><th>example</th><th>rule</th><th>trap</th></tr>
+<tr><td>octal <code>\o</code> <code>\oo</code> <code>\ooo</code></td><td><code>'\033'</code> = 27 (ESC)</td><td>one to <b>three</b> octal digits; stops at the third digit or the first non-octal character</td><td><code>"\0777"</code> is two characters: <code>\077</code> then <code>'7'</code>. And the value must fit in a byte — <code>'\777'</code> (511) is an error</td></tr>
+<tr><td>hex <code>\xh…</code></td><td><code>'\x1b'</code> = 27</td><td>one or more hex digits — <b>no length limit</b></td><td>greedy! <code>"\x0aFF"</code> tries to make one huge escape and fails to compile. Split the literal: <code>"\x0a" "FF"</code></td></tr>
+<tr><td>universal <code>\uXXXX</code></td><td><code>"\u00e9"</code> = é</td><td>exactly 4 hex digits naming a Unicode code point (C99)</td><td>surrogates (D800–DFFF) and most points below A0 are forbidden</td></tr>
+<tr><td>universal <code>\UXXXXXXXX</code></td><td><code>"\U0001F600"</code> = 😀</td><td>exactly 8 hex digits (C99)</td><td>how it's encoded in a plain <code>"…"</code> depends on the execution charset — use <code>u8"…"</code> for guaranteed UTF-8</td></tr>
+<tr><td>delimited <span class="c23">C23</span></td><td><code>"\x{1b}"</code> <code>"\o{33}"</code> <code>"\u{1F600}"</code></td><td>braces end the greediness problem</td><td>new in C23 — older compilers reject</td></tr>
+</table>
+</div>
+
+<h2>Character literals</h2>
+<div class="tablewrap">
+<table>
+<tr><th>literal</th><th>type</th><th>notes</th><th>learn</th></tr>
+<tr><td><code>'a'</code></td><td><code>int</code> — <b>not</b> <code>char</code>!</td><td>a C surprise (C++ differs): <code>sizeof 'a'</code> == <code>sizeof(int)</code>. A char really is a small integer — <code>'A'</code> is just 65</td><td><a class="ll" href="../index.html#/lesson/variables-types">→ lesson</a></td></tr>
+<tr><td><code>'ab'</code></td><td><code>int</code></td><td>multi-character constant: legal, value is <span class="impl">ID</span> — a portability trap, avoid</td><td></td></tr>
+<tr><td><code>L'x'</code></td><td><code>wchar_t</code></td><td>wide character — 32-bit on Linux, 16-bit on Windows (<span class="impl">ID</span>)</td><td></td></tr>
+<tr><td><code>u'x'</code></td><td><code>char16_t</code></td><td>C11, from <code>&lt;uchar.h&gt;</code></td><td></td></tr>
+<tr><td><code>U'x'</code></td><td><code>char32_t</code></td><td>C11, from <code>&lt;uchar.h&gt;</code></td><td></td></tr>
+<tr><td><code>u8'x'</code> <span class="c23">C23</span></td><td><code>char8_t</code> (= <code>unsigned char</code>)</td><td>C23 only; must be a single ASCII-range character</td><td><a class="ll" href="../index.html#/lesson/c23-features">→ lesson</a></td></tr>
+</table>
+</div>
+<p>Whether plain <code>char</code> is signed or unsigned is <span class="impl">ID</span> — signed on x86 Linux, unsigned on ARM Linux. Code that stores <code>getchar()</code>'s result in a <code>char</code> before comparing to <code>EOF</code> breaks either way: use <code>int</code>.</p>
+
+<h2>String literals</h2>
+<div class="tablewrap">
+<table>
+<tr><th>literal</th><th>array type</th><th>notes</th><th>learn</th></tr>
+<tr><td><code>"hi"</code></td><td><code>char[3]</code></td><td>the terminator is included: <code>sizeof "hi"</code> is 3, <code>strlen("hi")</code> is 2</td><td><a class="ll" href="../index.html#/lesson/strings">→ lesson</a></td></tr>
+<tr><td><code>L"hi"</code></td><td><code>wchar_t[3]</code></td><td>wide string — print with <code>%ls</code></td><td></td></tr>
+<tr><td><code>u8"hi"</code></td><td><code>char[3]</code> (C11) · <code>char8_t[3]</code> <span class="c23">C23</span></td><td>guaranteed UTF-8 encoding regardless of the compiler's charset</td><td><a class="ll" href="../index.html#/lesson/text-encoding">→ lesson</a></td></tr>
+<tr><td><code>u"hi"</code> / <code>U"hi"</code></td><td><code>char16_t[3]</code> / <code>char32_t[3]</code></td><td>C11; UTF-16/UTF-32 in practice (guaranteed in <span class="c23">C23</span>)</td><td></td></tr>
+</table>
+</div>
+<div class="tablewrap">
+<table>
+<tr><th>rule</th><th>details</th><th>learn</th></tr>
+<tr><td>modifying a literal is <span class="ub">UB</span></td><td><code>char *s = "hi"; s[0] = 'H';</code> typically crashes (literals live in read-only memory). The array isn't <code>const</code>-typed in C — the compiler won't stop you. Prefer <code>const char *s</code>, or copy into <code>char s[] = "hi";</code></td><td><a class="ll" href="../index.html#/lesson/strings">→ lesson</a></td></tr>
+<tr><td>identical literals may be merged</td><td>whether two <code>"abc"</code>s share one address is <span class="impl">ID</span> — never compare strings with <code>==</code></td><td><a class="ll" href="../index.html#/lesson/string-lib">→ lesson</a></td></tr>
+<tr><td>adjacent literals concatenate</td><td><code>"abc" "def"</code> is one literal — how the <code>PRId64</code> macros work, and how you split long lines. One prefixed + one plain: the prefix wins</td><td></td></tr>
+<tr><td>backslash-newline continues a line</td><td>a <code>\</code> as the very last character splices the next source line on — works anywhere, not just strings (macros love it)</td><td></td></tr>
+</table>
+</div>
+
+<div class="callout tip"><div class="co-ic">🪦</div><div><p><b>Trigraphs — 1989–2023, rest in peace.</b> For keyboards lacking <code>#[]{}|~^\</code>, C89 made these nine sequences convert <em>everywhere, even inside string literals</em>: <code>??=</code>→<code>#</code> <code>??(</code>→<code>[</code> <code>??)</code>→<code>]</code> <code>??&lt;</code>→<code>{</code> <code>??&gt;</code>→<code>}</code> <code>??/</code>→<code>\</code> <code>??'</code>→<code>^</code> <code>??!</code>→<code>|</code> <code>??-</code>→<code>~</code>. So <code>"huh??!"</code> silently became <code>"huh|"</code> — hence the <code>\?</code> escape. <span class="c23">C23</span> removed trigraphs entirely; GCC only ever applies them in strict <code>-std=</code> modes (or with <code>-trigraphs</code>). Their cousins the <em>digraphs</em> (<code>&lt;%</code> <code>%&gt;</code> <code>&lt;:</code> <code>:&gt;</code> <code>%:</code>) are whole tokens, never touch strings, and are still legal.</p></div></div>
+
+<h2>ASCII 0–127</h2>
+<p>Every C string is bytes; these are the byte values (<a href="../index.html#/lesson/text-encoding">text-encoding lesson</a>). Grey rows are control characters; the escape column shows the C spelling where one exists.</p>
+<div class="ascii">
+<div class="col"><table>
+<tr><th class="d">dec</th><th>hex</th><th>char</th><th>esc</th></tr>
+<tr class="ctl"><td class="d">0</td><td>0x00</td><td class="c">NUL</td><td class="c"><code>\0</code></td></tr>
+<tr class="ctl"><td class="d">1</td><td>0x01</td><td class="c">SOH</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">2</td><td>0x02</td><td class="c">STX</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">3</td><td>0x03</td><td class="c">ETX</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">4</td><td>0x04</td><td class="c">EOT</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">5</td><td>0x05</td><td class="c">ENQ</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">6</td><td>0x06</td><td class="c">ACK</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">7</td><td>0x07</td><td class="c">BEL</td><td class="c"><code>\a</code></td></tr>
+<tr class="ctl"><td class="d">8</td><td>0x08</td><td class="c">BS</td><td class="c"><code>\b</code></td></tr>
+<tr class="ctl"><td class="d">9</td><td>0x09</td><td class="c">HT</td><td class="c"><code>\t</code></td></tr>
+<tr class="ctl"><td class="d">10</td><td>0x0A</td><td class="c">LF</td><td class="c"><code>\n</code></td></tr>
+<tr class="ctl"><td class="d">11</td><td>0x0B</td><td class="c">VT</td><td class="c"><code>\v</code></td></tr>
+<tr class="ctl"><td class="d">12</td><td>0x0C</td><td class="c">FF</td><td class="c"><code>\f</code></td></tr>
+<tr class="ctl"><td class="d">13</td><td>0x0D</td><td class="c">CR</td><td class="c"><code>\r</code></td></tr>
+<tr class="ctl"><td class="d">14</td><td>0x0E</td><td class="c">SO</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">15</td><td>0x0F</td><td class="c">SI</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">16</td><td>0x10</td><td class="c">DLE</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">17</td><td>0x11</td><td class="c">DC1</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">18</td><td>0x12</td><td class="c">DC2</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">19</td><td>0x13</td><td class="c">DC3</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">20</td><td>0x14</td><td class="c">DC4</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">21</td><td>0x15</td><td class="c">NAK</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">22</td><td>0x16</td><td class="c">SYN</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">23</td><td>0x17</td><td class="c">ETB</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">24</td><td>0x18</td><td class="c">CAN</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">25</td><td>0x19</td><td class="c">EM</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">26</td><td>0x1A</td><td class="c">SUB</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">27</td><td>0x1B</td><td class="c">ESC</td><td class="c"><code>\x1b</code></td></tr>
+<tr class="ctl"><td class="d">28</td><td>0x1C</td><td class="c">FS</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">29</td><td>0x1D</td><td class="c">GS</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">30</td><td>0x1E</td><td class="c">RS</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">31</td><td>0x1F</td><td class="c">US</td><td class="c"></td></tr>
+</table></div>
+<div class="col"><table>
+<tr><th class="d">dec</th><th>hex</th><th>char</th><th>esc</th></tr>
+<tr class="ctl"><td class="d">32</td><td>0x20</td><td class="c">SP</td><td class="c"></td></tr>
+<tr><td class="d">33</td><td>0x21</td><td class="c">!</td><td class="c"></td></tr>
+<tr><td class="d">34</td><td>0x22</td><td class="c">&quot;</td><td class="c"><code>\&quot;</code></td></tr>
+<tr><td class="d">35</td><td>0x23</td><td class="c">#</td><td class="c"></td></tr>
+<tr><td class="d">36</td><td>0x24</td><td class="c">$</td><td class="c"></td></tr>
+<tr><td class="d">37</td><td>0x25</td><td class="c">%</td><td class="c"></td></tr>
+<tr><td class="d">38</td><td>0x26</td><td class="c">&amp;</td><td class="c"></td></tr>
+<tr><td class="d">39</td><td>0x27</td><td class="c">'</td><td class="c"><code>\'</code></td></tr>
+<tr><td class="d">40</td><td>0x28</td><td class="c">(</td><td class="c"></td></tr>
+<tr><td class="d">41</td><td>0x29</td><td class="c">)</td><td class="c"></td></tr>
+<tr><td class="d">42</td><td>0x2A</td><td class="c">*</td><td class="c"></td></tr>
+<tr><td class="d">43</td><td>0x2B</td><td class="c">+</td><td class="c"></td></tr>
+<tr><td class="d">44</td><td>0x2C</td><td class="c">,</td><td class="c"></td></tr>
+<tr><td class="d">45</td><td>0x2D</td><td class="c">-</td><td class="c"></td></tr>
+<tr><td class="d">46</td><td>0x2E</td><td class="c">.</td><td class="c"></td></tr>
+<tr><td class="d">47</td><td>0x2F</td><td class="c">/</td><td class="c"></td></tr>
+<tr><td class="d">48</td><td>0x30</td><td class="c">0</td><td class="c"></td></tr>
+<tr><td class="d">49</td><td>0x31</td><td class="c">1</td><td class="c"></td></tr>
+<tr><td class="d">50</td><td>0x32</td><td class="c">2</td><td class="c"></td></tr>
+<tr><td class="d">51</td><td>0x33</td><td class="c">3</td><td class="c"></td></tr>
+<tr><td class="d">52</td><td>0x34</td><td class="c">4</td><td class="c"></td></tr>
+<tr><td class="d">53</td><td>0x35</td><td class="c">5</td><td class="c"></td></tr>
+<tr><td class="d">54</td><td>0x36</td><td class="c">6</td><td class="c"></td></tr>
+<tr><td class="d">55</td><td>0x37</td><td class="c">7</td><td class="c"></td></tr>
+<tr><td class="d">56</td><td>0x38</td><td class="c">8</td><td class="c"></td></tr>
+<tr><td class="d">57</td><td>0x39</td><td class="c">9</td><td class="c"></td></tr>
+<tr><td class="d">58</td><td>0x3A</td><td class="c">:</td><td class="c"></td></tr>
+<tr><td class="d">59</td><td>0x3B</td><td class="c">;</td><td class="c"></td></tr>
+<tr><td class="d">60</td><td>0x3C</td><td class="c">&lt;</td><td class="c"></td></tr>
+<tr><td class="d">61</td><td>0x3D</td><td class="c">=</td><td class="c"></td></tr>
+<tr><td class="d">62</td><td>0x3E</td><td class="c">&gt;</td><td class="c"></td></tr>
+<tr><td class="d">63</td><td>0x3F</td><td class="c">?</td><td class="c"><code>\?</code></td></tr>
+</table></div>
+<div class="col"><table>
+<tr><th class="d">dec</th><th>hex</th><th>char</th><th>esc</th></tr>
+<tr><td class="d">64</td><td>0x40</td><td class="c">@</td><td class="c"></td></tr>
+<tr><td class="d">65</td><td>0x41</td><td class="c">A</td><td class="c"></td></tr>
+<tr><td class="d">66</td><td>0x42</td><td class="c">B</td><td class="c"></td></tr>
+<tr><td class="d">67</td><td>0x43</td><td class="c">C</td><td class="c"></td></tr>
+<tr><td class="d">68</td><td>0x44</td><td class="c">D</td><td class="c"></td></tr>
+<tr><td class="d">69</td><td>0x45</td><td class="c">E</td><td class="c"></td></tr>
+<tr><td class="d">70</td><td>0x46</td><td class="c">F</td><td class="c"></td></tr>
+<tr><td class="d">71</td><td>0x47</td><td class="c">G</td><td class="c"></td></tr>
+<tr><td class="d">72</td><td>0x48</td><td class="c">H</td><td class="c"></td></tr>
+<tr><td class="d">73</td><td>0x49</td><td class="c">I</td><td class="c"></td></tr>
+<tr><td class="d">74</td><td>0x4A</td><td class="c">J</td><td class="c"></td></tr>
+<tr><td class="d">75</td><td>0x4B</td><td class="c">K</td><td class="c"></td></tr>
+<tr><td class="d">76</td><td>0x4C</td><td class="c">L</td><td class="c"></td></tr>
+<tr><td class="d">77</td><td>0x4D</td><td class="c">M</td><td class="c"></td></tr>
+<tr><td class="d">78</td><td>0x4E</td><td class="c">N</td><td class="c"></td></tr>
+<tr><td class="d">79</td><td>0x4F</td><td class="c">O</td><td class="c"></td></tr>
+<tr><td class="d">80</td><td>0x50</td><td class="c">P</td><td class="c"></td></tr>
+<tr><td class="d">81</td><td>0x51</td><td class="c">Q</td><td class="c"></td></tr>
+<tr><td class="d">82</td><td>0x52</td><td class="c">R</td><td class="c"></td></tr>
+<tr><td class="d">83</td><td>0x53</td><td class="c">S</td><td class="c"></td></tr>
+<tr><td class="d">84</td><td>0x54</td><td class="c">T</td><td class="c"></td></tr>
+<tr><td class="d">85</td><td>0x55</td><td class="c">U</td><td class="c"></td></tr>
+<tr><td class="d">86</td><td>0x56</td><td class="c">V</td><td class="c"></td></tr>
+<tr><td class="d">87</td><td>0x57</td><td class="c">W</td><td class="c"></td></tr>
+<tr><td class="d">88</td><td>0x58</td><td class="c">X</td><td class="c"></td></tr>
+<tr><td class="d">89</td><td>0x59</td><td class="c">Y</td><td class="c"></td></tr>
+<tr><td class="d">90</td><td>0x5A</td><td class="c">Z</td><td class="c"></td></tr>
+<tr><td class="d">91</td><td>0x5B</td><td class="c">[</td><td class="c"></td></tr>
+<tr><td class="d">92</td><td>0x5C</td><td class="c">\</td><td class="c"><code>\\</code></td></tr>
+<tr><td class="d">93</td><td>0x5D</td><td class="c">]</td><td class="c"></td></tr>
+<tr><td class="d">94</td><td>0x5E</td><td class="c">^</td><td class="c"></td></tr>
+<tr><td class="d">95</td><td>0x5F</td><td class="c">_</td><td class="c"></td></tr>
+</table></div>
+<div class="col"><table>
+<tr><th class="d">dec</th><th>hex</th><th>char</th><th>esc</th></tr>
+<tr><td class="d">96</td><td>0x60</td><td class="c">`</td><td class="c"></td></tr>
+<tr><td class="d">97</td><td>0x61</td><td class="c">a</td><td class="c"></td></tr>
+<tr><td class="d">98</td><td>0x62</td><td class="c">b</td><td class="c"></td></tr>
+<tr><td class="d">99</td><td>0x63</td><td class="c">c</td><td class="c"></td></tr>
+<tr><td class="d">100</td><td>0x64</td><td class="c">d</td><td class="c"></td></tr>
+<tr><td class="d">101</td><td>0x65</td><td class="c">e</td><td class="c"></td></tr>
+<tr><td class="d">102</td><td>0x66</td><td class="c">f</td><td class="c"></td></tr>
+<tr><td class="d">103</td><td>0x67</td><td class="c">g</td><td class="c"></td></tr>
+<tr><td class="d">104</td><td>0x68</td><td class="c">h</td><td class="c"></td></tr>
+<tr><td class="d">105</td><td>0x69</td><td class="c">i</td><td class="c"></td></tr>
+<tr><td class="d">106</td><td>0x6A</td><td class="c">j</td><td class="c"></td></tr>
+<tr><td class="d">107</td><td>0x6B</td><td class="c">k</td><td class="c"></td></tr>
+<tr><td class="d">108</td><td>0x6C</td><td class="c">l</td><td class="c"></td></tr>
+<tr><td class="d">109</td><td>0x6D</td><td class="c">m</td><td class="c"></td></tr>
+<tr><td class="d">110</td><td>0x6E</td><td class="c">n</td><td class="c"></td></tr>
+<tr><td class="d">111</td><td>0x6F</td><td class="c">o</td><td class="c"></td></tr>
+<tr><td class="d">112</td><td>0x70</td><td class="c">p</td><td class="c"></td></tr>
+<tr><td class="d">113</td><td>0x71</td><td class="c">q</td><td class="c"></td></tr>
+<tr><td class="d">114</td><td>0x72</td><td class="c">r</td><td class="c"></td></tr>
+<tr><td class="d">115</td><td>0x73</td><td class="c">s</td><td class="c"></td></tr>
+<tr><td class="d">116</td><td>0x74</td><td class="c">t</td><td class="c"></td></tr>
+<tr><td class="d">117</td><td>0x75</td><td class="c">u</td><td class="c"></td></tr>
+<tr><td class="d">118</td><td>0x76</td><td class="c">v</td><td class="c"></td></tr>
+<tr><td class="d">119</td><td>0x77</td><td class="c">w</td><td class="c"></td></tr>
+<tr><td class="d">120</td><td>0x78</td><td class="c">x</td><td class="c"></td></tr>
+<tr><td class="d">121</td><td>0x79</td><td class="c">y</td><td class="c"></td></tr>
+<tr><td class="d">122</td><td>0x7A</td><td class="c">z</td><td class="c"></td></tr>
+<tr><td class="d">123</td><td>0x7B</td><td class="c">{</td><td class="c"></td></tr>
+<tr><td class="d">124</td><td>0x7C</td><td class="c">|</td><td class="c"></td></tr>
+<tr><td class="d">125</td><td>0x7D</td><td class="c">}</td><td class="c"></td></tr>
+<tr><td class="d">126</td><td>0x7E</td><td class="c">~</td><td class="c"></td></tr>
+<tr class="ctl"><td class="d">127</td><td>0x7F</td><td class="c">DEL</td><td class="c"></td></tr>
+</table></div>
+</div>
+
+<footer>
+<a class="cta" href="../index.html#/lesson/text-encoding">Learn this properly → the interactive text encoding lesson</a>
+<p class="fine">Part of <a href="../index.html">The C Path</a> — a free interactive C course with quizzes, visualizations and a real compiler. Facts per ISO C17; C23 changes marked.</p>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C stdint &amp; integer types cheatsheet — The C Path</title>
+<meta name="description" content="stdint.h fixed-width types, limits.h min/max macros, inttypes.h PRId64-style print macros, size_t and ptrdiff_t guidance, and a summary of integer promotions and conversion rank. C17, C23 changes marked.">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--danger:#e66767;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.badge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);border:1px solid var(--border);border-radius:999px;padding:3px 10px;white-space:nowrap}
+h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+h2{font-size:19px;margin:28px 0 4px}
+.meta{color:var(--ink3);font-size:13.5px;margin:0 0 4px}
+p{margin:8px 0;color:var(--ink2)}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.93em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 5px;color:var(--ink)}
+.tablewrap{overflow-x:auto;margin:10px 0 16px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.45}
+th,td{border:1px solid var(--border);padding:5px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);white-space:nowrap}
+td code{background:var(--code)}
+.ub{color:var(--danger);font-weight:700}
+.impl{color:#d9a441;font-weight:700}
+.c23{color:#7bc47b;font-weight:700;font-size:.85em;letter-spacing:.03em}
+.ll{font-size:11px;white-space:nowrap;text-decoration:none;color:var(--accent);font-weight:600}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:14px 0;color:var(--ink2)}
+.callout .co-ic{font-size:20px}
+.callout.danger{border-left:4px solid var(--danger)}
+.callout.tip{border-left:4px solid var(--accent)}
+.callout p{margin:0}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;text-decoration:none;margin:16px 0 6px}
+footer{margin-top:26px;border-top:1px solid var(--border)}
+.fine{color:var(--ink3);font-size:12.5px}
+@media print{
+:root{color-scheme:light}
+body{background:#fff;color:#000;font:10.5px/1.35 system-ui,sans-serif}
+.wrap{max-width:none;padding:0}
+header,.cta,.noprint{display:none}
+h1{font-size:18px;color:#000;margin:0 0 2px}
+h2{font-size:13px;color:#000;margin:10px 0 3px;break-after:avoid;page-break-after:avoid}
+p,.meta{color:#222}
+a{color:#000;text-decoration:none}
+.ll{display:none}
+code{background:none;border:none;padding:0;color:#000}
+td code{background:none}
+table{font-size:9px}
+th,td{border:1px solid #888;padding:2px 6px}
+th{background:#eee;color:#000}
+tr{break-inside:avoid;page-break-inside:avoid}
+.tablewrap{overflow:visible;margin:5px 0 8px}
+.callout{background:#fff;border:1px solid #888;color:#000;padding:5px 10px;border-radius:6px}
+.callout .co-ic{font-size:12px}
+.ub{color:#000;text-decoration:underline}
+.impl{color:#000;font-style:italic}
+.c23{color:#000}
+footer{border-top:1px solid #888;margin-top:10px}
+.fine{color:#333}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../index.html">&lt;C&gt;</a><a href="../index.html">The C Path — learn C, visually</a><span class="badge">printable cheatsheet</span></header>
+
+<h1>stdint.h, limits.h &amp; inttypes.h — know your integers</h1>
+<p class="meta">Facts per ISO C17 · <span class="c23">C23</span> changes marked · <span class="ub">UB</span> = undefined behavior, <span class="impl">ID</span> = implementation-defined</p>
+<p class="noprint meta">Styled for paper — hit Ctrl+P and pin it above your desk.</p>
+
+<p>"How big is an <code>int</code>?" The honest C answer: <em>it depends</em> — the standard only guarantees minimums. On 64-bit Linux <code>long</code> is 64 bits; on 64-bit Windows it's 32. These headers turn that chaos into certainty.</p>
+
+<h2>&lt;stdint.h&gt; — fixed-width types (C99)</h2>
+<div class="tablewrap">
+<table>
+<tr><th>type</th><th>meaning</th><th>min / max macros</th><th>print with</th></tr>
+<tr><td><code>int8_t</code> / <code>uint8_t</code></td><td>exactly 8 bits, two's complement (<span class="c23">C23</span> mandates two's complement; the typedefs are optional only on exotic hardware)</td><td><code>INT8_MIN INT8_MAX</code> / <code>UINT8_MAX</code></td><td><code>PRId8</code> / <code>PRIu8</code>, hex <code>PRIx8</code></td></tr>
+<tr><td><code>int16_t</code> / <code>uint16_t</code></td><td>exactly 16 bits</td><td><code>INT16_MIN INT16_MAX</code> / <code>UINT16_MAX</code></td><td><code>PRId16</code> / <code>PRIu16</code></td></tr>
+<tr><td><code>int32_t</code> / <code>uint32_t</code></td><td>exactly 32 bits</td><td><code>INT32_MIN INT32_MAX</code> / <code>UINT32_MAX</code></td><td><code>PRId32</code> / <code>PRIu32</code></td></tr>
+<tr><td><code>int64_t</code> / <code>uint64_t</code></td><td>exactly 64 bits</td><td><code>INT64_MIN INT64_MAX</code> / <code>UINT64_MAX</code></td><td><code>PRId64</code> / <code>PRIu64</code></td></tr>
+<tr><td><code>int_least8_t</code> … <code>uint_least64_t</code></td><td>smallest type with <em>at least</em> N bits — always exists</td><td><code>INT_LEAST8_MIN</code> …</td><td><code>PRIdLEAST8</code> …</td></tr>
+<tr><td><code>int_fast8_t</code> … <code>uint_fast64_t</code></td><td>fastest type with at least N bits (often plain <code>int</code> — or a full register — under the hood)</td><td><code>INT_FAST8_MIN</code> …</td><td><code>PRIdFAST8</code> …</td></tr>
+<tr><td><code>intptr_t</code> / <code>uintptr_t</code></td><td>integer wide enough to round-trip a pointer — the only sanctioned way to store an address as an integer (optional but ubiquitous)</td><td><code>INTPTR_MIN INTPTR_MAX</code> / <code>UINTPTR_MAX</code></td><td><code>PRIdPTR</code> / <code>PRIxPTR</code></td></tr>
+<tr><td><code>intmax_t</code> / <code>uintmax_t</code></td><td>the widest integer type</td><td><code>INTMAX_MIN INTMAX_MAX</code> / <code>UINTMAX_MAX</code></td><td><code>PRIdMAX</code>, or <code>%jd</code> / <code>%ju</code></td></tr>
+</table>
+</div>
+<p>Constant macros: <code>INT8_C(42)</code>, <code>UINT64_C(0xFFFFFFFFFF)</code> make a literal of (at least) the right type without guessing suffixes. Also in stdint.h: <code>SIZE_MAX</code>, <code>PTRDIFF_MIN/MAX</code>, <code>WCHAR_MIN/MAX</code>, <code>WINT_MIN/MAX</code>, <code>SIG_ATOMIC_MIN/MAX</code>. <span class="c23">C23</span> adds <code>*_WIDTH</code> macros (bit widths) for every type.</p>
+
+<h2>&lt;limits.h&gt; — what this machine's basic types hold</h2>
+<div class="tablewrap">
+<table>
+<tr><th>type</th><th>standard guarantees at least</th><th>typical 64-bit Linux (LP64)</th><th>macros</th><th>learn</th></tr>
+<tr><td><code>char</code></td><td>8 bits (<code>CHAR_BIT</code> ≥ 8); signedness is <span class="impl">ID</span>!</td><td>8 bits, signed</td><td><code>CHAR_BIT CHAR_MIN CHAR_MAX</code></td><td><a class="ll" href="../index.html#/lesson/text-encoding">→ lesson</a></td></tr>
+<tr><td><code>signed char</code> / <code>unsigned char</code></td><td>−127..127 / 0..255</td><td>−128..127 / 0..255</td><td><code>SCHAR_MIN SCHAR_MAX UCHAR_MAX</code></td><td></td></tr>
+<tr><td><code>short</code></td><td>16 bits (−32767..32767)</td><td>16 bits</td><td><code>SHRT_MIN SHRT_MAX USHRT_MAX</code></td><td></td></tr>
+<tr><td><code>int</code></td><td><b>16 bits</b> — yes, really (alive and well on microcontrollers)</td><td>32 bits</td><td><code>INT_MIN INT_MAX UINT_MAX</code></td><td><a class="ll" href="../index.html#/lesson/limits-stdint">→ lesson</a></td></tr>
+<tr><td><code>long</code></td><td>32 bits</td><td>64 bits — but <b>32 on 64-bit Windows!</b></td><td><code>LONG_MIN LONG_MAX ULONG_MAX</code></td><td></td></tr>
+<tr><td><code>long long</code></td><td>64 bits (C99)</td><td>64 bits</td><td><code>LLONG_MIN LLONG_MAX ULLONG_MAX</code></td><td></td></tr>
+</table>
+</div>
+<p>Minimum magnitudes read ±32767, not ±32768, because C17 still permitted sign-magnitude and ones'-complement machines; <span class="c23">C23</span> mandates two's complement (<a href="../index.html#/lesson/negative-numbers">negative-numbers lesson</a>). The portable bit-width pattern: <code>sizeof(type) * CHAR_BIT</code>. Float limits (<code>FLT_EPSILON</code>, <code>DBL_MAX</code>…) live in <code>&lt;float.h&gt;</code> — covered in the <a href="../index.html#/lesson/limits-stdint">limits-stdint lesson</a>.</p>
+
+<h2>&lt;inttypes.h&gt; — printing fixed-width types</h2>
+<p>What printf specifier matches <code>int64_t</code>? On 64-bit Linux it's <code>long</code> (<code>%ld</code>), on Windows <code>long long</code> (<code>%lld</code>) — hardcode either and the other platform is <span class="ub">UB</span>. The PRI macros expand to the right letters and glue in via string-literal concatenation:</p>
+<div class="tablewrap">
+<table>
+<tr><th>build the macro name</th><th>pieces</th><th>examples</th></tr>
+<tr><td>printf: <code>PRI</code> + conversion + width</td><td>conversion: <code>d i u o x X</code> (<span class="c23">C23</span>: <code>b</code>) · width: <code>8 16 32 64</code>, <code>LEAST8</code>…, <code>FAST8</code>…, <code>MAX</code>, <code>PTR</code></td><td><code>PRId64 PRIu32 PRIx8 PRIXMAX PRIxPTR</code></td></tr>
+<tr><td>scanf: <code>SCN</code> + conversion + width</td><td>conversion: <code>d i u o x</code></td><td><code>SCNd64 SCNu32 SCNx16</code></td></tr>
+</table>
+</div>
+<div class="tablewrap">
+<table>
+<tr><th>usage</th><th>notes</th></tr>
+<tr><td><code>printf("big = %" PRId64 "\n", big);</code></td><td>the macro is a string literal — adjacent literals concatenate at compile time</td></tr>
+<tr><td><code>printf("flags = 0x%08" PRIX32 "\n", f);</code></td><td>flags, width and precision still go before the macro</td></tr>
+<tr><td><code>scanf("%" SCNd64, &amp;big);</code></td><td>SCN macros size the pointer target correctly</td></tr>
+<tr><td><code>strtoimax / strtoumax / imaxabs / imaxdiv</code></td><td>also live in inttypes.h — <code>intmax_t</code> cousins of strtol/abs/div</td></tr>
+</table>
+</div>
+
+<h2>size_t &amp; ptrdiff_t (&lt;stddef.h&gt;)</h2>
+<div class="tablewrap">
+<table>
+<tr><th>type</th><th>what it is</th><th>print</th><th>trap</th><th>learn</th></tr>
+<tr><td><code>size_t</code></td><td><b>unsigned</b> type of <code>sizeof</code> and array indexing; max is <code>SIZE_MAX</code></td><td><code>%zu</code></td><td>it can't go negative: <code>for (size_t i = n-1; i &gt;= 0; --i)</code> loops forever. Count down with <code>for (size_t i = n; i-- &gt; 0;)</code></td><td><a class="ll" href="../index.html#/lesson/sizeof">→ lesson</a></td></tr>
+<tr><td><code>ptrdiff_t</code></td><td><b>signed</b> result of subtracting two pointers into the same array</td><td><code>%td</code></td><td>subtracting pointers into <em>different</em> objects is <span class="ub">UB</span></td><td><a class="ll" href="../index.html#/lesson/pointer-arithmetic">→ lesson</a></td></tr>
+</table>
+</div>
+<p><code>ssize_t</code> is POSIX, not ISO C. Also in stddef.h: <code>NULL</code>, <code>offsetof(type, member)</code>, <code>max_align_t</code>; <span class="c23">C23</span> adds <code>nullptr</code> and makes <code>bool/true/false</code> real keywords (historically via <code>&lt;stdbool.h&gt;</code>).</p>
+
+<h2>Integer promotions &amp; conversion rank — the 60-second version</h2>
+<div class="tablewrap">
+<table>
+<tr><th>rule</th><th>statement</th></tr>
+<tr><td>rank ladder</td><td><code>_Bool</code> &lt; <code>char</code> &lt; <code>short</code> &lt; <code>int</code> &lt; <code>long</code> &lt; <code>long long</code> (an enum has the rank of its compatible type)</td></tr>
+<tr><td>integer promotions</td><td>anything ranked <em>below</em> <code>int</code> becomes <code>int</code> first (or <code>unsigned int</code> if int can't hold every value). Applies to arithmetic, shifts, unary <code>+ - ~</code>, and variadic calls (where <code>float</code> also becomes <code>double</code>)</td></tr>
+<tr><td>usual arithmetic conversions</td><td>after promotion: same type → done · same signedness → lower rank converts up · <b>mixed signedness:</b> if the unsigned side's rank ≥ the signed side's, both go unsigned; if the signed type can represent every unsigned value (e.g. <code>long</code> vs <code>unsigned int</code> on LP64), both go signed; otherwise both go to the unsigned version of the signed type</td></tr>
+<tr><td>signed → unsigned</td><td>always defined: value wraps modulo 2ⁿ (<code>(unsigned)-1 == UINT_MAX</code>)</td></tr>
+<tr><td>unsigned → signed, value doesn't fit</td><td><span class="impl">ID</span> result (or an implementation-defined signal) — in practice it wraps, but the standard doesn't say so</td></tr>
+<tr><td>signed arithmetic overflow</td><td><span class="ub">UB</span> — <code>INT_MAX + 1</code> is not "wraps around", it's undefined. Unsigned arithmetic wraps by definition</td></tr>
+</table>
+</div>
+
+<div class="tablewrap">
+<table>
+<tr><th>expression</th><th>result</th><th>why</th><th>learn</th></tr>
+<tr><td><code>-1 &gt; 1u</code></td><td>true(!)</td><td>same rank, mixed signs → −1 converts to unsigned, becoming 4294967295</td><td><a class="ll" href="../index.html#/lesson/casting-conversions">→ lesson</a></td></tr>
+<tr><td><code>sizeof(int) &gt; -1</code></td><td>false(!)</td><td><code>sizeof</code> yields <code>size_t</code>; −1 converts to <code>SIZE_MAX</code></td><td><a class="ll" href="../index.html#/lesson/sizeof">→ lesson</a></td></tr>
+<tr><td><code>'A' + 1</code></td><td><code>int</code> 66</td><td>two chars added = the addition happens in <code>int</code></td><td><a class="ll" href="../index.html#/lesson/casting-conversions">→ lesson</a></td></tr>
+<tr><td><code>uint8_t u = 0xFF; ~u == 0x00</code></td><td>false(!)</td><td><code>~u</code> promotes to <code>int</code> first: ~255 is −256, not 0. Fix: <code>(uint8_t)~u</code></td><td><a class="ll" href="../index.html#/lesson/operators-bitwise">→ lesson</a></td></tr>
+<tr><td><code>unsigned char u = 255; u &lt;&lt; 1</code></td><td>510</td><td>promotion to <code>int</code> happens <em>before</em> the shift — no 8-bit wraparound</td><td><a class="ll" href="../index.html#/lesson/casting-conversions">→ lesson</a></td></tr>
+<tr><td><code>unsigned short a = 65535, b = 65535; a * b</code></td><td><span class="ub">UB</span> on 32-bit-int platforms(!)</td><td>both promote to <em>signed</em> <code>int</code>; 65535 × 65535 overflows <code>INT_MAX</code>. Cast one side: <code>(unsigned)a * b</code></td><td><a class="ll" href="../index.html#/lesson/undefined-behavior">→ lesson</a></td></tr>
+</table>
+</div>
+
+<h2>Which type do I use?</h2>
+<div class="tablewrap">
+<table>
+<tr><th>situation</th><th>use</th><th>why</th></tr>
+<tr><td>exact bit layout — file format, network packet, hardware register</td><td><code>uint32_t</code>, <code>int64_t</code>, … (stdint.h)</td><td>same size on every machine on Earth</td></tr>
+<tr><td>a size, length, or array index</td><td><code>size_t</code></td><td>matches sizeof, malloc, strlen; print with <code>%zu</code></td></tr>
+<tr><td>values that can exceed ~2 billion</td><td><code>int64_t</code> (or <code>long long</code>)</td><td>plain int is 32 bits on today's desktops — and may be 16 elsewhere</td></tr>
+<tr><td>bit manipulation, masks, flags</td><td>unsigned types</td><td>shifts and overflow are fully defined on unsigned</td></tr>
+<tr><td>storing a pointer as an integer</td><td><code>uintptr_t</code></td><td>the only sanctioned round-trip</td></tr>
+<tr><td>everything else — small everyday numbers</td><td>plain <code>int</code></td><td>the natural word; don't reach for unsigned just because a value "can't be negative" — unsigned underflow bugs in loop conditions are legion</td></tr>
+</table>
+</div>
+
+<div class="callout tip"><div class="co-ic">💡</div><div><p><b>The one-line habit:</b> at any binary boundary say the width out loud (<code>uint32_t</code>); everywhere else keep it simple (<code>int</code>, <code>size_t</code>). And print fixed-width types only through their <code>PRI…</code> macros — a hardcoded <code>%ld</code> is a portability bug waiting for a Windows build.</p></div></div>
+
+<footer>
+<a class="cta" href="../index.html#/lesson/limits-stdint">Learn this properly → the interactive limits &amp; stdint lesson</a>
+<p class="fine">Part of <a href="../index.html">The C Path</a> — a free interactive C course with quizzes, visualizations and a real compiler. Facts per ISO C17; C23 changes marked.</p>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCC flags cheatsheet — The C Path</title>
+<meta name="description" content="The GCC flags that matter: warnings (-Wall -Wextra and the extras worth adding), sanitizers, optimization levels, debugging, -std= standards, linking, and hardening basics — with recommended dev and release command lines.">
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚙️&lt;/text&gt;&lt;/svg&gt;">
+<style>
+:root{color-scheme:dark;--bg:#0d0d0d;--surface:#1a1a19;--border:rgba(255,255,255,.14);--ink:#fff;--ink2:#c3c2b7;--ink3:#898781;--accent:#3987e5;--danger:#e66767;--code:#141413;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.logo{font:800 15px var(--mono);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:3px 8px;text-decoration:none}
+header a{color:var(--ink2);text-decoration:none;font-weight:600}
+.badge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);border:1px solid var(--border);border-radius:999px;padding:3px 10px;white-space:nowrap}
+h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+h2{font-size:19px;margin:28px 0 4px}
+.meta{color:var(--ink3);font-size:13.5px;margin:0 0 4px}
+p{margin:8px 0;color:var(--ink2)}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.93em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1px 5px;color:var(--ink)}
+.tablewrap{overflow-x:auto;margin:10px 0 16px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.45}
+th,td{border:1px solid var(--border);padding:5px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);white-space:nowrap}
+td code{background:var(--code);white-space:nowrap}
+td code.wrapok{white-space:normal}
+.ub{color:var(--danger);font-weight:700}
+.c23{color:#7bc47b;font-weight:700;font-size:.85em;letter-spacing:.03em}
+.ll{font-size:11px;white-space:nowrap;text-decoration:none;color:var(--accent);font-weight:600}
+.callout{display:flex;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:14px 0;color:var(--ink2)}
+.callout .co-ic{font-size:20px}
+.callout.danger{border-left:4px solid var(--danger)}
+.callout.tip{border-left:4px solid var(--accent)}
+.callout p{margin:0}
+.cmd{background:var(--code);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin:10px 0;font:13px/1.6 var(--mono);overflow-x:auto;white-space:pre}
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;text-decoration:none;margin:16px 0 6px}
+footer{margin-top:26px;border-top:1px solid var(--border)}
+.fine{color:var(--ink3);font-size:12.5px}
+@media print{
+:root{color-scheme:light}
+body{background:#fff;color:#000;font:10.5px/1.35 system-ui,sans-serif}
+.wrap{max-width:none;padding:0}
+header,.cta,.noprint{display:none}
+h1{font-size:18px;color:#000;margin:0 0 2px}
+h2{font-size:13px;color:#000;margin:10px 0 3px;break-after:avoid;page-break-after:avoid}
+p,.meta{color:#222}
+a{color:#000;text-decoration:none}
+.ll{display:none}
+code{background:none;border:none;padding:0;color:#000}
+td code{background:none}
+table{font-size:9px}
+th,td{border:1px solid #888;padding:2px 6px}
+th{background:#eee;color:#000}
+tr{break-inside:avoid;page-break-inside:avoid}
+.tablewrap{overflow:visible;margin:5px 0 8px}
+.callout{background:#fff;border:1px solid #888;color:#000;padding:5px 10px;border-radius:6px}
+.callout .co-ic{font-size:12px}
+.cmd{background:#fff;border:1px solid #888;color:#000;font-size:8.5px;overflow:visible;white-space:pre-wrap}
+.ub{color:#000;text-decoration:underline}
+.c23{color:#000}
+footer{border-top:1px solid #888;margin-top:10px}
+.fine{color:#333}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="../index.html">&lt;C&gt;</a><a href="../index.html">The C Path — learn C, visually</a><span class="badge">printable cheatsheet</span></header>
+
+<h1>GCC flags worth knowing by heart</h1>
+<p class="meta">GCC accepts hundreds of options; these are the ~30 that matter. Nearly all work identically in Clang.</p>
+<p class="noprint meta">Styled for paper — hit Ctrl+P and pin it above your desk.</p>
+
+<div class="callout tip"><div class="co-ic">💡</div><div><p><b>Your everyday invocation</b> — make it muscle memory (or a shell alias):<br><code>gcc -std=c17 -Wall -Wextra -Wshadow -g -Og program.c -o program</code></p></div></div>
+
+<h2>Warnings: free code review, on by request</h2>
+<p>By default GCC is scandalously quiet. Fix that — always:</p>
+<div class="tablewrap">
+<table>
+<tr><th>flag</th><th>what it does</th><th>learn</th></tr>
+<tr><td><code>-Wall</code></td><td>the "sensible warnings" set — badly named: it's nowhere near <em>all</em>. Includes the format-string checks that catch printf mismatches</td><td><a class="ll" href="../index.html#/lesson/gcc-flags">→ lesson</a></td></tr>
+<tr><td><code>-Wextra</code></td><td>more good ones: unused parameters, signed/unsigned comparisons…</td><td></td></tr>
+<tr><td><code>-Wpedantic</code></td><td>complain about anything that isn't strictly ISO C (pair with an explicit <code>-std=</code>)</td><td></td></tr>
+<tr><td><code>-Werror</code></td><td>promote warnings to errors so nobody can ignore them. Great for your own code; think twice before forcing it on code you distribute — new compiler versions add new warnings and break the build</td><td></td></tr>
+</table>
+</div>
+<p>The extras worth adding:</p>
+<div class="tablewrap">
+<table>
+<tr><th>flag</th><th>catches</th></tr>
+<tr><td><code>-Wshadow</code></td><td>an inner variable hides an outer one — a silent logic-bug generator</td></tr>
+<tr><td><code>-Wconversion</code></td><td>implicit conversions that can lose data (<code>int rounded = celsius;</code> truncating a double)</td></tr>
+<tr><td><code>-Wsign-conversion</code></td><td>silent signed↔unsigned changes — the <code>-1 &gt; 1u</code> family of bugs</td></tr>
+<tr><td><code>-Wdouble-promotion</code></td><td><code>float</code> silently computed in <code>double</code> — matters for embedded/hot loops</td></tr>
+<tr><td><code>-Wformat=2</code></td><td>stricter printf/scanf checking than -Wall, plus warns when the format string isn't a literal (security)</td></tr>
+<tr><td><code>-Wundef</code></td><td><code>#if MISPELLED_MACRO</code> silently evaluating as 0</td></tr>
+<tr><td><code>-Wvla</code></td><td>variable-length arrays — stack overflows in disguise on untrusted sizes</td></tr>
+<tr><td><code>-Wwrite-strings</code></td><td>assigning a string literal to <code>char *</code> — modifying one is <span class="ub">UB</span></td></tr>
+<tr><td><code>-Wnull-dereference</code></td><td>paths that provably dereference NULL</td></tr>
+<tr><td><code>-Wstrict-prototypes</code></td><td>old-style <code>int f()</code> declarations that accept any arguments (moot in <span class="c23">C23</span>, where <code>()</code> finally means <code>(void)</code>)</td></tr>
+</table>
+</div>
+
+<h2>Which C? -std=</h2>
+<div class="tablewrap">
+<table>
+<tr><th>flag</th><th>meaning</th><th>learn</th></tr>
+<tr><td><code>-std=c17</code></td><td>portable ISO C17 — today's safe default</td><td><a class="ll" href="../index.html#/lesson/gcc-flags">→ lesson</a></td></tr>
+<tr><td><code>-std=c23</code></td><td>ISO C23 (GCC 14+; on older GCC the working name was <code>-std=c2x</code>)</td><td><a class="ll" href="../index.html#/lesson/c23-features">→ lesson</a></td></tr>
+<tr><td><code>-std=gnu17</code></td><td>C17 + GNU extensions — GCC's own default dialect on most installs (GCC 15 moved to <code>gnu23</code>)</td><td><a class="ll" href="../index.html#/lesson/gcc-extensions">→ lesson</a></td></tr>
+<tr><td><code>-ansi</code></td><td>museum piece: means <code>-std=c90</code> — you'll meet it in old build scripts</td><td></td></tr>
+</table>
+</div>
+
+<h2>Optimization: the speed dial</h2>
+<div class="tablewrap">
+<table>
+<tr><th>flag</th><th>meaning</th><th>trade-off</th></tr>
+<tr><td><code>-O0</code></td><td>default — no optimization</td><td>fast compiles, faithful line-by-line debugging, slow code</td></tr>
+<tr><td><code>-Og</code></td><td>optimize, but keep debuggable</td><td>the sweet spot for development builds</td></tr>
+<tr><td><code>-O1</code></td><td>basic optimizations</td><td>rarely used directly</td></tr>
+<tr><td><code>-O2</code></td><td>full optimization, no size explosion</td><td><b>the production standard</b></td></tr>
+<tr><td><code>-O3</code></td><td>-O2 + aggressive inlining/vectorization</td><td>sometimes faster, sometimes bigger &amp; slower — measure!</td></tr>
+<tr><td><code>-Os</code></td><td>optimize for size</td><td>embedded targets, cache-bound code</td></tr>
+<tr><td><code>-march=native</code></td><td>use every instruction <em>this</em> CPU supports (AVX2, FMA…)</td><td>great for code that runs where it's built; wrong for binaries you ship to older machines</td></tr>
+<tr><td><code>-flto</code></td><td>link-time optimization — optimize across .c file boundaries</td><td>slower builds, real speedups; pass it to both compile and link steps</td></tr>
+<tr><td><code>-ffast-math</code></td><td>let the optimizer break IEEE float rules</td><td>faster, <em>wrong</em> for code that cares about NaN/precision — know what you're signing</td></tr>
+</table>
+</div>
+
+<h2>Debug info &amp; sanitizers</h2>
+<div class="tablewrap">
+<table>
+<tr><th>flag</th><th>what it does</th><th>learn</th></tr>
+<tr><td><code>-g</code></td><td>embed DWARF debug info mapping machine code back to source lines and variable names. Does <b>not</b> slow the program down — it just makes the file bigger. There is never a reason to omit it during development; ship with it too (you can strip symbols later, but you can't conjure them back when a core dump lands)</td><td><a class="ll" href="../index.html#/lesson/debugging-tools">→ lesson</a></td></tr>
+<tr><td><code>-g3</code></td><td>-g plus macro definitions — lets gdb expand your <code>#define</code>s</td><td></td></tr>
+<tr><td><code>-fsanitize=address</code></td><td>AddressSanitizer (ASan): catches buffer overflows, use-after-free, stack overflows at the moment they happen; leak check runs at exit. ~2× slowdown — dev/test builds only</td><td><a class="ll" href="../index.html#/lesson/debugging-tools">→ lesson</a></td></tr>
+<tr><td><code>-fsanitize=undefined</code></td><td>UBSan: catches signed overflow, bad shifts, null dereference, misaligned access as they execute</td><td><a class="ll" href="../index.html#/lesson/undefined-behavior">→ lesson</a></td></tr>
+<tr><td><code>-fsanitize=address,undefined</code></td><td>the combo for dev builds — many teams gate every merge on it</td><td></td></tr>
+<tr><td><code>-fsanitize=thread</code></td><td>TSan: data races. Cannot be combined with ASan; don't mix sanitized binaries with valgrind either</td><td></td></tr>
+<tr><td><code>-fno-omit-frame-pointer</code></td><td>keeps stack traces (from ASan, perf, gdb) accurate at small cost</td><td></td></tr>
+</table>
+</div>
+
+<h2>The plumbing</h2>
+<div class="tablewrap">
+<table>
+<tr><th>flag</th><th>does</th><th>example / note</th><th>learn</th></tr>
+<tr><td><code>-o file</code></td><td>name the output</td><td><code>gcc app.c -o app</code> — default is the immortal <code>a.out</code></td><td></td></tr>
+<tr><td><code>-c</code></td><td>compile to a .o object, don't link</td><td>the heart of every Makefile's incremental build</td><td><a class="ll" href="../index.html#/lesson/makefiles">→ lesson</a></td></tr>
+<tr><td><code>-E</code> / <code>-S</code></td><td>stop after preprocessing / after compiling to assembly</td><td>see what the preprocessor or optimizer actually did</td><td><a class="ll" href="../index.html#/lesson/compilation-pipeline">→ lesson</a></td></tr>
+<tr><td><code>-DNAME[=val]</code></td><td>define a macro from the command line</td><td><code>-DDEBUG -DVERSION=3</code></td><td><a class="ll" href="../index.html#/lesson/conditional-compilation">→ lesson</a></td></tr>
+<tr><td><code>-Idir</code></td><td>add a directory to the <code>#include</code> search path</td><td><code>-Iinclude/</code> — used by the preprocessor</td><td><a class="ll" href="../index.html#/lesson/include">→ lesson</a></td></tr>
+<tr><td><code>-Ldir</code></td><td>add a directory to the library search path</td><td><code>-Lbuild/lib</code> — used by the linker</td><td><a class="ll" href="../index.html#/lesson/linking-libraries">→ lesson</a></td></tr>
+<tr><td><code>-lname</code></td><td>link against lib<i>name</i></td><td><code>-lm</code> → libm, the math library. <b>Order matters:</b> put <code>-l</code> flags <em>after</em> your .c/.o files</td><td><a class="ll" href="../index.html#/lesson/linking-libraries">→ lesson</a></td></tr>
+<tr><td><code>-fPIC -shared</code></td><td>build a shared library</td><td><code>gcc -fPIC -shared mylib.c -o libmylib.so</code></td><td><a class="ll" href="../index.html#/lesson/linking-libraries">→ lesson</a></td></tr>
+<tr><td><code>-static</code></td><td>link everything statically — self-contained binary</td><td>bigger file, no runtime .so dependencies</td><td><a class="ll" href="../index.html#/lesson/linking-libraries">→ lesson</a></td></tr>
+</table>
+</div>
+
+<h2>Hardening basics (release builds)</h2>
+<div class="tablewrap">
+<table>
+<tr><th>flag</th><th>protects against</th><th>note</th></tr>
+<tr><td><code>-D_FORTIFY_SOURCE=2</code></td><td>adds runtime checks to memcpy/sprintf/… when sizes are known</td><td>needs optimization on (<code>-O1</code>+); <code>=3</code> checks more (GCC 12+, glibc 2.34+)</td></tr>
+<tr><td><code>-fstack-protector-strong</code></td><td>stack-smashing canaries on vulnerable functions</td><td>cheap; distro default in many places</td></tr>
+<tr><td><code>-fPIE -pie</code></td><td>position-independent executable → full ASLR</td><td>compile flag + link flag; default on most modern distros</td></tr>
+<tr><td><code>-Wl,-z,relro -Wl,-z,now</code></td><td>makes the relocation/GOT tables read-only after startup</td><td>"full RELRO" — linker flags, hence the <code>-Wl,</code> prefix</td></tr>
+<tr><td><code>-fstack-clash-protection</code></td><td>stack-clash attacks via huge stack allocations</td><td>cheap insurance</td></tr>
+<tr><td><code>-fcf-protection</code></td><td>ROP/JOP control-flow hijacks (x86 CET)</td><td>hardware-assisted on recent CPUs</td></tr>
+<tr><td><code>-ftrivial-auto-var-init=zero</code></td><td>reading uninitialized locals becomes reading zeros</td><td>GCC 12+; defense-in-depth, not a license to skip initialization — the read is still a bug (<a class="ll" href="../index.html#/lesson/undefined-behavior">→ lesson</a>)</td></tr>
+</table>
+</div>
+
+<h2>Put it together</h2>
+<p>Development — warnings, debuggability, sanitizers:</p>
+<div class="cmd">gcc -std=c17 -Wall -Wextra -Wshadow -Wconversion \
+    -g -Og -fsanitize=address,undefined \
+    program.c -o program</div>
+<p>Release — optimized, hardened, still debuggable from a core dump:</p>
+<div class="cmd">gcc -std=c17 -Wall -Wextra -O2 -g \
+    -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE -pie \
+    -Wl,-z,relro -Wl,-z,now \
+    program.c -o program -lm</div>
+
+<div class="callout tip"><div class="co-ic">🎉</div><div><p><b>Clang compatibility:</b> nearly every flag on this page works identically in Clang — <code>clang -std=c17 -Wall -Wextra -O2</code> just works. The two compilers deliberately share a command-line dialect, so learning one is learning both.</p></div></div>
+
+<footer>
+<a class="cta" href="../index.html#/lesson/gcc-flags">Learn this properly → the interactive GCC flags lesson</a>
+<p class="fine">Part of <a href="../index.html">The C Path</a> — a free interactive C course with quizzes, visualizations and a real compiler.</p>
+</footer>
+</div>
+</body>
+</html>
