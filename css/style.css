@@ -868,3 +868,24 @@ input[type="range"] { accent-color: var(--accent); flex: 1; }
 .book-card h3 { margin: 0; font-size: 17px; }
 .book-card .b-author { font: 600 13px var(--mono); color: var(--accent); margin: 3px 0 8px; }
 .book-card p { margin: 0 0 12px; font-size: 14.5px; color: var(--ink-2); }
+
+/* ===== Terminal texture (shared with the hub) ===== */
+
+/* Selecting text inverts it, like a terminal. The code editor keeps its
+   own accent-tinted selection (its rule is more specific). */
+::selection { background: var(--ink); color: var(--bg); }
+
+/* Ligatures must never rewrite C source: ->, !=, => stay separate glyphs. */
+code, pre, kbd, textarea { font-variant-ligatures: none; }
+
+/* Faint scanlines over the terminal output surfaces (they stay dark in
+   both themes, so no light-mode switch is needed). */
+.termblock, .hero-term, .pg-out, .trace-out { position: relative; }
+.termblock::after, .hero-term::after, .pg-out::after, .trace-out::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0, 0, 0, 0.10) 2px 3px);
+}
+
+/* Copying a shell line never grabs the prompt glyph. */
+.termblock .t-prompt { user-select: none; }
