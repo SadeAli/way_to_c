@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://sadeali.github.io/way_to_c/sitemap.xml
